@@ -9,7 +9,6 @@ import Animated, {
   withRepeat,
   withSequence,
 } from 'react-native-reanimated';
-import { LinearGradient } from 'expo-linear-gradient';
 import { Audio, AVPlaybackStatus } from 'expo-av';
 import { supabase } from '@/lib/supabase';
 import { fonts } from '@/lib/fonts';
@@ -185,49 +184,40 @@ export default function DiscoverScreen() {
 
   if (isLoading) {
     return (
-      <LinearGradient
-        colors={['#1a1a1a', '#2a2a2a', '#1a1a1a']}
-        className="flex-1"
-      >
+      <View style={{ backgroundColor: '#19161a' }} className="flex-1">
         <SafeAreaView className="flex-1 items-center justify-center">
-          <ActivityIndicator size="large" color="#00ff41" />
+          <ActivityIndicator size="large" color="#8b6699" />
           <Text style={{ color: 'white', marginTop: 16, fontFamily: fonts.chillax.regular }}>Loading track...</Text>
         </SafeAreaView>
-      </LinearGradient>
+      </View>
     );
   }
 
   if (error) {
     return (
-      <LinearGradient
-        colors={['#1a1a1a', '#2a2a2a', '#1a1a1a']}
-        className="flex-1"
-      >
+      <View style={{ backgroundColor: '#19161a' }} className="flex-1">
         <SafeAreaView className="flex-1 items-center justify-center px-6">
           <Text style={{ color: 'white', textAlign: 'center', marginBottom: 16, fontFamily: fonts.chillax.regular }}>{error}</Text>
           <TouchableOpacity
             onPress={loadNextTrack}
-            className="bg-neon-green px-8 py-4 rounded-full"
+            className="bg-brand-accent px-8 py-4 rounded-full"
           >
             <Text style={{ color: 'black', fontFamily: fonts.chillax.bold, fontSize: 18 }}>
               Try Again
             </Text>
           </TouchableOpacity>
         </SafeAreaView>
-      </LinearGradient>
+      </View>
     );
   }
 
   return (
-    <LinearGradient
-      colors={['#1a1a1a', '#2a2a2a', '#1a1a1a']}
-      className="flex-1"
-    >
+    <View style={{ backgroundColor: '#19161a' }} className="flex-1">
       <SafeAreaView className="flex-1 px-6">
         {/* Header */}
         <View className="items-center pt-8 pb-12">
-          <Text style={{ color: 'white', fontSize: 24, fontFamily: fonts.chillax.bold }}>unknown</Text>
-          <Text style={{ color: '#9ca3af', fontSize: 14, fontFamily: fonts.chillax.medium, marginTop: 8 }}>
+          <Text className='text-brand-text' style={{ fontSize: 24, fontFamily: fonts.chillax.bold }}>unknown</Text>
+          <Text className='text-brand-gray' style={{ fontSize: 14, fontFamily: fonts.chillax.medium, marginTop: 8 }}>
             Discover underground music
           </Text>
         </View>
@@ -239,32 +229,32 @@ export default function DiscoverScreen() {
               {/* Mystery Track Visualization */}
               <Animated.View
                 style={pulseStyle}
-                className="w-64 h-64 rounded-full bg-gradient-to-br from-neon-green/20 to-neon-blue/20 items-center justify-center mb-8"
+                className="w-64 h-64 rounded-full bg-gradient-to-br from-brand-accent/20 to-brand-secondary/20 items-center justify-center mb-8"
               >
-                <View className="w-48 h-48 rounded-full bg-dark-200 items-center justify-center border border-neon-green/30">
+                <View className="w-48 h-48 rounded-full bg-brand-backgroundLighter items-center justify-center">
                   <TouchableOpacity
                     onPress={playPauseAudio}
-                    className="w-20 h-20 rounded-full bg-neon-green items-center justify-center"
+                    className="w-20 h-20 rounded-full bg-brand-accent items-center justify-center"
                   >
                     {isPlaying ? (
-                      <Pause size={32} color="#000" strokeWidth={2} />
+                      <Pause size={32} color="#8b6699" strokeWidth={2} />
                     ) : (
-                      <Play size={32} color="#000" strokeWidth={2} />
+                      <Play size={32} color="#8b6699" strokeWidth={2} />
                     )}
                   </TouchableOpacity>
                 </View>
               </Animated.View>
 
               {/* Progress Bar */}
-              <View className="w-full max-w-sm h-1 bg-dark-300 rounded-full mb-8">
+              <View className="w-full max-w-sm h-1 bg-brand-backgroundLighter rounded-full mb-8">
                 <Animated.View
                   style={progressStyle}
-                  className="h-full bg-neon-green rounded-full"
+                  className="h-full bg-brand-accent rounded-full"
                 />
               </View>
 
               {/* Question Text */}
-              <Text style={{ color: 'white', fontSize: 20, fontFamily: fonts.chillax.medium, textAlign: 'center', marginBottom: 48 }}>
+              <Text className='text-brand-text' style={{ fontSize: 20, fontFamily: fonts.chillax.medium, textAlign: 'center', marginBottom: 48 }}>
                 How does this track make you feel?
               </Text>
 
@@ -278,9 +268,9 @@ export default function DiscoverScreen() {
                   >
                     <Star
                       size={32}
-                      color={star <= rating ? '#00ff41' : '#5a5a5a'}
-                      fill={star <= rating ? '#00ff41' : 'transparent'}
-                      strokeWidth={2}
+                      color={star <= rating ? '#8b6699' : '#d9d9d9'}
+                      fill={star <= rating ? '#8b6699' : 'transparent'}
+                      strokeWidth={1.5}
                     />
                   </TouchableOpacity>
                 ))}
@@ -291,8 +281,8 @@ export default function DiscoverScreen() {
                 onPress={skipTrack}
                 className="flex-row items-center space-x-2 p-4"
               >
-                <SkipForward size={20} color="#5a5a5a" strokeWidth={2} />
-                <Text style={{ color: '#9ca3af', fontFamily: fonts.chillax.regular }}>Skip</Text>
+                <SkipForward size={20} color='#d9d9d9' strokeWidth={2} />
+                <Text className='text-brand-text' style={{ fontFamily: fonts.chillax.regular }}>Skip</Text>
               </TouchableOpacity>
             </>
           ) : (
@@ -306,7 +296,7 @@ export default function DiscoverScreen() {
                     resizeMode="cover"
                   />
                 ) : (
-                  <View className="w-full h-full bg-gradient-to-br from-neon-purple/30 to-neon-blue/30 items-center justify-center">
+                  <View className="w-full h-full bg-brand-backgroundLighter items-center justify-center">
                     <Text className="text-4xl">🎵</Text>
                   </View>
                 )}
@@ -318,13 +308,13 @@ export default function DiscoverScreen() {
               <Text style={{ color: '#d1d5db', fontSize: 18, fontFamily: fonts.chillax.regular, textAlign: 'center', marginBottom: 16 }}>
                 {currentTrack?.artist}
               </Text>
-              <Text style={{ color: '#00ff41', fontSize: 14, fontFamily: fonts.chillax.medium, marginBottom: 32 }}>
+              <Text style={{ color: '#8b6699', fontSize: 14, fontFamily: fonts.chillax.medium, marginBottom: 32 }}>
                 {currentTrack?.genre}
               </Text>
 
               <TouchableOpacity
                 onPress={loadNextTrack}
-                className="bg-neon-green px-8 py-4 rounded-full"
+                className="bg-brand-accent px-8 py-4 rounded-full"
               >
                 <Text style={{ color: 'black', fontFamily: fonts.chillax.bold, fontSize: 18 }}>
                   Discover Next
@@ -334,6 +324,6 @@ export default function DiscoverScreen() {
           )}
         </View>
       </SafeAreaView>
-    </LinearGradient>
+    </View>
   );
 }

@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, Image } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { ExternalLink, Play } from 'lucide-react-native';
-import { LinearGradient } from 'expo-linear-gradient';
+import { ExternalLink } from 'lucide-react-native';
 import { supabase } from '@/lib/supabase';
 
 interface HistoryTrack {
@@ -66,7 +65,7 @@ export default function HistoryScreen() {
 
   const renderStars = (rating: number) => {
     return Array.from({ length: 5 }, (_, i) => (
-      <Text key={i} className={i < rating ? 'text-neon-green' : 'text-gray-600'}>
+      <Text key={i} className={i < rating ? 'text-brand-accent' : 'text-brand-gray'}>
         ★
       </Text>
     ));
@@ -74,21 +73,21 @@ export default function HistoryScreen() {
 
   if (loading) {
     return (
-      <LinearGradient colors={['#1a1a1a', '#2a2a2a']} className="flex-1">
+      <View style={{ backgroundColor: '#19161a' }} className="flex-1">
         <SafeAreaView className="flex-1 justify-center items-center">
-          <Text className="text-white font-chillax">Loading your discoveries...</Text>
+          <Text className="text-brand-text font-chillax">Loading your discoveries...</Text>
         </SafeAreaView>
-      </LinearGradient>
+      </View>
     );
   }
 
   return (
-    <LinearGradient colors={['#1a1a1a', '#2a2a2a']} className="flex-1">
+    <View style={{ backgroundColor: '#19161a' }} className="flex-1">
       <SafeAreaView className="flex-1">
         {/* Header */}
         <View className="px-6 pt-8 pb-6">
-          <Text className="text-white text-2xl font-chillax-bold mb-2">Your Discoveries</Text>
-          <Text className="text-gray-400 font-chillax">
+          <Text className="text-brand-text text-2xl font-chillax-bold mb-2">Your Discoveries</Text>
+          <Text className="text-brand-text font-chillax">
             {tracks.length} tracks you've loved
           </Text>
         </View>
@@ -97,10 +96,10 @@ export default function HistoryScreen() {
         <ScrollView className="flex-1 px-6" showsVerticalScrollIndicator={false}>
           {tracks.length === 0 ? (
             <View className="flex-1 justify-center items-center py-20">
-              <Text className="text-gray-400 text-lg font-chillax text-center mb-4">
+              <Text className="text-brand-text text-lg font-chillax text-center mb-4">
                 No discoveries yet
               </Text>
-              <Text className="text-gray-500 font-chillax text-center">
+              <Text className="text-brand-text font-chillax text-center">
                 Start exploring to build your collection
               </Text>
             </View>
@@ -109,11 +108,11 @@ export default function HistoryScreen() {
               {tracks.map((track) => (
                 <View
                   key={track.id}
-                  className="bg-dark-200 rounded-2xl p-4 border border-dark-300"
+                  className="bg-brand-backgroundLighter rounded-2xl p-4"
                 >
                   <View className="flex-row space-x-4">
                     {/* Artwork */}
-                    <View className="w-16 h-16 rounded-xl bg-dark-300 overflow-hidden">
+                    <View className="w-16 h-16 rounded-xl bg-brand-backgroundLighter overflow-hidden">
                       {track.artwork_url ? (
                         <Image
                           source={{ uri: track.artwork_url }}
@@ -121,7 +120,7 @@ export default function HistoryScreen() {
                           resizeMode="cover"
                         />
                       ) : (
-                        <View className="w-full h-full bg-gradient-to-br from-neon-purple/20 to-neon-blue/20 items-center justify-center">
+                        <View className="w-full h-full bg-brand-backgroundLighter items-center justify-center">
                           <Text className="text-lg">🎵</Text>
                         </View>
                       )}
@@ -129,16 +128,16 @@ export default function HistoryScreen() {
 
                     {/* Track Info */}
                     <View className="flex-1">
-                      <Text className="text-white font-chillax-bold text-lg mb-1">
+                      <Text className="text-brand-text font-chillax-bold text-lg mb-1">
                         {track.title}
                       </Text>
-                      <Text className="text-gray-300 font-chillax mb-2">
+                      <Text className="text-brand-text font-chillax mb-2">
                         {track.artist}
                       </Text>
                       
                       <View className="flex-row items-center justify-between">
                         <View className="flex-row items-center space-x-2">
-                          <Text className="text-neon-green text-xs font-chillax-medium bg-neon-green/10 px-2 py-1 rounded-full">
+                          <Text className="text-brand-accent text-xs font-chillax-medium bg-brand-accent/10 px-2 py-1 rounded-full">
                             {track.genre}
                           </Text>
                           <View className="flex-row">
@@ -153,7 +152,7 @@ export default function HistoryScreen() {
                               // Open Spotify URL
                             }}
                           >
-                            <ExternalLink size={16} color="#00ff41" strokeWidth={2} />
+                            <ExternalLink size={16} color="#8b6699" strokeWidth={2} />
                           </TouchableOpacity>
                         )}
                       </View>
@@ -165,6 +164,6 @@ export default function HistoryScreen() {
           )}
         </ScrollView>
       </SafeAreaView>
-    </LinearGradient>
+    </View>
   );
 }

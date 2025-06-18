@@ -1,5 +1,4 @@
 import { Tabs } from 'expo-router';
-import { View } from 'react-native';
 import { Home, History, Settings, User } from 'lucide-react-native';
 
 export default function TabLayout() {
@@ -8,18 +7,21 @@ export default function TabLayout() {
       screenOptions={{
         headerShown: false,
         tabBarStyle: {
-          backgroundColor: '#1a1a1a',
-          borderTopColor: '#3a3a3a',
+          backgroundColor: '#19161a',
+          borderTopColor: '#28232a',
           borderTopWidth: 1,
-          height: 80,
+          height: 100,
           paddingBottom: 20,
           paddingTop: 10,
         },
-        tabBarActiveTintColor: '#00ff41',
-        tabBarInactiveTintColor: '#5a5a5a',
+        tabBarActiveTintColor: '#8b6699',
+        tabBarInactiveTintColor: '#ded7e0',
+        tabBarIconStyle: {
+          marginBottom: 4,
+        },
         tabBarLabelStyle: {
           fontSize: 12,
-          fontFamily: 'Chillax-Medium',
+          fontFamily: 'Chillax-Regular',
         },
       }}>
       <Tabs.Screen
@@ -27,7 +29,7 @@ export default function TabLayout() {
         options={{
           title: 'Discover',
           tabBarIcon: ({ size, color }) => (
-            <Home size={size} color={color} strokeWidth={2} />
+            <Home size={size} color={color} strokeWidth={1.5} />
           ),
         }}
       />
@@ -36,7 +38,7 @@ export default function TabLayout() {
         options={{
           title: 'History',
           tabBarIcon: ({ size, color }) => (
-            <History size={size} color={color} strokeWidth={2} />
+            <History size={size} color={color} strokeWidth={1.5} />
           ),
         }}
       />
@@ -45,7 +47,7 @@ export default function TabLayout() {
         options={{
           title: 'Preferences',
           tabBarIcon: ({ size, color }) => (
-            <Settings size={size} color={color} strokeWidth={2} />
+            <Settings size={size} color={color} strokeWidth={1.5} />
           ),
         }}
       />
@@ -54,7 +56,7 @@ export default function TabLayout() {
         options={{
           title: 'Profile',
           tabBarIcon: ({ size, color }) => (
-            <User size={size} color={color} strokeWidth={2} />
+            <User size={size} color={color} strokeWidth={1.5} />
           ),
         }}
       />

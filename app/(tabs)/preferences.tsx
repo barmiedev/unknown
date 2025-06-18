@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, TouchableOpacity, ScrollView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { LinearGradient } from 'expo-linear-gradient';
 import { Check } from 'lucide-react-native';
 import { supabase } from '@/lib/supabase';
 
@@ -84,32 +83,32 @@ export default function PreferencesScreen() {
 
   if (loading) {
     return (
-      <LinearGradient colors={['#1a1a1a', '#2a2a2a']} className="flex-1">
+      <View style={{ backgroundColor: '#19161a' }} className="flex-1">
         <SafeAreaView className="flex-1 justify-center items-center">
-          <Text className="text-white font-chillax">Loading preferences...</Text>
+          <Text className="text-brand-text font-chillax">Loading preferences...</Text>
         </SafeAreaView>
-      </LinearGradient>
+      </View>
     );
   }
 
   return (
-    <LinearGradient colors={['#1a1a1a', '#2a2a2a']} className="flex-1">
+    <View style={{ backgroundColor: '#19161a' }} className="flex-1">
       <SafeAreaView className="flex-1">
         {/* Header */}
         <View className="px-6 pt-8 pb-6">
-          <Text className="text-white text-2xl font-chillax-bold mb-2">Preferences</Text>
-          <Text className="text-gray-400 font-chillax">
+          <Text className="text-brand-text text-2xl font-chillax-bold mb-2">Preferences</Text>
+          <Text className="text-brand-text font-chillax">
             Customize your discovery experience
           </Text>
         </View>
 
         <ScrollView className="flex-1 px-6" showsVerticalScrollIndicator={false}>
           {/* Genres Section */}
-          <View className="mb-8">
-            <Text className="text-white text-xl font-chillax-bold mb-4">
+          <View className="">
+            <Text className="text-brand-text text-xl font-chillax-bold mb-4">
               Which genres do you prefer?
             </Text>
-            <Text className="text-gray-400 font-chillax mb-6">
+            <Text className="text-brand-text font-chillax mb-6">
               Choose your favorite genres for more personalized music
             </Text>
             
@@ -118,20 +117,20 @@ export default function PreferencesScreen() {
                 <TouchableOpacity
                   key={genre}
                   onPress={() => toggleGenre(genre)}
-                  className={`mr-3 mb-3 px-4 py-3 rounded-2xl border-2 ${
+                  className={`mr-3 mb-3 px-4 py-3 rounded-2xl ${
                     selectedGenres.includes(genre)
-                      ? 'bg-neon-green/10 border-neon-green'
-                      : 'bg-dark-200 border-dark-300'
+                      ? 'bg-brand-accent'
+                      : 'bg-brand-backgroundLighter'
                   }`}
                 >
                   <View className="flex-row items-center space-x-2">
                     <Text className={`font-chillax-medium ${
-                      selectedGenres.includes(genre) ? 'text-neon-green' : 'text-gray-300'
+                      selectedGenres.includes(genre) ? 'text-brand-text' : 'text-brand-gray'
                     }`}>
                       {genre}
                     </Text>
                     {selectedGenres.includes(genre) && (
-                      <Check size={16} color="#00ff41" strokeWidth={2} />
+                      <Check size={16} color="#ded7e0" strokeWidth={1.5} />
                     )}
                   </View>
                 </TouchableOpacity>
@@ -141,10 +140,10 @@ export default function PreferencesScreen() {
 
           {/* Moods Section */}
           <View className="mb-8">
-            <Text className="text-white text-xl font-chillax-bold mb-4">
+            <Text className="text-brand-text text-xl font-chillax-bold mb-4">
               What moods do you enjoy?
             </Text>
-            <Text className="text-gray-400 font-chillax mb-6">
+            <Text className="text-brand-text font-chillax mb-6">
               Select moods that match your listening preferences
             </Text>
             
@@ -153,20 +152,20 @@ export default function PreferencesScreen() {
                 <TouchableOpacity
                   key={mood}
                   onPress={() => toggleMood(mood)}
-                  className={`mr-3 mb-3 px-4 py-3 rounded-2xl border-2 ${
+                  className={`mr-3 mb-3 px-4 py-3 rounded-2xl ${
                     selectedMoods.includes(mood)
-                      ? 'bg-neon-blue/10 border-neon-blue'
-                      : 'bg-dark-200 border-dark-300'
+                      ? 'bg-brand-accent'
+                      : 'bg-brand-backgroundLighter'
                   }`}
                 >
                   <View className="flex-row items-center space-x-2">
                     <Text className={`font-chillax-medium ${
-                      selectedMoods.includes(mood) ? 'text-neon-blue' : 'text-gray-300'
+                      selectedMoods.includes(mood) ? 'text-brand-text' : 'text-brand-gray'
                     }`}>
                       {mood}
                     </Text>
                     {selectedMoods.includes(mood) && (
-                      <Check size={16} color="#0099ff" strokeWidth={2} />
+                      <Check size={16} color="#ded7e0" strokeWidth={1.5} />
                     )}
                   </View>
                 </TouchableOpacity>
@@ -176,20 +175,20 @@ export default function PreferencesScreen() {
 
           {/* Duration Section */}
           <View className="mb-8">
-            <Text className="text-white text-xl font-chillax-bold mb-4">
+            <Text className="text-brand-text text-xl font-chillax-bold mb-4">
               Track Duration
             </Text>
-            <Text className="text-gray-400 font-chillax mb-6">
+            <Text className="text-brand-text font-chillax mb-6">
               Set your preferred track length range
             </Text>
             
-            <View className="bg-dark-200 rounded-2xl p-6 border border-dark-300">
+            <View className="bg-brand-backgroundLighter rounded-2xl p-6">
               <View className="flex-row justify-between items-center mb-4">
-                <Text className="text-gray-300 font-chillax">
+                <Text className="text-brand-gray font-chillax">
                   {Math.floor(minDuration / 60)}:{(minDuration % 60).toString().padStart(2, '0')}
                 </Text>
-                <Text className="text-gray-300 font-chillax">to</Text>
-                <Text className="text-gray-300 font-chillax">
+                <Text className="text-brand-gray font-chillax">to</Text>
+                <Text className="text-brand-gray font-chillax">
                   {Math.floor(maxDuration / 60)}:{(maxDuration % 60).toString().padStart(2, '0')}
                 </Text>
               </View>
@@ -198,15 +197,15 @@ export default function PreferencesScreen() {
               <View className="flex-row space-x-4">
                 <TouchableOpacity
                   onPress={() => setMinDuration(Math.max(30, minDuration - 30))}
-                  className="bg-dark-300 px-4 py-2 rounded-xl"
+                  className="bg-brand-backgroundLighter px-4 py-2 rounded-xl"
                 >
-                  <Text className="text-gray-300 font-chillax">-</Text>
+                  <Text className="text-brand-gray font-chillax">-</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
                   onPress={() => setMinDuration(minDuration + 30)}
-                  className="bg-dark-300 px-4 py-2 rounded-xl"
+                  className="bg-brand-backgroundLighter px-4 py-2 rounded-xl"
                 >
-                  <Text className="text-gray-300 font-chillax">+</Text>
+                  <Text className="text-brand-gray font-chillax">+</Text>
                 </TouchableOpacity>
               </View>
             </View>
@@ -215,14 +214,14 @@ export default function PreferencesScreen() {
           {/* Save Button */}
           <TouchableOpacity
             onPress={savePreferences}
-            className="bg-neon-green rounded-2xl py-4 mb-8"
+            className="bg-brand-accent rounded-2xl py-4 mb-8"
           >
-            <Text className="text-black text-lg font-chillax-bold text-center">
+            <Text className="text-brand-gray text-lg font-chillax-medium text-center">
               Save Preferences
             </Text>
           </TouchableOpacity>
         </ScrollView>
       </SafeAreaView>
-    </LinearGradient>
+    </View>
   );
 }
