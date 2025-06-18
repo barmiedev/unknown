@@ -12,6 +12,7 @@ import Animated, {
 import { LinearGradient } from 'expo-linear-gradient';
 import { Audio, AVPlaybackStatus } from 'expo-av';
 import { supabase } from '@/lib/supabase';
+import { fonts } from '@/lib/fonts';
 
 interface Track {
   id: string;
@@ -190,7 +191,7 @@ export default function DiscoverScreen() {
       >
         <SafeAreaView className="flex-1 items-center justify-center">
           <ActivityIndicator size="large" color="#00ff41" />
-          <Text className="text-white mt-4">Loading track...</Text>
+          <Text style={{ color: 'white', marginTop: 16, fontFamily: fonts.chillax.regular }}>Loading track...</Text>
         </SafeAreaView>
       </LinearGradient>
     );
@@ -203,12 +204,12 @@ export default function DiscoverScreen() {
         className="flex-1"
       >
         <SafeAreaView className="flex-1 items-center justify-center px-6">
-          <Text className="text-white text-center mb-4">{error}</Text>
+          <Text style={{ color: 'white', textAlign: 'center', marginBottom: 16, fontFamily: fonts.chillax.regular }}>{error}</Text>
           <TouchableOpacity
             onPress={loadNextTrack}
             className="bg-neon-green px-8 py-4 rounded-full"
           >
-            <Text className="text-black font-satoshi-bold text-lg">
+            <Text style={{ color: 'black', fontFamily: fonts.chillax.bold, fontSize: 18 }}>
               Try Again
             </Text>
           </TouchableOpacity>
@@ -225,8 +226,8 @@ export default function DiscoverScreen() {
       <SafeAreaView className="flex-1 px-6">
         {/* Header */}
         <View className="items-center pt-8 pb-12">
-          <Text className="text-white text-2xl font-satoshi-bold">unknown</Text>
-          <Text className="text-gray-400 text-sm font-satoshi mt-2">
+          <Text style={{ color: 'white', fontSize: 24, fontFamily: fonts.chillax.bold }}>unknown</Text>
+          <Text style={{ color: '#9ca3af', fontSize: 14, fontFamily: fonts.chillax.medium, marginTop: 8 }}>
             Discover underground music
           </Text>
         </View>
@@ -263,7 +264,7 @@ export default function DiscoverScreen() {
               </View>
 
               {/* Question Text */}
-              <Text className="text-white text-xl font-satoshi-medium text-center mb-12">
+              <Text style={{ color: 'white', fontSize: 20, fontFamily: fonts.chillax.medium, textAlign: 'center', marginBottom: 48 }}>
                 How does this track make you feel?
               </Text>
 
@@ -291,7 +292,7 @@ export default function DiscoverScreen() {
                 className="flex-row items-center space-x-2 p-4"
               >
                 <SkipForward size={20} color="#5a5a5a" strokeWidth={2} />
-                <Text className="text-gray-400 font-satoshi">Skip</Text>
+                <Text style={{ color: '#9ca3af', fontFamily: fonts.chillax.regular }}>Skip</Text>
               </TouchableOpacity>
             </>
           ) : (
@@ -311,13 +312,13 @@ export default function DiscoverScreen() {
                 )}
               </View>
 
-              <Text className="text-white text-2xl font-satoshi-bold text-center mb-2">
+              <Text style={{ color: 'white', fontSize: 24, fontFamily: fonts.chillax.bold, textAlign: 'center', marginBottom: 8 }}>
                 {currentTrack?.title}
               </Text>
-              <Text className="text-gray-300 text-lg font-satoshi text-center mb-4">
+              <Text style={{ color: '#d1d5db', fontSize: 18, fontFamily: fonts.chillax.regular, textAlign: 'center', marginBottom: 16 }}>
                 {currentTrack?.artist}
               </Text>
-              <Text className="text-neon-green text-sm font-satoshi-medium mb-8">
+              <Text style={{ color: '#00ff41', fontSize: 14, fontFamily: fonts.chillax.medium, marginBottom: 32 }}>
                 {currentTrack?.genre}
               </Text>
 
@@ -325,7 +326,7 @@ export default function DiscoverScreen() {
                 onPress={loadNextTrack}
                 className="bg-neon-green px-8 py-4 rounded-full"
               >
-                <Text className="text-black font-satoshi-bold text-lg">
+                <Text style={{ color: 'black', fontFamily: fonts.chillax.bold, fontSize: 18 }}>
                   Discover Next
                 </Text>
               </TouchableOpacity>

@@ -86,7 +86,7 @@ export default function PreferencesScreen() {
     return (
       <LinearGradient colors={['#1a1a1a', '#2a2a2a']} className="flex-1">
         <SafeAreaView className="flex-1 justify-center items-center">
-          <Text className="text-white font-satoshi">Loading preferences...</Text>
+          <Text className="text-white font-chillax">Loading preferences...</Text>
         </SafeAreaView>
       </LinearGradient>
     );
@@ -97,8 +97,8 @@ export default function PreferencesScreen() {
       <SafeAreaView className="flex-1">
         {/* Header */}
         <View className="px-6 pt-8 pb-6">
-          <Text className="text-white text-2xl font-satoshi-bold mb-2">Preferences</Text>
-          <Text className="text-gray-400 font-satoshi">
+          <Text className="text-white text-2xl font-chillax-bold mb-2">Preferences</Text>
+          <Text className="text-gray-400 font-chillax">
             Customize your discovery experience
           </Text>
         </View>
@@ -106,10 +106,10 @@ export default function PreferencesScreen() {
         <ScrollView className="flex-1 px-6" showsVerticalScrollIndicator={false}>
           {/* Genres Section */}
           <View className="mb-8">
-            <Text className="text-white text-xl font-satoshi-bold mb-4">
+            <Text className="text-white text-xl font-chillax-bold mb-4">
               Which genres do you prefer?
             </Text>
-            <Text className="text-gray-400 font-satoshi mb-6">
+            <Text className="text-gray-400 font-chillax mb-6">
               Choose your favorite genres for more personalized music
             </Text>
             
@@ -125,7 +125,7 @@ export default function PreferencesScreen() {
                   }`}
                 >
                   <View className="flex-row items-center space-x-2">
-                    <Text className={`font-satoshi-medium ${
+                    <Text className={`font-chillax-medium ${
                       selectedGenres.includes(genre) ? 'text-neon-green' : 'text-gray-300'
                     }`}>
                       {genre}
@@ -141,10 +141,10 @@ export default function PreferencesScreen() {
 
           {/* Moods Section */}
           <View className="mb-8">
-            <Text className="text-white text-xl font-satoshi-bold mb-4">
+            <Text className="text-white text-xl font-chillax-bold mb-4">
               What moods do you enjoy?
             </Text>
-            <Text className="text-gray-400 font-satoshi mb-6">
+            <Text className="text-gray-400 font-chillax mb-6">
               Select moods that match your listening preferences
             </Text>
             
@@ -160,7 +160,7 @@ export default function PreferencesScreen() {
                   }`}
                 >
                   <View className="flex-row items-center space-x-2">
-                    <Text className={`font-satoshi-medium ${
+                    <Text className={`font-chillax-medium ${
                       selectedMoods.includes(mood) ? 'text-neon-blue' : 'text-gray-300'
                     }`}>
                       {mood}
@@ -176,20 +176,20 @@ export default function PreferencesScreen() {
 
           {/* Duration Section */}
           <View className="mb-8">
-            <Text className="text-white text-xl font-satoshi-bold mb-4">
+            <Text className="text-white text-xl font-chillax-bold mb-4">
               Track Duration
             </Text>
-            <Text className="text-gray-400 font-satoshi mb-6">
+            <Text className="text-gray-400 font-chillax mb-6">
               Set your preferred track length range
             </Text>
             
             <View className="bg-dark-200 rounded-2xl p-6 border border-dark-300">
               <View className="flex-row justify-between items-center mb-4">
-                <Text className="text-gray-300 font-satoshi">
+                <Text className="text-gray-300 font-chillax">
                   {Math.floor(minDuration / 60)}:{(minDuration % 60).toString().padStart(2, '0')}
                 </Text>
-                <Text className="text-gray-300 font-satoshi">to</Text>
-                <Text className="text-gray-300 font-satoshi">
+                <Text className="text-gray-300 font-chillax">to</Text>
+                <Text className="text-gray-300 font-chillax">
                   {Math.floor(maxDuration / 60)}:{(maxDuration % 60).toString().padStart(2, '0')}
                 </Text>
               </View>
@@ -200,13 +200,13 @@ export default function PreferencesScreen() {
                   onPress={() => setMinDuration(Math.max(30, minDuration - 30))}
                   className="bg-dark-300 px-4 py-2 rounded-xl"
                 >
-                  <Text className="text-gray-300 font-satoshi">-</Text>
+                  <Text className="text-gray-300 font-chillax">-</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
                   onPress={() => setMinDuration(minDuration + 30)}
                   className="bg-dark-300 px-4 py-2 rounded-xl"
                 >
-                  <Text className="text-gray-300 font-satoshi">+</Text>
+                  <Text className="text-gray-300 font-chillax">+</Text>
                 </TouchableOpacity>
               </View>
             </View>
@@ -217,7 +217,7 @@ export default function PreferencesScreen() {
             onPress={savePreferences}
             className="bg-neon-green rounded-2xl py-4 mb-8"
           >
-            <Text className="text-black text-lg font-satoshi-bold text-center">
+            <Text className="text-black text-lg font-chillax-bold text-center">
               Save Preferences
             </Text>
           </TouchableOpacity>

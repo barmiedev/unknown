@@ -19,7 +19,7 @@ export default function TabLayout() {
         tabBarInactiveTintColor: '#5a5a5a',
         tabBarLabelStyle: {
           fontSize: 12,
-          fontFamily: 'Satoshi-Medium',
+          fontFamily: 'Chillax-Medium',
         },
       }}>
       <Tabs.Screen

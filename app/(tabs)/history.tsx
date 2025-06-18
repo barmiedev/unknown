@@ -76,7 +76,7 @@ export default function HistoryScreen() {
     return (
       <LinearGradient colors={['#1a1a1a', '#2a2a2a']} className="flex-1">
         <SafeAreaView className="flex-1 justify-center items-center">
-          <Text className="text-white font-satoshi">Loading your discoveries...</Text>
+          <Text className="text-white font-chillax">Loading your discoveries...</Text>
         </SafeAreaView>
       </LinearGradient>
     );
@@ -87,8 +87,8 @@ export default function HistoryScreen() {
       <SafeAreaView className="flex-1">
         {/* Header */}
         <View className="px-6 pt-8 pb-6">
-          <Text className="text-white text-2xl font-satoshi-bold mb-2">Your Discoveries</Text>
-          <Text className="text-gray-400 font-satoshi">
+          <Text className="text-white text-2xl font-chillax-bold mb-2">Your Discoveries</Text>
+          <Text className="text-gray-400 font-chillax">
             {tracks.length} tracks you've loved
           </Text>
         </View>
@@ -97,10 +97,10 @@ export default function HistoryScreen() {
         <ScrollView className="flex-1 px-6" showsVerticalScrollIndicator={false}>
           {tracks.length === 0 ? (
             <View className="flex-1 justify-center items-center py-20">
-              <Text className="text-gray-400 text-lg font-satoshi text-center mb-4">
+              <Text className="text-gray-400 text-lg font-chillax text-center mb-4">
                 No discoveries yet
               </Text>
-              <Text className="text-gray-500 font-satoshi text-center">
+              <Text className="text-gray-500 font-chillax text-center">
                 Start exploring to build your collection
               </Text>
             </View>
@@ -129,16 +129,16 @@ export default function HistoryScreen() {
 
                     {/* Track Info */}
                     <View className="flex-1">
-                      <Text className="text-white font-satoshi-bold text-lg mb-1">
+                      <Text className="text-white font-chillax-bold text-lg mb-1">
                         {track.title}
                       </Text>
-                      <Text className="text-gray-300 font-satoshi mb-2">
+                      <Text className="text-gray-300 font-chillax mb-2">
                         {track.artist}
                       </Text>
                       
                       <View className="flex-row items-center justify-between">
                         <View className="flex-row items-center space-x-2">
-                          <Text className="text-neon-green text-xs font-satoshi-medium bg-neon-green/10 px-2 py-1 rounded-full">
+                          <Text className="text-neon-green text-xs font-chillax-medium bg-neon-green/10 px-2 py-1 rounded-full">
                             {track.genre}
                           </Text>
                           <View className="flex-row">

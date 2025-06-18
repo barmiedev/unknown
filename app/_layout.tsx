@@ -3,13 +3,9 @@ import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useFrameworkReady } from '@/hooks/useFrameworkReady';
 import { useFonts } from 'expo-font';
-import {
-  Inter_400Regular,
-  Inter_500Medium,
-  Inter_700Bold,
-} from '@expo-google-fonts/inter';
 import * as SplashScreen from 'expo-splash-screen';
 import '../global.css';
+
 
 // Prevent splash screen from auto-hiding
 SplashScreen.preventAutoHideAsync();
@@ -18,13 +14,19 @@ export default function RootLayout() {
   useFrameworkReady();
 
   const [fontsLoaded, fontError] = useFonts({
-    'Inter-Regular': Inter_400Regular,
-    'Inter-Medium': Inter_500Medium,
-    'Inter-Bold': Inter_700Bold,
+    'Chillax-Regular': require('../assets/fonts/Chillax-Regular.otf'),
+    'Chillax-Light': require('../assets/fonts/Chillax-Light.otf'),
+    'Chillax-Extralight': require('../assets/fonts/Chillax-Extralight.otf'),
+    'Chillax-Medium': require('../assets/fonts/Chillax-Medium.otf'),
+    'Chillax-Semibold': require('../assets/fonts/Chillax-Semibold.otf'),
+    'Chillax-Bold': require('../assets/fonts/Chillax-Bold.otf'),
   });
 
   useEffect(() => {
     if (fontsLoaded || fontError) {
+      if (fontError) {
+        console.error('Font loading error:', fontError);
+      }
       SplashScreen.hideAsync();
     }
   }, [fontsLoaded, fontError]);

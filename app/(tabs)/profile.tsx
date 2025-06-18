@@ -131,7 +131,7 @@ export default function ProfileScreen() {
     return (
       <LinearGradient colors={['#1a1a1a', '#2a2a2a']} className="flex-1">
         <SafeAreaView className="flex-1 justify-center items-center">
-          <Text className="text-white font-satoshi">Loading profile...</Text>
+          <Text className="text-white font-chillax">Loading profile...</Text>
         </SafeAreaView>
       </LinearGradient>
     );
@@ -142,8 +142,8 @@ export default function ProfileScreen() {
       <SafeAreaView className="flex-1">
         {/* Header */}
         <View className="px-6 pt-8 pb-6">
-          <Text className="text-white text-2xl font-satoshi-bold mb-2">Profile</Text>
-          <Text className="text-gray-400 font-satoshi">
+          <Text className="text-white text-2xl font-chillax-bold mb-2">Profile</Text>
+          <Text className="text-gray-400 font-chillax">
             Your music discovery journey
           </Text>
         </View>
@@ -152,9 +152,9 @@ export default function ProfileScreen() {
           {/* Stats Overview */}
           <View className="bg-gradient-to-r from-neon-green/10 to-neon-blue/10 rounded-2xl p-6 mb-6 border border-neon-green/20">
             <View className="flex-row justify-between items-center mb-4">
-              <Text className="text-white text-xl font-satoshi-bold">Discovery Stats</Text>
+              <Text className="text-white text-xl font-chillax-bold">Discovery Stats</Text>
               <View className="bg-neon-green/20 px-3 py-1 rounded-full">
-                <Text className="text-neon-green font-satoshi-bold text-sm">
+                <Text className="text-neon-green font-chillax-bold text-sm">
                   {stats.points} pts
                 </Text>
               </View>
@@ -162,29 +162,29 @@ export default function ProfileScreen() {
 
             <View className="flex-row justify-between">
               <View className="items-center">
-                <Text className="text-white text-2xl font-satoshi-bold">
+                <Text className="text-white text-2xl font-chillax-bold">
                   {stats.totalTracks}
                 </Text>
-                <Text className="text-gray-400 font-satoshi text-sm">Tracks</Text>
+                <Text className="text-gray-400 font-chillax text-sm">Tracks</Text>
               </View>
               <View className="items-center">
-                <Text className="text-white text-2xl font-satoshi-bold">
+                <Text className="text-white text-2xl font-chillax-bold">
                   {stats.averageRating.toFixed(1)}
                 </Text>
-                <Text className="text-gray-400 font-satoshi text-sm">Avg Rating</Text>
+                <Text className="text-gray-400 font-chillax text-sm">Avg Rating</Text>
               </View>
               <View className="items-center">
-                <Text className="text-white text-2xl font-satoshi-bold">
+                <Text className="text-white text-2xl font-chillax-bold">
                   {stats.streakDays}
                 </Text>
-                <Text className="text-gray-400 font-satoshi text-sm">Day Streak</Text>
+                <Text className="text-gray-400 font-chillax text-sm">Day Streak</Text>
               </View>
             </View>
           </View>
 
           {/* Achievements */}
           <View className="mb-6">
-            <Text className="text-white text-xl font-satoshi-bold mb-4">
+            <Text className="text-white text-xl font-chillax-bold mb-4">
               Achievements
             </Text>
             
@@ -206,12 +206,12 @@ export default function ProfileScreen() {
                     </View>
                     
                     <View className="flex-1">
-                      <Text className={`font-satoshi-bold ${
+                      <Text className={`font-chillax-bold ${
                         badge.unlocked ? 'text-white' : 'text-gray-500'
                       }`}>
                         {badge.name}
                       </Text>
-                      <Text className={`font-satoshi text-sm ${
+                      <Text className={`font-chillax text-sm ${
                         badge.unlocked ? 'text-gray-300' : 'text-gray-600'
                       }`}>
                         {badge.description}
@@ -229,37 +229,37 @@ export default function ProfileScreen() {
 
           {/* Quick Stats */}
           <View className="mb-8">
-            <Text className="text-white text-xl font-satoshi-bold mb-4">
+            <Text className="text-white text-xl font-chillax-bold mb-4">
               Quick Stats
             </Text>
             
             <View className="flex-row justify-between space-x-3">
               <View className="flex-1 bg-dark-200 rounded-2xl p-4 border border-dark-300">
                 <Flame size={24} color="#ff6b35" strokeWidth={2} className="mb-2" />
-                <Text className="text-white text-lg font-satoshi-bold">
+                <Text className="text-white text-lg font-chillax-bold">
                   {stats.streakDays}
                 </Text>
-                <Text className="text-gray-400 font-satoshi text-sm">
+                <Text className="text-gray-400 font-chillax text-sm">
                   Current Streak
                 </Text>
               </View>
 
               <View className="flex-1 bg-dark-200 rounded-2xl p-4 border border-dark-300">
                 <Star size={24} color="#ffd700" strokeWidth={2} className="mb-2" />
-                <Text className="text-white text-lg font-satoshi-bold">
+                <Text className="text-white text-lg font-chillax-bold">
                   {stats.averageRating.toFixed(1)}
                 </Text>
-                <Text className="text-gray-400 font-satoshi text-sm">
+                <Text className="text-gray-400 font-chillax text-sm">
                   Avg Rating
                 </Text>
               </View>
 
               <View className="flex-1 bg-dark-200 rounded-2xl p-4 border border-dark-300">
                 <TrendingUp size={24} color="#00ff41" strokeWidth={2} className="mb-2" />
-                <Text className="text-white text-lg font-satoshi-bold">
+                <Text className="text-white text-lg font-chillax-bold">
                   {stats.badges.length}
                 </Text>
-                <Text className="text-gray-400 font-satoshi text-sm">
+                <Text className="text-gray-400 font-chillax text-sm">
                   Badges
                 </Text>
               </View>
@@ -268,24 +268,24 @@ export default function ProfileScreen() {
 
           {/* Settings */}
           <View className="mb-8">
-            <Text className="text-white text-xl font-satoshi-bold mb-4">
+            <Text className="text-white text-xl font-chillax-bold mb-4">
               Settings
             </Text>
             
             <TouchableOpacity className="bg-dark-200 rounded-2xl p-4 border border-dark-300 mb-3">
-              <Text className="text-white font-satoshi-medium">Account Settings</Text>
+              <Text className="text-white font-chillax-medium">Account Settings</Text>
             </TouchableOpacity>
             
             <TouchableOpacity className="bg-dark-200 rounded-2xl p-4 border border-dark-300 mb-3">
-              <Text className="text-white font-satoshi-medium">Privacy Settings</Text>
+              <Text className="text-white font-chillax-medium">Privacy Settings</Text>
             </TouchableOpacity>
             
             <TouchableOpacity className="bg-dark-200 rounded-2xl p-4 border border-dark-300 mb-3">
-              <Text className="text-white font-satoshi-medium">Notifications</Text>
+              <Text className="text-white font-chillax-medium">Notifications</Text>
             </TouchableOpacity>
             
             <TouchableOpacity className="bg-red-600/10 border-red-600/30 rounded-2xl p-4 border">
-              <Text className="text-red-400 font-satoshi-medium">Sign Out</Text>
+              <Text className="text-red-400 font-chillax-medium">Sign Out</Text>
             </TouchableOpacity>
           </View>
         </ScrollView>
