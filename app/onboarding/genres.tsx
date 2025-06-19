@@ -24,8 +24,6 @@ export default function GenrePreferencesScreen() {
   };
 
   const handleContinue = () => {
-    // Store selected genres in a temporary state or context
-    // For now, we'll pass them via router params
     router.push({
       pathname: '/onboarding/moods',
       params: { genres: JSON.stringify(selectedGenres) }

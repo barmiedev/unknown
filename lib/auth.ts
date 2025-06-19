@@ -114,6 +114,8 @@ export class AuthService {
           user_id: user.id, // Keep for backward compatibility
           preferred_genres: profileData.preferred_genres || [],
           preferred_moods: profileData.preferred_moods || [],
+          min_duration: 60, // Default values
+          max_duration: 300,
           updated_at: new Date().toISOString(),
         });
 
