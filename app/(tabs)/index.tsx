@@ -49,7 +49,6 @@ export default function DiscoverScreen() {
   const [showWelcomeTip, setShowWelcomeTip] = useState(false);
   const [userPreferences, setUserPreferences] = useState<UserPreferences | null>(null);
   const [showThankYou, setShowThankYou] = useState(false);
-  const [isLoadingNext, setIsLoadingNext] = useState(false);
 
   const pulseAnimation = useSharedValue(1);
   const progressAnimation = useSharedValue(0);
@@ -242,12 +241,10 @@ export default function DiscoverScreen() {
       if (!isBackgroundLoad) {
         setIsLoading(false);
       }
-      setIsLoadingNext(false);
     }
   };
 
   const loadNextTrackInBackground = async () => {
-    setIsLoadingNext(true);
     await loadNextTrack(true);
   };
 
@@ -255,7 +252,7 @@ export default function DiscoverScreen() {
     setShowThankYou(true);
     thankYouOpacity.value = withTiming(1, { duration: 300 });
     
-    // Start loading next track in background
+    // Start loading next track in background (completely hidden from user)
     loadNextTrackInBackground();
     
     // Hide thank you message after 3 seconds
@@ -439,13 +436,13 @@ export default function DiscoverScreen() {
             }
           ]}>
             <View style={{ alignItems: 'center' }}>
-              <Text style={{ fontSize: 48, marginBottom: 24 }}>🙏</Text>
+              <Text style={{ fontSize: 64, marginBottom: 32 }}>🙏</Text>
               <Text style={{ 
-                fontSize: 28, 
+                fontSize: 32, 
                 fontFamily: fonts.chillax.bold, 
                 color: '#ded7e0', 
                 textAlign: 'center',
-                marginBottom: 16 
+                marginBottom: 20 
               }}>
                 Thank you for your feedback!
               </Text>
@@ -454,24 +451,11 @@ export default function DiscoverScreen() {
                 fontFamily: fonts.chillax.regular, 
                 color: '#8b6699', 
                 textAlign: 'center',
-                lineHeight: 26,
-                marginBottom: 32 
+                lineHeight: 28,
+                maxWidth: 280
               }}>
                 Your taste helps us discover better music for everyone
               </Text>
-              {isLoadingNext && (
-                <View style={{ alignItems: 'center' }}>
-                  <ActivityIndicator size="large" color="#452451" />
-                  <Text style={{ 
-                    fontSize: 16, 
-                    fontFamily: fonts.chillax.medium, 
-                    color: '#8b6699',
-                    marginTop: 16 
-                  }}>
-                    Finding your next discovery...
-                  </Text>
-                </View>
-              )}
             </View>
           </Animated.View>
         )}
