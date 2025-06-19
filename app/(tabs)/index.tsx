@@ -1,20 +1,19 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TouchableOpacity, Alert, ActivityIndicator } from 'react-native';
+import { View, Text, TouchableOpacity, Alert, Image, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Play, Pause, SkipForward } from 'lucide-react-native';
+import { Play, Pause, Star, SkipForward } from 'lucide-react-native';
 import Animated, { 
-  useSharedValue, 
   useAnimatedStyle, 
+  useSharedValue, 
   withTiming,
+  withRepeat,
+  withSequence,
   runOnJS,
 } from 'react-native-reanimated';
 import { Audio, AVPlaybackStatus } from 'expo-av';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/contexts/AuthContext';
 import { fonts } from '@/lib/fonts';
-import Ripple from '@/components/Ripple';
-import RatingControls from '@/components/RatingControls';
-import TrackReveal from '@/components/TrackReveal';
 
 interface Track {
   id: string;
@@ -42,17 +41,26 @@ export default function DiscoverScreen() {
   const [currentTrack, setCurrentTrack] = useState<Track | null>(null);
   const [state, setState] = useState<DiscoverState>('loading');
   const [rating, setRating] = useState(0);
+  const [review, setReview] = useState('');
+  const [showRating, setShowRating] = useState(false);
+  const [trackRevealed, setTrackRevealed] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [sound, setSound] = useState<Audio.Sound | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [position, setPosition] = useState(0);
   const [duration, setDuration] = useState(0);
+  const [showWelcomeTip, setShowWelcomeTip] = useState(false);
   const [userPreferences, setUserPreferences] = useState<UserPreferences | null>(null);
+  const [showThankYou, setShowThankYou] = useState(false);
   const [ratingThreshold] = useState(0.8); // 80% of track length
   const [canSkip, setCanSkip] = useState(true);
   const [isTransitioning, setIsTransitioning] = useState(false);
+  const [showReviewInput, setShowReviewInput] = useState(false);
 
+  const pulseAnimation = useSharedValue(1);
+  const progressAnimation = useSharedValue(0);
+  const thankYouOpacity = useSharedValue(0);
   const fadeOpacity = useSharedValue(1);
   const transitionTextOpacity = useSharedValue(0);
 
@@ -60,6 +68,7 @@ export default function DiscoverScreen() {
     if (user?.id) {
       loadUserPreferences();
       loadNextTrack();
+      checkFirstTimeUser();
     }
 
     return () => {
@@ -69,15 +78,42 @@ export default function DiscoverScreen() {
     };
   }, [user]);
 
+  useEffect(() => {
+    if (isPlaying) {
+      pulseAnimation.value = withRepeat(
+        withSequence(
+          withTiming(1.1, { duration: 800 }),
+          withTiming(1, { duration: 800 })
+        ),
+        -1
+      );
+    } else {
+      pulseAnimation.value = withTiming(1);
+    }
+  }, [isPlaying]);
+
   // Monitor playback progress for rating trigger
   useEffect(() => {
     if (duration > 0 && position > 0 && state === 'playing') {
       const progress = position / duration;
       if (progress >= ratingThreshold) {
         setState('rating');
+        setShowRating(true);
       }
     }
   }, [position, duration, ratingThreshold, state]);
+
+  const pulseStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: pulseAnimation.value }],
+  }));
+
+  const progressStyle = useAnimatedStyle(() => ({
+    width: `${(position / duration) * 100}%`,
+  }));
+
+  const thankYouStyle = useAnimatedStyle(() => ({
+    opacity: thankYouOpacity.value,
+  }));
 
   const fadeStyle = useAnimatedStyle(() => ({
     opacity: fadeOpacity.value,
@@ -110,11 +146,33 @@ export default function DiscoverScreen() {
     }
   };
 
-  const loadNextTrack = async () => {
+  const checkFirstTimeUser = async () => {
+    if (!user?.id) return;
+
     try {
-      setIsLoading(true);
-      setError(null);
-      setState('loading');
+      const { data, error } = await supabase
+        .from('user_ratings')
+        .select('id')
+        .eq('profile_id', user.id)
+        .limit(1);
+
+      if (error) throw error;
+
+      if (!data || data.length === 0) {
+        setShowWelcomeTip(true);
+      }
+    } catch (error) {
+      console.error('Error checking first time user:', error);
+    }
+  };
+
+  const loadNextTrack = async (isBackgroundLoad = false) => {
+    try {
+      if (!isBackgroundLoad) {
+        setIsLoading(true);
+        setError(null);
+        setState('loading');
+      }
       
       if (sound) {
         await sound.unloadAsync();
@@ -159,12 +217,13 @@ export default function DiscoverScreen() {
           .lte('duration', userPreferences.max_duration);
       }
 
+      // Get random track from filtered results
       const { data: tracks, error: tracksError } = await query.limit(50);
 
       if (tracksError) throw tracksError;
 
       if (!tracks || tracks.length === 0) {
-        // Fallback to any available tracks
+        // If no tracks match preferences, try with relaxed filters
         const { data: fallbackTracks, error: fallbackError } = await supabase
           .from('tracks')
           .select('*')
@@ -185,20 +244,79 @@ export default function DiscoverScreen() {
         setCurrentTrack(randomTrack);
       }
 
-      // Reset state
+      // Reset UI state
       setRating(0);
-      setState('playing');
+      setReview('');
+      setShowRating(false);
+      setTrackRevealed(false);
       setIsPlaying(false);
       setPosition(0);
       setDuration(0);
+      setShowWelcomeTip(false);
       setCanSkip(true);
+      setShowReviewInput(false);
+      setState('playing');
+
+      if (!isBackgroundLoad) {
+        setShowThankYou(false);
+      }
 
     } catch (error) {
       console.error('Error loading track:', error);
       setError('Failed to load track. Please try again.');
     } finally {
-      setIsLoading(false);
+      if (!isBackgroundLoad) {
+        setIsLoading(false);
+      }
     }
+  };
+
+  const loadNextTrackInBackground = async () => {
+    await loadNextTrack(true);
+  };
+
+  const handleTransition = async (callback: () => void) => {
+    setIsTransitioning(true);
+    
+    // Fade out current content
+    fadeOpacity.value = withTiming(0, { duration: 300 });
+    
+    // Show transition message
+    transitionTextOpacity.value = withTiming(1, { duration: 300 });
+    
+    // Fade out audio
+    if (sound) {
+      try {
+        await sound.setVolumeAsync(0);
+      } catch (error) {
+        console.error('Error fading audio:', error);
+      }
+    }
+    
+    // Wait for transition
+    setTimeout(() => {
+      runOnJS(callback)();
+      
+      // Fade back in
+      setTimeout(() => {
+        transitionTextOpacity.value = withTiming(0, { duration: 300 });
+        fadeOpacity.value = withTiming(1, { duration: 300 });
+        setIsTransitioning(false);
+      }, 1000);
+    }, 3000);
+  };
+
+  const showThankYouMessage = () => {
+    setShowThankYou(true);
+    thankYouOpacity.value = withTiming(1, { duration: 300 });
+    
+    loadNextTrackInBackground();
+    
+    setTimeout(() => {
+      thankYouOpacity.value = withTiming(0, { duration: 300 }, () => {
+        runOnJS(setShowThankYou)(false);
+      });
+    }, 3000);
   };
 
   const playPauseAudio = async () => {
@@ -241,37 +359,6 @@ export default function DiscoverScreen() {
     }
   };
 
-  const handleTransition = async (callback: () => void) => {
-    setIsTransitioning(true);
-    
-    // Fade out current content
-    fadeOpacity.value = withTiming(0, { duration: 300 });
-    
-    // Show transition message
-    transitionTextOpacity.value = withTiming(1, { duration: 300 });
-    
-    // Fade out audio
-    if (sound) {
-      try {
-        await sound.setVolumeAsync(0);
-      } catch (error) {
-        console.error('Error fading audio:', error);
-      }
-    }
-    
-    // Wait for transition
-    setTimeout(() => {
-      runOnJS(callback)();
-      
-      // Fade back in
-      setTimeout(() => {
-        transitionTextOpacity.value = withTiming(0, { duration: 300 });
-        fadeOpacity.value = withTiming(1, { duration: 300 });
-        setIsTransitioning(false);
-      }, 1000);
-    }, 3000);
-  };
-
   const skipTrack = async () => {
     if (!canSkip) return;
     
@@ -280,7 +367,7 @@ export default function DiscoverScreen() {
     });
   };
 
-  const handleRating = async (stars: number, review?: string) => {
+  const submitRating = async (stars: number) => {
     if (!currentTrack || !user?.id) return;
 
     setRating(stars);
@@ -291,13 +378,15 @@ export default function DiscoverScreen() {
         .insert({
           track_id: currentTrack.id,
           rating: stars,
-          review_text: review,
+          review_text: review.trim() || null,
           profile_id: user.id,
           user_id: user.id,
         });
 
-      if (error && error.code !== '23505') {
-        throw error;
+      if (error) {
+        if (error.code !== '23505') {
+          throw error;
+        }
       }
 
       // Update user stats
@@ -321,11 +410,10 @@ export default function DiscoverScreen() {
       }
 
       if (stars >= 4) {
+        setTrackRevealed(true);
         setState('revealed');
       } else {
-        handleTransition(() => {
-          loadNextTrack();
-        });
+        showThankYouMessage();
       }
     } catch (error) {
       console.error('Error submitting rating:', error);
@@ -333,33 +421,40 @@ export default function DiscoverScreen() {
     }
   };
 
+  const handleStarPress = (stars: number) => {
+    if (stars >= 4) {
+      setShowReviewInput(true);
+      setRating(stars);
+    } else {
+      submitRating(stars);
+    }
+  };
+
+  const handleSubmitWithReview = () => {
+    submitRating(rating);
+  };
+
   const handleContinueListening = () => {
-    setCanSkip(false);
-    setState('playing');
-  };
-
-  const handleDiscoverNext = () => {
-    handleTransition(() => {
-      loadNextTrack();
-    });
-  };
-
-  const calculateBPM = () => {
-    if (!currentTrack) return 120;
-    // Simple BPM estimation based on track characteristics
-    // In a real app, you'd have BPM data or use audio analysis
-    return Math.max(60, Math.min(180, 120 + (currentTrack.duration % 60)));
+    Alert.alert(
+      'Continue Listening',
+      'Would you like to listen to the full track? You won\'t be able to skip until it ends.',
+      [
+        { text: 'No, discover next', style: 'cancel', onPress: () => handleTransition(() => loadNextTrack()) },
+        { text: 'Yes, continue', onPress: () => {
+          setCanSkip(false);
+          setState('playing');
+          setTrackRevealed(false);
+        }},
+      ]
+    );
   };
 
   if (isLoading) {
     return (
       <View style={{ backgroundColor: '#19161a', flex: 1 }}>
-        <Ripple bpm={120} />
         <SafeAreaView style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
           <ActivityIndicator size="large" color="#8b6699" />
-          <Text style={{ color: 'white', marginTop: 16, fontFamily: fonts.chillax.regular }}>
-            Loading track...
-          </Text>
+          <Text style={{ color: 'white', marginTop: 16, fontFamily: fonts.chillax.regular }}>Loading track...</Text>
         </SafeAreaView>
       </View>
     );
@@ -368,11 +463,8 @@ export default function DiscoverScreen() {
   if (error) {
     return (
       <View style={{ backgroundColor: '#19161a', flex: 1 }}>
-        <Ripple bpm={120} />
         <SafeAreaView style={{ flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 24 }}>
-          <Text style={{ color: 'white', textAlign: 'center', marginBottom: 16, fontFamily: fonts.chillax.regular }}>
-            {error}
-          </Text>
+          <Text style={{ color: 'white', textAlign: 'center', marginBottom: 16, fontFamily: fonts.chillax.regular }}>{error}</Text>
           <TouchableOpacity
             onPress={() => loadNextTrack()}
             style={{ backgroundColor: '#452451', paddingHorizontal: 32, paddingVertical: 16, borderRadius: 16 }}
@@ -388,18 +480,68 @@ export default function DiscoverScreen() {
 
   return (
     <View style={{ backgroundColor: '#19161a', flex: 1 }}>
-      <Ripple bpm={calculateBPM()} />
-      
       <SafeAreaView style={{ flex: 1, paddingHorizontal: 24 }}>
         {/* Header */}
         <View style={{ alignItems: 'center', paddingTop: 32, paddingBottom: 48 }}>
-          <Text style={{ fontSize: 24, fontFamily: fonts.chillax.bold, color: '#ded7e0' }}>
-            unknown
-          </Text>
+          <Text style={{ fontSize: 24, fontFamily: fonts.chillax.bold, color: '#ded7e0' }}>unknown</Text>
           <Text style={{ fontSize: 14, fontFamily: fonts.chillax.medium, marginTop: 8, color: '#8b6699' }}>
             Discover underground music
           </Text>
         </View>
+
+        {/* Welcome Tip */}
+        {showWelcomeTip && (
+          <View style={{ backgroundColor: '#28232a', borderRadius: 16, padding: 16, marginBottom: 24 }}>
+            <Text style={{ fontSize: 16, fontFamily: fonts.chillax.bold, color: '#ded7e0', marginBottom: 8 }}>
+              Welcome to the Underground! 🎵
+            </Text>
+            <Text style={{ fontSize: 14, fontFamily: fonts.chillax.regular, color: '#8b6699' }}>
+              Tap play to start discovering hidden gems. Rate tracks to reveal the artist and add them to your collection.
+            </Text>
+          </View>
+        )}
+
+        {/* Thank You Overlay */}
+        {showThankYou && (
+          <Animated.View style={[
+            thankYouStyle,
+            {
+              position: 'absolute',
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              backgroundColor: 'rgba(25, 22, 26, 0.95)',
+              justifyContent: 'center',
+              alignItems: 'center',
+              zIndex: 1000,
+              paddingHorizontal: 24,
+            }
+          ]}>
+            <View style={{ alignItems: 'center' }}>
+              <Text style={{ fontSize: 64, marginBottom: 32 }}>🙏</Text>
+              <Text style={{ 
+                fontSize: 32, 
+                fontFamily: fonts.chillax.bold, 
+                color: '#ded7e0', 
+                textAlign: 'center',
+                marginBottom: 20 
+              }}>
+                Thank you for your feedback!
+              </Text>
+              <Text style={{ 
+                fontSize: 18, 
+                fontFamily: fonts.chillax.regular, 
+                color: '#8b6699', 
+                textAlign: 'center',
+                lineHeight: 28,
+                maxWidth: 280
+              }}>
+                Your taste helps us discover better music for everyone
+              </Text>
+            </View>
+          </Animated.View>
+        )}
 
         {/* Transition Overlay */}
         {isTransitioning && (
@@ -434,46 +576,57 @@ export default function DiscoverScreen() {
           </Animated.View>
         )}
 
-        {/* Main Content */}
-        <Animated.View style={[fadeStyle, { flex: 1 }]}>
-          {state === 'playing' && (
-            <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-              {/* Play/Pause Button */}
-              <TouchableOpacity
-                onPress={playPauseAudio}
-                style={{
-                  width: 80,
-                  height: 80,
-                  borderRadius: 40,
-                  backgroundColor: '#452451',
+        {/* Main Player Area */}
+        <Animated.View style={[fadeStyle, { flex: 1, justifyContent: 'center', alignItems: 'center' }]}>
+          {!showRating && !trackRevealed ? (
+            <>
+              {/* Mystery Track Visualization */}
+              <Animated.View
+                style={[
+                  pulseStyle,
+                  {
+                    width: 256,
+                    height: 256,
+                    borderRadius: 128,
+                    backgroundColor: 'rgba(69, 36, 81, 0.2)',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    marginBottom: 32,
+                  }
+                ]}
+              >
+                <View style={{
+                  width: 192,
+                  height: 192,
+                  borderRadius: 96,
+                  backgroundColor: '#28232a',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  marginBottom: 32,
-                }}
-              >
-                {isPlaying ? (
-                  <Pause size={32} color="#ded7e0" strokeWidth={2} />
-                ) : (
-                  <Play size={32} color="#ded7e0" strokeWidth={2} />
-                )}
-              </TouchableOpacity>
+                }}>
+                  <TouchableOpacity
+                    onPress={playPauseAudio}
+                    style={{
+                      width: 80,
+                      height: 80,
+                      borderRadius: 40,
+                      backgroundColor: '#452451',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                    }}
+                  >
+                    {isPlaying ? (
+                      <Pause size={32} color="#ded7e0" strokeWidth={2} />
+                    ) : (
+                      <Play size={32} color="#ded7e0" strokeWidth={2} />
+                    )}
+                  </TouchableOpacity>
+                </View>
+              </Animated.View>
 
               {/* Progress Bar */}
-              <View style={{ 
-                width: '100%', 
-                maxWidth: 320, 
-                height: 4, 
-                backgroundColor: '#28232a', 
-                borderRadius: 2, 
-                marginBottom: 32 
-              }}>
-                <View
-                  style={{
-                    width: duration > 0 ? `${(position / duration) * 100}%` : '0%',
-                    height: '100%',
-                    backgroundColor: '#452451',
-                    borderRadius: 2,
-                  }}
+              <View style={{ width: '100%', maxWidth: 320, height: 4, backgroundColor: '#28232a', borderRadius: 2, marginBottom: 32 }}>
+                <Animated.View
+                  style={[progressStyle, { height: '100%', backgroundColor: '#452451', borderRadius: 2 }]}
                 />
               </View>
 
@@ -487,30 +640,128 @@ export default function DiscoverScreen() {
                   <Text style={{ fontFamily: fonts.chillax.regular, color: '#8b6699' }}>Skip</Text>
                 </TouchableOpacity>
               )}
-            </View>
-          )}
+            </>
+          ) : showRating && !trackRevealed ? (
+            /* Rating Interface */
+            <View style={{ alignItems: 'center' }}>
+              <Text style={{ fontSize: 20, fontFamily: fonts.chillax.medium, textAlign: 'center', marginBottom: 48, color: '#ded7e0' }}>
+                How does this track make you feel?
+              </Text>
 
-          {state === 'rating' && currentTrack && (
-            <View style={{ flex: 1, justifyContent: 'center' }}>
-              <RatingControls
-                onRating={handleRating}
-                onSkip={skipTrack}
-                trackTitle={currentTrack.title}
-                trackArtist={currentTrack.artist}
-              />
-            </View>
-          )}
+              {/* Rating Stars */}
+              <View style={{ flexDirection: 'row', gap: 16, marginBottom: 32 }}>
+                {[1, 2, 3, 4, 5].map((star) => (
+                  <TouchableOpacity
+                    key={star}
+                    onPress={() => handleStarPress(star)}
+                    style={{ padding: 8 }}
+                  >
+                    <Star
+                      size={32}
+                      color={star <= rating ? '#452451' : '#8b6699'}
+                      fill={star <= rating ? '#452451' : 'transparent'}
+                      strokeWidth={1.5}
+                    />
+                  </TouchableOpacity>
+                ))}
+              </View>
 
-          {state === 'revealed' && currentTrack && (
-            <View style={{ flex: 1, justifyContent: 'center' }}>
-              <TrackReveal
-                track={currentTrack}
-                rating={rating}
-                onContinueListening={handleContinueListening}
-                onDiscoverNext={handleDiscoverNext}
-              />
+              {/* Review Input for High Ratings */}
+              {showReviewInput && (
+                <View style={{ width: '100%', marginBottom: 32 }}>
+                  <Text style={{ fontSize: 16, fontFamily: fonts.chillax.medium, color: '#ded7e0', marginBottom: 12 }}>
+                    Share your thoughts (optional)
+                  </Text>
+                  <View style={{ backgroundColor: '#28232a', borderRadius: 16, padding: 16 }}>
+                    <Text
+                      style={{ 
+                        fontSize: 16, 
+                        fontFamily: fonts.chillax.regular, 
+                        color: '#ded7e0',
+                        minHeight: 80,
+                        textAlignVertical: 'top'
+                      }}
+                      onPress={() => {
+                        // In a real app, you'd implement a proper text input
+                        Alert.prompt(
+                          'Write a review',
+                          'What did you love about this track?',
+                          (text) => setReview(text || ''),
+                          'plain-text',
+                          review
+                        );
+                      }}
+                    >
+                      {review || 'Tap to write a review...'}
+                    </Text>
+                  </View>
+                  
+                  <TouchableOpacity
+                    onPress={handleSubmitWithReview}
+                    style={{ backgroundColor: '#452451', paddingVertical: 16, borderRadius: 16, alignItems: 'center', marginTop: 16 }}
+                  >
+                    <Text style={{ color: '#ded7e0', fontFamily: fonts.chillax.bold, fontSize: 18 }}>
+                      Submit Rating
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+              )}
+
+              {/* Skip Button */}
+              <TouchableOpacity
+                onPress={skipTrack}
+                style={{ flexDirection: 'row', alignItems: 'center', gap: 8, padding: 16 }}
+              >
+                <SkipForward size={20} color='#8b6699' strokeWidth={2} />
+                <Text style={{ fontFamily: fonts.chillax.regular, color: '#8b6699' }}>Skip</Text>
+              </TouchableOpacity>
             </View>
-          )}
+          ) : trackRevealed && currentTrack ? (
+            /* Track Revealed */
+            <View style={{ alignItems: 'center' }}>
+              <View style={{ width: 256, height: 256, borderRadius: 24, backgroundColor: '#28232a', marginBottom: 32, overflow: 'hidden' }}>
+                {currentTrack?.artwork_url ? (
+                  <Image
+                    source={{ uri: currentTrack.artwork_url }}
+                    style={{ width: '100%', height: '100%' }}
+                    resizeMode="cover"
+                  />
+                ) : (
+                  <View style={{ width: '100%', height: '100%', backgroundColor: '#28232a', alignItems: 'center', justifyContent: 'center' }}>
+                    <Text style={{ fontSize: 48 }}>🎵</Text>
+                  </View>
+                )}
+              </View>
+
+              <Text style={{ color: '#ded7e0', fontSize: 24, fontFamily: fonts.chillax.bold, textAlign: 'center', marginBottom: 8 }}>
+                {currentTrack?.title}
+              </Text>
+              <Text style={{ color: '#8b6699', fontSize: 18, fontFamily: fonts.chillax.regular, textAlign: 'center', marginBottom: 16 }}>
+                {currentTrack?.artist}
+              </Text>
+              <Text style={{ color: '#452451', fontSize: 14, fontFamily: fonts.chillax.medium, marginBottom: 32 }}>
+                {currentTrack?.genre} • {currentTrack?.mood}
+              </Text>
+
+              <TouchableOpacity
+                onPress={handleContinueListening}
+                style={{ backgroundColor: '#452451', paddingHorizontal: 32, paddingVertical: 16, borderRadius: 16, marginBottom: 16 }}
+              >
+                <Text style={{ color: '#ded7e0', fontFamily: fonts.chillax.bold, fontSize: 18 }}>
+                  Listen to Full Track
+                </Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                onPress={() => handleTransition(() => loadNextTrack())}
+                style={{ backgroundColor: '#28232a', paddingHorizontal: 32, paddingVertical: 16, borderRadius: 16 }}
+              >
+                <Text style={{ color: '#ded7e0', fontFamily: fonts.chillax.bold, fontSize: 18 }}>
+                  Discover Next
+                </Text>
+              </TouchableOpacity>
+            </View>
+          ) : null}
         </Animated.View>
       </SafeAreaView>
     </View>
