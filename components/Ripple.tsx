@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo } from 'react';
+import React, { useEffect, useMemo, useRef } from 'react';
 import { View, Dimensions, StyleSheet, ViewStyle } from 'react-native';
 import Animated, {
   useSharedValue,
@@ -7,7 +7,7 @@ import Animated, {
   withRepeat,
   withTiming,
   interpolate,
-  runOnJS,
+  Easing,
 } from 'react-native-reanimated';
 import Svg, { Path } from 'react-native-svg';
 
@@ -74,8 +74,8 @@ function generateRingPath(
     const angle = (i / POINTS_PER_RING) * Math.PI * 2;
     const phaseA = seed * 1.7;
     const phaseB = morphSeed * 1.7;
-    const freqA = 2 + (seed % 3);
-    const freqB = 2 + (morphSeed % 3);
+    const freqA = 2 + (Math.floor(seed) % 3);
+    const freqB = 2 + (Math.floor(morphSeed) % 3);
     const wobbleA = Math.sin(angle * freqA + phaseA) * wobbleStrength;
     const wobbleB = Math.sin(angle * freqB + phaseB) * wobbleStrength;
     const wobble = lerp(wobbleA, wobbleB, t);
@@ -88,6 +88,8 @@ function generateRingPath(
   }
 
   // Create smooth path using quadratic curves
+  if (points.length === 0) return '';
+  
   let path = `M ${points[0].x} ${points[0].y}`;
   
   for (let i = 0; i < points.length; i++) {
@@ -111,26 +113,32 @@ export default function Ripple({ bpm = 120, style }: RippleProps) {
   const progress = useSharedValue(0);
   const scaleProgress = useSharedValue(0);
 
-  // Ring data: [currentSeed, nextSeed, morphProgress]
-  const ringData = useMemo(() => {
-    return Array.from({ length: NUM_RINGS }, () => [
+  // Ring data: [currentSeed, nextSeed, morphProgress] - use refs to avoid state issues
+  const ringDataRef = useRef(
+    Array.from({ length: NUM_RINGS }, () => [
       randomSeed(),
       randomSeed(),
       0,
-    ]);
-  }, []);
+    ])
+  );
 
   useEffect(() => {
     // Main morphing animation
     progress.value = withRepeat(
-      withTiming(1, { duration: animationDuration }),
+      withTiming(1, { 
+        duration: animationDuration,
+        easing: Easing.bezier(0.4, 0, 0.2, 1)
+      }),
       -1,
       false
     );
 
     // Scale animation
     scaleProgress.value = withRepeat(
-      withTiming(1, { duration: animationDuration }),
+      withTiming(1, { 
+        duration: animationDuration,
+        easing: Easing.bezier(0.4, 0, 0.2, 1)
+      }),
       -1,
       false
     );
@@ -146,16 +154,16 @@ export default function Ripple({ bpm = 120, style }: RippleProps) {
       const delay = (ringIndex / NUM_RINGS) * 0.3;
       const ringProgress = Math.max(0, Math.min(1, progress.value - delay));
       
-      // Update ring data
-      const [currentSeed, nextSeed] = ringData[ringIndex];
-      let morphProgress = ringProgress;
+      // Get current ring data
+      const ringData = ringDataRef.current[ringIndex];
+      const [currentSeed, nextSeed] = ringData;
       
-      // Generate new seeds when cycle completes
-      if (ringProgress >= 1 && progress.value < 0.1) {
-        runOnJS(() => {
-          ringData[ringIndex][0] = ringData[ringIndex][1];
-          ringData[ringIndex][1] = randomSeed();
-        })();
+      // Generate new seeds when cycle completes (simplified)
+      let morphProgress = ringProgress;
+      if (ringProgress >= 0.95 && progress.value < 0.1) {
+        // Update seeds for next cycle
+        ringDataRef.current[ringIndex][0] = ringDataRef.current[ringIndex][1];
+        ringDataRef.current[ringIndex][1] = randomSeed();
       }
 
       const path = generateRingPath(
@@ -172,7 +180,7 @@ export default function Ripple({ bpm = 120, style }: RippleProps) {
     }
     
     return paths;
-  });
+  }, [progress]);
 
   // Scale animation style
   const animatedStyle = useAnimatedStyle(() => {
@@ -204,16 +212,20 @@ export default function Ripple({ bpm = 120, style }: RippleProps) {
           height={SCREEN_HEIGHT}
           style={styles.svg}
         >
-          {Array.from({ length: NUM_RINGS }, (_, index) => (
-            <Animated.View key={index}>
+          {Array.from({ length: NUM_RINGS }, (_, index) => {
+            const pathData = animatedPaths.value[index];
+            if (!pathData) return null;
+            
+            return (
               <Path
-                d={animatedPaths.value[index]}
+                key={index}
+                d={pathData}
                 fill={ringColors[index]}
                 fillOpacity={0.12}
                 stroke="none"
               />
-            </Animated.View>
-          ))}
+            );
+          })}
         </Svg>
       </Animated.View>
     </View>
