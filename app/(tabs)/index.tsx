@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, TouchableOpacity, Alert, Image, ActivityIndicator } from 'react-native';
+import React, { useState, useEffect, useRef } from 'react';
+import { View, Text, TouchableOpacity, Alert, Image, ActivityIndicator, TextInput, Keyboard, TouchableWithoutFeedback } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Play, Pause, Star, SkipForward } from 'lucide-react-native';
 import Animated, { 
@@ -36,6 +36,35 @@ interface UserPreferences {
 
 type DiscoverState = 'loading' | 'playing' | 'rating' | 'revealed' | 'transitioning';
 
+interface AnimationBackgroundProps {
+  animationUrl?: string;
+  children: React.ReactNode;
+}
+
+// Animation Background Component - placeholder for future animation files
+function AnimationBackground({ animationUrl, children }: AnimationBackgroundProps) {
+  return (
+    <View style={{ flex: 1, position: 'relative' }}>
+      {/* Placeholder for future animation - transparent background */}
+      <View style={{ 
+        position: 'absolute', 
+        top: 0, 
+        left: 0, 
+        right: 0, 
+        bottom: 0,
+        backgroundColor: 'transparent'
+      }}>
+        {/* Future animation will be rendered here based on animationUrl prop */}
+      </View>
+      
+      {/* Content overlay */}
+      <View style={{ flex: 1, zIndex: 1 }}>
+        {children}
+      </View>
+    </View>
+  );
+}
+
 export default function DiscoverScreen() {
   const { user } = useAuth();
   const [currentTrack, setCurrentTrack] = useState<Track | null>(null);
@@ -57,6 +86,9 @@ export default function DiscoverScreen() {
   const [canSkip, setCanSkip] = useState(true);
   const [isTransitioning, setIsTransitioning] = useState(false);
   const [showReviewInput, setShowReviewInput] = useState(false);
+  const [isReviewFocused, setIsReviewFocused] = useState(false);
+
+  const reviewInputRef = useRef<TextInput>(null);
 
   const pulseAnimation = useSharedValue(1);
   const progressAnimation = useSharedValue(0);
@@ -255,6 +287,7 @@ export default function DiscoverScreen() {
       setShowWelcomeTip(false);
       setCanSkip(true);
       setShowReviewInput(false);
+      setIsReviewFocused(false);
       setState('playing');
 
       if (!isBackgroundLoad) {
@@ -275,23 +308,23 @@ export default function DiscoverScreen() {
     await loadNextTrack(true);
   };
 
-  const handleTransition = async (callback: () => void) => {
+  const fadeAudioAndTransition = async (callback: () => void) => {
     setIsTransitioning(true);
+    
+    // Fade out audio volume over 0.2 seconds
+    if (sound) {
+      try {
+        await sound.setVolumeAsync(0, { duration: 200 });
+      } catch (error) {
+        console.error('Error fading audio:', error);
+      }
+    }
     
     // Fade out current content
     fadeOpacity.value = withTiming(0, { duration: 300 });
     
     // Show transition message
     transitionTextOpacity.value = withTiming(1, { duration: 300 });
-    
-    // Fade out audio
-    if (sound) {
-      try {
-        await sound.setVolumeAsync(0);
-      } catch (error) {
-        console.error('Error fading audio:', error);
-      }
-    }
     
     // Wait for transition
     setTimeout(() => {
@@ -329,9 +362,13 @@ export default function DiscoverScreen() {
         const status = await sound.getStatusAsync();
         if (status.isLoaded) {
           if (isPlaying) {
+            // Fade out volume over 0.2 seconds when pausing
+            await sound.setVolumeAsync(0, { duration: 200 });
             await sound.pauseAsync();
             setIsPlaying(false);
           } else {
+            // Restore volume and play
+            await sound.setVolumeAsync(1, { duration: 200 });
             await sound.playAsync();
             setIsPlaying(true);
           }
@@ -362,7 +399,7 @@ export default function DiscoverScreen() {
   const skipTrack = async () => {
     if (!canSkip) return;
     
-    handleTransition(() => {
+    fadeAudioAndTransition(() => {
       loadNextTrack();
     });
   };
@@ -439,7 +476,7 @@ export default function DiscoverScreen() {
       'Continue Listening',
       'Would you like to listen to the full track? You won\'t be able to skip until it ends.',
       [
-        { text: 'No, discover next', style: 'cancel', onPress: () => handleTransition(() => loadNextTrack()) },
+        { text: 'No, discover next', style: 'cancel', onPress: () => fadeAudioAndTransition(() => loadNextTrack()) },
         { text: 'Yes, continue', onPress: () => {
           setCanSkip(false);
           setState('playing');
@@ -447,6 +484,11 @@ export default function DiscoverScreen() {
         }},
       ]
     );
+  };
+
+  const dismissKeyboard = () => {
+    Keyboard.dismiss();
+    setIsReviewFocused(false);
   };
 
   if (isLoading) {
@@ -479,291 +521,290 @@ export default function DiscoverScreen() {
   }
 
   return (
-    <View style={{ backgroundColor: '#19161a', flex: 1 }}>
-      <SafeAreaView style={{ flex: 1, paddingHorizontal: 24 }}>
-        {/* Header */}
-        <View style={{ alignItems: 'center', paddingTop: 32, paddingBottom: 48 }}>
-          <Text style={{ fontSize: 24, fontFamily: fonts.chillax.bold, color: '#ded7e0' }}>unknown</Text>
-          <Text style={{ fontSize: 14, fontFamily: fonts.chillax.medium, marginTop: 8, color: '#8b6699' }}>
-            Discover underground music
-          </Text>
-        </View>
-
-        {/* Welcome Tip */}
-        {showWelcomeTip && (
-          <View style={{ backgroundColor: '#28232a', borderRadius: 16, padding: 16, marginBottom: 24 }}>
-            <Text style={{ fontSize: 16, fontFamily: fonts.chillax.bold, color: '#ded7e0', marginBottom: 8 }}>
-              Welcome to the Underground! 🎵
-            </Text>
-            <Text style={{ fontSize: 14, fontFamily: fonts.chillax.regular, color: '#8b6699' }}>
-              Tap play to start discovering hidden gems. Rate tracks to reveal the artist and add them to your collection.
-            </Text>
-          </View>
-        )}
-
-        {/* Thank You Overlay */}
-        {showThankYou && (
-          <Animated.View style={[
-            thankYouStyle,
-            {
-              position: 'absolute',
-              top: 0,
-              left: 0,
-              right: 0,
-              bottom: 0,
-              backgroundColor: 'rgba(25, 22, 26, 0.95)',
-              justifyContent: 'center',
-              alignItems: 'center',
-              zIndex: 1000,
-              paddingHorizontal: 24,
-            }
-          ]}>
-            <View style={{ alignItems: 'center' }}>
-              <Text style={{ fontSize: 64, marginBottom: 32 }}>🙏</Text>
-              <Text style={{ 
-                fontSize: 32, 
-                fontFamily: fonts.chillax.bold, 
-                color: '#ded7e0', 
-                textAlign: 'center',
-                marginBottom: 20 
-              }}>
-                Thank you for your feedback!
-              </Text>
-              <Text style={{ 
-                fontSize: 18, 
-                fontFamily: fonts.chillax.regular, 
-                color: '#8b6699', 
-                textAlign: 'center',
-                lineHeight: 28,
-                maxWidth: 280
-              }}>
-                Your taste helps us discover better music for everyone
+    <TouchableWithoutFeedback onPress={dismissKeyboard}>
+      <View style={{ backgroundColor: '#19161a', flex: 1 }}>
+        <SafeAreaView style={{ flex: 1 }}>
+          <AnimationBackground>
+            {/* Header */}
+            <View style={{ alignItems: 'center', paddingTop: 32, paddingBottom: 48 }}>
+              <Text style={{ fontSize: 24, fontFamily: fonts.chillax.bold, color: '#ded7e0' }}>unknown</Text>
+              <Text style={{ fontSize: 14, fontFamily: fonts.chillax.medium, marginTop: 8, color: '#8b6699' }}>
+                Discover underground music
               </Text>
             </View>
-          </Animated.View>
-        )}
 
-        {/* Transition Overlay */}
-        {isTransitioning && (
-          <Animated.View style={[
-            transitionTextStyle,
-            {
-              position: 'absolute',
-              top: 0,
-              left: 0,
-              right: 0,
-              bottom: 0,
-              backgroundColor: 'rgba(25, 22, 26, 0.95)',
-              justifyContent: 'center',
-              alignItems: 'center',
-              zIndex: 1000,
-              paddingHorizontal: 24,
-            }
-          ]}>
-            <View style={{ alignItems: 'center' }}>
-              <Text style={{ fontSize: 48, marginBottom: 32 }}>🎵</Text>
-              <Text style={{ 
-                fontSize: 24, 
-                fontFamily: fonts.chillax.bold, 
-                color: '#ded7e0', 
-                textAlign: 'center',
-                marginBottom: 16 
-              }}>
-                Finding your next discovery...
-              </Text>
-              <ActivityIndicator size="large" color="#8b6699" />
-            </View>
-          </Animated.View>
-        )}
+            {/* Welcome Tip */}
+            {showWelcomeTip && (
+              <View style={{ backgroundColor: '#28232a', borderRadius: 16, padding: 16, marginHorizontal: 24, marginBottom: 24 }}>
+                <Text style={{ fontSize: 16, fontFamily: fonts.chillax.bold, color: '#ded7e0', marginBottom: 8 }}>
+                  Welcome to the Underground! 🎵
+                </Text>
+                <Text style={{ fontSize: 14, fontFamily: fonts.chillax.regular, color: '#8b6699' }}>
+                  Tap play to start discovering hidden gems. Rate tracks to reveal the artist and add them to your collection.
+                </Text>
+              </View>
+            )}
 
-        {/* Main Player Area */}
-        <Animated.View style={[fadeStyle, { flex: 1, justifyContent: 'center', alignItems: 'center' }]}>
-          {!showRating && !trackRevealed ? (
-            <>
-              {/* Mystery Track Visualization */}
-              <Animated.View
-                style={[
-                  pulseStyle,
-                  {
-                    width: 256,
-                    height: 256,
-                    borderRadius: 128,
-                    backgroundColor: 'rgba(69, 36, 81, 0.2)',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    marginBottom: 32,
-                  }
-                ]}
-              >
-                <View style={{
-                  width: 192,
-                  height: 192,
-                  borderRadius: 96,
-                  backgroundColor: '#28232a',
-                  alignItems: 'center',
+            {/* Thank You Overlay */}
+            {showThankYou && (
+              <Animated.View style={[
+                thankYouStyle,
+                {
+                  position: 'absolute',
+                  top: 0,
+                  left: 0,
+                  right: 0,
+                  bottom: 0,
+                  backgroundColor: 'rgba(25, 22, 26, 0.95)',
                   justifyContent: 'center',
-                }}>
-                  <TouchableOpacity
-                    onPress={playPauseAudio}
-                    style={{
-                      width: 80,
-                      height: 80,
-                      borderRadius: 40,
-                      backgroundColor: '#452451',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                    }}
-                  >
-                    {isPlaying ? (
-                      <Pause size={32} color="#ded7e0" strokeWidth={2} />
-                    ) : (
-                      <Play size={32} color="#ded7e0" strokeWidth={2} />
-                    )}
-                  </TouchableOpacity>
+                  alignItems: 'center',
+                  zIndex: 1000,
+                  paddingHorizontal: 24,
+                }
+              ]}>
+                <View style={{ alignItems: 'center' }}>
+                  <Text style={{ fontSize: 64, marginBottom: 32 }}>🙏</Text>
+                  <Text style={{ 
+                    fontSize: 32, 
+                    fontFamily: fonts.chillax.bold, 
+                    color: '#ded7e0', 
+                    textAlign: 'center',
+                    marginBottom: 20 
+                  }}>
+                    Thank you for your feedback!
+                  </Text>
+                  <Text style={{ 
+                    fontSize: 18, 
+                    fontFamily: fonts.chillax.regular, 
+                    color: '#8b6699', 
+                    textAlign: 'center',
+                    lineHeight: 28,
+                    maxWidth: 280
+                  }}>
+                    Your taste helps us discover better music for everyone
+                  </Text>
                 </View>
               </Animated.View>
+            )}
 
-              {/* Progress Bar */}
-              <View style={{ width: '100%', maxWidth: 320, height: 4, backgroundColor: '#28232a', borderRadius: 2, marginBottom: 32 }}>
-                <Animated.View
-                  style={[progressStyle, { height: '100%', backgroundColor: '#452451', borderRadius: 2 }]}
-                />
-              </View>
-
-              {/* Skip Button */}
-              {canSkip && (
-                <TouchableOpacity
-                  onPress={skipTrack}
-                  style={{ flexDirection: 'row', alignItems: 'center', gap: 8, padding: 16 }}
-                >
-                  <SkipForward size={20} color='#8b6699' strokeWidth={2} />
-                  <Text style={{ fontFamily: fonts.chillax.regular, color: '#8b6699' }}>Skip</Text>
-                </TouchableOpacity>
-              )}
-            </>
-          ) : showRating && !trackRevealed ? (
-            /* Rating Interface */
-            <View style={{ alignItems: 'center' }}>
-              <Text style={{ fontSize: 20, fontFamily: fonts.chillax.medium, textAlign: 'center', marginBottom: 48, color: '#ded7e0' }}>
-                How does this track make you feel?
-              </Text>
-
-              {/* Rating Stars */}
-              <View style={{ flexDirection: 'row', gap: 16, marginBottom: 32 }}>
-                {[1, 2, 3, 4, 5].map((star) => (
-                  <TouchableOpacity
-                    key={star}
-                    onPress={() => handleStarPress(star)}
-                    style={{ padding: 8 }}
-                  >
-                    <Star
-                      size={32}
-                      color={star <= rating ? '#452451' : '#8b6699'}
-                      fill={star <= rating ? '#452451' : 'transparent'}
-                      strokeWidth={1.5}
-                    />
-                  </TouchableOpacity>
-                ))}
-              </View>
-
-              {/* Review Input for High Ratings */}
-              {showReviewInput && (
-                <View style={{ width: '100%', marginBottom: 32 }}>
-                  <Text style={{ fontSize: 16, fontFamily: fonts.chillax.medium, color: '#ded7e0', marginBottom: 12 }}>
-                    Share your thoughts (optional)
+            {/* Transition Overlay */}
+            {isTransitioning && (
+              <Animated.View style={[
+                transitionTextStyle,
+                {
+                  position: 'absolute',
+                  top: 0,
+                  left: 0,
+                  right: 0,
+                  bottom: 0,
+                  backgroundColor: 'rgba(25, 22, 26, 0.95)',
+                  justifyContent: 'center',
+                  alignItems: 'center',
+                  zIndex: 1000,
+                  paddingHorizontal: 24,
+                }
+              ]}>
+                <View style={{ alignItems: 'center' }}>
+                  <Text style={{ fontSize: 48, marginBottom: 32 }}>🎵</Text>
+                  <Text style={{ 
+                    fontSize: 24, 
+                    fontFamily: fonts.chillax.bold, 
+                    color: '#ded7e0', 
+                    textAlign: 'center',
+                    marginBottom: 16 
+                  }}>
+                    Finding your next discovery...
                   </Text>
-                  <View style={{ backgroundColor: '#28232a', borderRadius: 16, padding: 16 }}>
-                    <Text
-                      style={{ 
-                        fontSize: 16, 
-                        fontFamily: fonts.chillax.regular, 
-                        color: '#ded7e0',
-                        minHeight: 80,
-                        textAlignVertical: 'top'
-                      }}
-                      onPress={() => {
-                        // In a real app, you'd implement a proper text input
-                        Alert.prompt(
-                          'Write a review',
-                          'What did you love about this track?',
-                          (text) => setReview(text || ''),
-                          'plain-text',
-                          review
-                        );
+                  <ActivityIndicator size="large" color="#8b6699" />
+                </View>
+              </Animated.View>
+            )}
+
+            {/* Main Player Area */}
+            <Animated.View style={[fadeStyle, { flex: 1, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 24 }]}>
+              {!showRating && !trackRevealed ? (
+                <>
+                  {/* Play Button */}
+                  <Animated.View style={[pulseStyle, { marginBottom: 48 }]}>
+                    <TouchableOpacity
+                      onPress={playPauseAudio}
+                      style={{
+                        width: 120,
+                        height: 120,
+                        borderRadius: 60,
+                        backgroundColor: '#452451',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        shadowColor: '#452451',
+                        shadowOffset: { width: 0, height: 8 },
+                        shadowOpacity: 0.3,
+                        shadowRadius: 16,
+                        elevation: 8,
                       }}
                     >
-                      {review || 'Tap to write a review...'}
-                    </Text>
+                      {isPlaying ? (
+                        <Pause size={40} color="#ded7e0" strokeWidth={2} />
+                      ) : (
+                        <Play size={40} color="#ded7e0" strokeWidth={2} style={{ marginLeft: 4 }} />
+                      )}
+                    </TouchableOpacity>
+                  </Animated.View>
+
+                  {/* Progress Bar */}
+                  <View style={{ width: '100%', maxWidth: 320, height: 4, backgroundColor: '#28232a', borderRadius: 2, marginBottom: 48 }}>
+                    <Animated.View
+                      style={[progressStyle, { height: '100%', backgroundColor: '#452451', borderRadius: 2 }]}
+                    />
                   </View>
-                  
+
+                  {/* Skip Button */}
+                  {canSkip && (
+                    <TouchableOpacity
+                      onPress={skipTrack}
+                      style={{ 
+                        flexDirection: 'row', 
+                        alignItems: 'center', 
+                        gap: 8, 
+                        paddingHorizontal: 24,
+                        paddingVertical: 16,
+                        backgroundColor: '#28232a',
+                        borderRadius: 16,
+                      }}
+                    >
+                      <SkipForward size={20} color='#8b6699' strokeWidth={2} />
+                      <Text style={{ fontFamily: fonts.chillax.medium, color: '#8b6699', fontSize: 16 }}>Skip</Text>
+                    </TouchableOpacity>
+                  )}
+                </>
+              ) : showRating && !trackRevealed ? (
+                /* Rating Interface */
+                <View style={{ alignItems: 'center', width: '100%' }}>
+                  <Text style={{ fontSize: 20, fontFamily: fonts.chillax.medium, textAlign: 'center', marginBottom: 48, color: '#ded7e0' }}>
+                    How does this track make you feel?
+                  </Text>
+
+                  {/* Rating Stars */}
+                  <View style={{ flexDirection: 'row', gap: 16, marginBottom: 32 }}>
+                    {[1, 2, 3, 4, 5].map((star) => (
+                      <TouchableOpacity
+                        key={star}
+                        onPress={() => handleStarPress(star)}
+                        style={{ padding: 8 }}
+                      >
+                        <Star
+                          size={32}
+                          color={star <= rating ? '#452451' : '#8b6699'}
+                          fill={star <= rating ? '#452451' : 'transparent'}
+                          strokeWidth={1.5}
+                        />
+                      </TouchableOpacity>
+                    ))}
+                  </View>
+
+                  {/* Review Input for High Ratings */}
+                  {showReviewInput && (
+                    <View style={{ width: '100%', marginBottom: 32 }}>
+                      <Text style={{ fontSize: 16, fontFamily: fonts.chillax.medium, color: '#ded7e0', marginBottom: 12 }}>
+                        Share your thoughts (optional)
+                      </Text>
+                      <View style={{ backgroundColor: '#28232a', borderRadius: 16, padding: 16 }}>
+                        <TextInput
+                          ref={reviewInputRef}
+                          style={{ 
+                            fontSize: 16, 
+                            fontFamily: fonts.chillax.regular, 
+                            color: '#ded7e0',
+                            minHeight: 80,
+                            textAlignVertical: 'top'
+                          }}
+                          placeholder="What did you love about this track?"
+                          placeholderTextColor="#8b6699"
+                          value={review}
+                          onChangeText={setReview}
+                          multiline
+                          onFocus={() => setIsReviewFocused(true)}
+                          onBlur={() => setIsReviewFocused(false)}
+                        />
+                      </View>
+                      
+                      <TouchableOpacity
+                        onPress={handleSubmitWithReview}
+                        style={{ backgroundColor: '#452451', paddingVertical: 16, borderRadius: 16, alignItems: 'center', marginTop: 16 }}
+                      >
+                        <Text style={{ color: '#ded7e0', fontFamily: fonts.chillax.bold, fontSize: 18 }}>
+                          Submit Rating
+                        </Text>
+                      </TouchableOpacity>
+                    </View>
+                  )}
+
+                  {/* Skip Button */}
                   <TouchableOpacity
-                    onPress={handleSubmitWithReview}
-                    style={{ backgroundColor: '#452451', paddingVertical: 16, borderRadius: 16, alignItems: 'center', marginTop: 16 }}
+                    onPress={skipTrack}
+                    style={{ 
+                      flexDirection: 'row', 
+                      alignItems: 'center', 
+                      gap: 8, 
+                      paddingHorizontal: 24,
+                      paddingVertical: 16,
+                      backgroundColor: '#28232a',
+                      borderRadius: 16,
+                    }}
+                  >
+                    <SkipForward size={20} color='#8b6699' strokeWidth={2} />
+                    <Text style={{ fontFamily: fonts.chillax.medium, color: '#8b6699', fontSize: 16 }}>Skip</Text>
+                  </TouchableOpacity>
+                </View>
+              ) : trackRevealed && currentTrack ? (
+                /* Track Revealed */
+                <View style={{ alignItems: 'center' }}>
+                  <View style={{ width: 256, height: 256, borderRadius: 24, backgroundColor: '#28232a', marginBottom: 32, overflow: 'hidden' }}>
+                    {currentTrack?.artwork_url ? (
+                      <Image
+                        source={{ uri: currentTrack.artwork_url }}
+                        style={{ width: '100%', height: '100%' }}
+                        resizeMode="cover"
+                      />
+                    ) : (
+                      <View style={{ width: '100%', height: '100%', backgroundColor: '#28232a', alignItems: 'center', justifyContent: 'center' }}>
+                        <Text style={{ fontSize: 48 }}>🎵</Text>
+                      </View>
+                    )}
+                  </View>
+
+                  <Text style={{ color: '#ded7e0', fontSize: 24, fontFamily: fonts.chillax.bold, textAlign: 'center', marginBottom: 8 }}>
+                    {currentTrack?.title}
+                  </Text>
+                  <Text style={{ color: '#8b6699', fontSize: 18, fontFamily: fonts.chillax.regular, textAlign: 'center', marginBottom: 16 }}>
+                    {currentTrack?.artist}
+                  </Text>
+                  <Text style={{ color: '#452451', fontSize: 14, fontFamily: fonts.chillax.medium, marginBottom: 32 }}>
+                    {currentTrack?.genre} • {currentTrack?.mood}
+                  </Text>
+
+                  <TouchableOpacity
+                    onPress={handleContinueListening}
+                    style={{ backgroundColor: '#452451', paddingHorizontal: 32, paddingVertical: 16, borderRadius: 16, marginBottom: 16 }}
                   >
                     <Text style={{ color: '#ded7e0', fontFamily: fonts.chillax.bold, fontSize: 18 }}>
-                      Submit Rating
+                      Listen to Full Track
+                    </Text>
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    onPress={() => fadeAudioAndTransition(() => loadNextTrack())}
+                    style={{ backgroundColor: '#28232a', paddingHorizontal: 32, paddingVertical: 16, borderRadius: 16 }}
+                  >
+                    <Text style={{ color: '#ded7e0', fontFamily: fonts.chillax.bold, fontSize: 18 }}>
+                      Discover Next
                     </Text>
                   </TouchableOpacity>
                 </View>
-              )}
-
-              {/* Skip Button */}
-              <TouchableOpacity
-                onPress={skipTrack}
-                style={{ flexDirection: 'row', alignItems: 'center', gap: 8, padding: 16 }}
-              >
-                <SkipForward size={20} color='#8b6699' strokeWidth={2} />
-                <Text style={{ fontFamily: fonts.chillax.regular, color: '#8b6699' }}>Skip</Text>
-              </TouchableOpacity>
-            </View>
-          ) : trackRevealed && currentTrack ? (
-            /* Track Revealed */
-            <View style={{ alignItems: 'center' }}>
-              <View style={{ width: 256, height: 256, borderRadius: 24, backgroundColor: '#28232a', marginBottom: 32, overflow: 'hidden' }}>
-                {currentTrack?.artwork_url ? (
-                  <Image
-                    source={{ uri: currentTrack.artwork_url }}
-                    style={{ width: '100%', height: '100%' }}
-                    resizeMode="cover"
-                  />
-                ) : (
-                  <View style={{ width: '100%', height: '100%', backgroundColor: '#28232a', alignItems: 'center', justifyContent: 'center' }}>
-                    <Text style={{ fontSize: 48 }}>🎵</Text>
-                  </View>
-                )}
-              </View>
-
-              <Text style={{ color: '#ded7e0', fontSize: 24, fontFamily: fonts.chillax.bold, textAlign: 'center', marginBottom: 8 }}>
-                {currentTrack?.title}
-              </Text>
-              <Text style={{ color: '#8b6699', fontSize: 18, fontFamily: fonts.chillax.regular, textAlign: 'center', marginBottom: 16 }}>
-                {currentTrack?.artist}
-              </Text>
-              <Text style={{ color: '#452451', fontSize: 14, fontFamily: fonts.chillax.medium, marginBottom: 32 }}>
-                {currentTrack?.genre} • {currentTrack?.mood}
-              </Text>
-
-              <TouchableOpacity
-                onPress={handleContinueListening}
-                style={{ backgroundColor: '#452451', paddingHorizontal: 32, paddingVertical: 16, borderRadius: 16, marginBottom: 16 }}
-              >
-                <Text style={{ color: '#ded7e0', fontFamily: fonts.chillax.bold, fontSize: 18 }}>
-                  Listen to Full Track
-                </Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                onPress={() => handleTransition(() => loadNextTrack())}
-                style={{ backgroundColor: '#28232a', paddingHorizontal: 32, paddingVertical: 16, borderRadius: 16 }}
-              >
-                <Text style={{ color: '#ded7e0', fontFamily: fonts.chillax.bold, fontSize: 18 }}>
-                  Discover Next
-                </Text>
-              </TouchableOpacity>
-            </View>
-          ) : null}
-        </Animated.View>
-      </SafeAreaView>
-    </View>
+              ) : null}
+            </Animated.View>
+          </AnimationBackground>
+        </SafeAreaView>
+      </View>
+    </TouchableWithoutFeedback>
   );
 }
