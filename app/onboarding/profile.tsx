@@ -53,14 +53,12 @@ export default function ProfileCustomizationScreen() {
     try {
       console.log('Checking username availability for:', username.toLowerCase());
       
-      // Use a more explicit query to check for existing usernames
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('id, username')
-        .ilike('username', username.toLowerCase())
-        .limit(1);
+      // Use the dedicated function that bypasses RLS
+      const { data, error } = await supabase.rpc('check_username_availability', {
+        username_to_check: username.trim()
+      });
 
-      console.log('Username check result:', { data, error, dataLength: data?.length });
+      console.log('Username availability result:', { data, error });
 
       if (error) {
         console.error('Database error:', error);
@@ -69,17 +67,17 @@ export default function ProfileCustomizationScreen() {
         return;
       }
 
-      // Check if any rows were returned
-      if (data && data.length > 0) {
-        // Username exists
-        console.log('Username taken by user:', data[0]);
-        setUsernameError('Username is already taken');
-        setUsernameValid(false);
-      } else {
+      // data is boolean: true if available, false if taken
+      if (data === true) {
         // Username is available
         console.log('Username is available');
         setUsernameValid(true);
         setUsernameError(null);
+      } else {
+        // Username is taken
+        console.log('Username is taken');
+        setUsernameError('Username is already taken');
+        setUsernameValid(false);
       }
     } catch (error) {
       console.error('Error checking username:', error);
@@ -131,13 +129,11 @@ export default function ProfileCustomizationScreen() {
     setLoading(true);
     try {
       // Double-check username availability before proceeding
-      const { data: existingUser } = await supabase
-        .from('profiles')
-        .select('id')
-        .ilike('username', username.trim().toLowerCase())
-        .limit(1);
+      const { data: isAvailable } = await supabase.rpc('check_username_availability', {
+        username_to_check: username.trim()
+      });
 
-      if (existingUser && existingUser.length > 0) {
+      if (!isAvailable) {
         Alert.alert('Error', 'Username is already taken. Please choose a different one.');
         setUsernameError('Username is already taken');
         setUsernameValid(false);
