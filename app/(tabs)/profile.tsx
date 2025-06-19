@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, ScrollView, TouchableOpacity } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Award, Flame, Star, TrendingUp } from 'lucide-react-native';
+import { Award, Flame, Star, TrendingUp, LogOut } from 'lucide-react-native';
 import { supabase } from '@/lib/supabase';
+import { useAuth } from '@/contexts/AuthContext';
+import { fonts } from '@/lib/fonts';
 
 interface UserStats {
   totalTracks: number;
@@ -60,6 +62,7 @@ const AVAILABLE_BADGES: Badge[] = [
 ];
 
 export default function ProfileScreen() {
+  const { user, signOut } = useAuth();
   const [stats, setStats] = useState<UserStats>({
     totalTracks: 0,
     averageRating: 0,
@@ -72,16 +75,20 @@ export default function ProfileScreen() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    loadUserStats();
-  }, []);
+    if (user?.id) {
+      loadUserStats();
+    }
+  }, [user]);
 
   const loadUserStats = async () => {
+    if (!user?.id) return;
+
     try {
       // Load user ratings
       const { data: ratings, error: ratingsError } = await supabase
         .from('user_ratings')
         .select('rating, created_at')
-        .eq('user_id', 'demo-user'); // Replace with actual user ID
+        .eq('profile_id', user.id);
 
       if (ratingsError) throw ratingsError;
 
@@ -89,7 +96,7 @@ export default function ProfileScreen() {
       const { data: userBadges, error: badgesError } = await supabase
         .from('user_badges')
         .select('badge_id')
-        .eq('user_id', 'demo-user'); // Replace with actual user ID
+        .eq('profile_id', user.id);
 
       if (badgesError) throw badgesError;
 
@@ -126,97 +133,111 @@ export default function ProfileScreen() {
     }
   };
 
+  const handleSignOut = async () => {
+    try {
+      await signOut();
+    } catch (error) {
+      console.error('Error signing out:', error);
+    }
+  };
+
   if (loading) {
     return (
-      <View style={{ backgroundColor: '#19161a' }} className="flex-1">
-        <SafeAreaView className="flex-1 justify-center items-center">
-          <Text className="text-brand-text font-chillax">Loading profile...</Text>
+      <View style={{ backgroundColor: '#19161a', flex: 1 }}>
+        <SafeAreaView style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+          <Text style={{ color: '#ded7e0', fontFamily: fonts.chillax.regular }}>Loading profile...</Text>
         </SafeAreaView>
       </View>
     );
   }
 
   return (
-    <View style={{ backgroundColor: '#19161a' }} className="flex-1">
-      <SafeAreaView className="flex-1">
+    <View style={{ backgroundColor: '#19161a', flex: 1 }}>
+      <SafeAreaView style={{ flex: 1 }}>
         {/* Header */}
-        <View className="px-6 pt-8 pb-6">
-          <Text className="text-brand-text text-2xl font-chillax-bold mb-2">Profile</Text>
-          <Text className="text-brand-text font-chillax">
+        <View style={{ paddingHorizontal: 24, paddingTop: 32, paddingBottom: 24 }}>
+          <Text style={{ color: '#ded7e0', fontSize: 24, fontFamily: fonts.chillax.bold, marginBottom: 8 }}>
+            {user?.profile?.display_name || user?.profile?.username || 'Profile'}
+          </Text>
+          <Text style={{ color: '#8b6699', fontFamily: fonts.chillax.regular }}>
             Your music discovery journey
           </Text>
         </View>
 
-        <ScrollView className="flex-1 px-6" showsVerticalScrollIndicator={false}>
+        <ScrollView style={{ flex: 1, paddingHorizontal: 24 }} showsVerticalScrollIndicator={false}>
           {/* Stats Overview */}
-          <View className="bg-brand-backgroundLighter rounded-2xl p-6 mb-6">
-            <View className="flex-row justify-between items-center mb-4">
-              <Text className="text-brand-text text-xl font-chillax-bold">Discovery Stats</Text>
-              <View className="bg-brand-accent px-3 py-1 rounded-full">
-                <Text className="text-brand-text font-chillax-bold text-sm">
+          <View style={{ backgroundColor: '#28232a', borderRadius: 16, padding: 24, marginBottom: 24 }}>
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+              <Text style={{ color: '#ded7e0', fontSize: 20, fontFamily: fonts.chillax.bold }}>Discovery Stats</Text>
+              <View style={{ backgroundColor: '#452451', paddingHorizontal: 12, paddingVertical: 4, borderRadius: 12 }}>
+                <Text style={{ color: '#ded7e0', fontFamily: fonts.chillax.bold, fontSize: 14 }}>
                   {stats.points} pts
                 </Text>
               </View>
             </View>
 
-            <View className="flex-row justify-between">
-              <View className="items-center">
-                <Text className="text-brand-text text-2xl font-chillax-bold">
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+              <View style={{ alignItems: 'center' }}>
+                <Text style={{ color: '#ded7e0', fontSize: 24, fontFamily: fonts.chillax.bold }}>
                   {stats.totalTracks}
                 </Text>
-                <Text className="text-brand-text font-chillax text-sm">Tracks</Text>
+                <Text style={{ color: '#8b6699', fontFamily: fonts.chillax.regular, fontSize: 14 }}>Tracks</Text>
               </View>
-              <View className="items-center">
-                <Text className="text-brand-text text-2xl font-chillax-bold">
+              <View style={{ alignItems: 'center' }}>
+                <Text style={{ color: '#ded7e0', fontSize: 24, fontFamily: fonts.chillax.bold }}>
                   {stats.averageRating.toFixed(1)}
                 </Text>
-                <Text className="text-brand-text font-chillax text-sm">Avg Rating</Text>
+                <Text style={{ color: '#8b6699', fontFamily: fonts.chillax.regular, fontSize: 14 }}>Avg Rating</Text>
               </View>
-              <View className="items-center">
-                <Text className="text-brand-text text-2xl font-chillax-bold">
+              <View style={{ alignItems: 'center' }}>
+                <Text style={{ color: '#ded7e0', fontSize: 24, fontFamily: fonts.chillax.bold }}>
                   {stats.streakDays}
                 </Text>
-                <Text className="text-brand-text font-chillax text-sm">Day Streak</Text>
+                <Text style={{ color: '#8b6699', fontFamily: fonts.chillax.regular, fontSize: 14 }}>Day Streak</Text>
               </View>
             </View>
           </View>
 
           {/* Achievements */}
-          <View className="mb-6">
-            <Text className="text-brand-text text-xl font-chillax-bold mb-4">
+          <View style={{ marginBottom: 24 }}>
+            <Text style={{ color: '#ded7e0', fontSize: 20, fontFamily: fonts.chillax.bold, marginBottom: 16 }}>
               Achievements
             </Text>
             
-            <View className="space-y-3">
+            <View style={{ gap: 12 }}>
               {badges.map((badge) => (
                 <View
                   key={badge.id}
-                  className={`bg-brand-backgroundLighter rounded-2xl p-4 ${
-                    !badge.unlocked && 'opacity-50'
-                  }`}
+                  style={[
+                    { backgroundColor: '#28232a', borderRadius: 16, padding: 16 },
+                    !badge.unlocked && { opacity: 0.5 }
+                  ]}
                 >
-                  <View className="flex-row items-center space-x-4">
-                    <View className={`w-12 h-12 rounded-xl items-center justify-center ${
-                      badge.unlocked ? 'bg-brand-accent/20' : 'bg-brand-backgroundLighter'
-                    }`}>
-                      <Text className="text-lg">{badge.icon}</Text>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 16 }}>
+                    <View style={[
+                      { width: 48, height: 48, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
+                      badge.unlocked ? { backgroundColor: 'rgba(69, 36, 81, 0.2)' } : { backgroundColor: '#28232a' }
+                    ]}>
+                      <Text style={{ fontSize: 18 }}>{badge.icon}</Text>
                     </View>
                     
-                    <View className="flex-1">
-                      <Text className={`font-chillax-bold ${
-                        badge.unlocked ? 'text-brand-text' : 'text-brand-gray'
-                      }`}>
+                    <View style={{ flex: 1 }}>
+                      <Text style={[
+                        { fontFamily: fonts.chillax.bold },
+                        badge.unlocked ? { color: '#ded7e0' } : { color: '#8b6699' }
+                      ]}>
                         {badge.name}
                       </Text>
-                      <Text className={`font-chillax text-sm ${
-                        badge.unlocked ? 'text-brand-text' : 'text-brand-gray'
-                      }`}>
+                      <Text style={[
+                        { fontFamily: fonts.chillax.regular, fontSize: 14 },
+                        badge.unlocked ? { color: '#8b6699' } : { color: '#8b6699' }
+                      ]}>
                         {badge.description}
                       </Text>
                     </View>
 
                     {badge.unlocked && (
-                      <Award size={20} color="#8b6699" strokeWidth={2} />
+                      <Award size={20} color="#452451" strokeWidth={2} />
                     )}
                   </View>
                 </View>
@@ -225,38 +246,38 @@ export default function ProfileScreen() {
           </View>
 
           {/* Quick Stats */}
-          <View className="mb-8">
-            <Text className="text-brand-text text-xl font-chillax-bold mb-4">
+          <View style={{ marginBottom: 32 }}>
+            <Text style={{ color: '#ded7e0', fontSize: 20, fontFamily: fonts.chillax.bold, marginBottom: 16 }}>
               Quick Stats
             </Text>
             
-            <View className="flex-row justify-between space-x-3">
-              <View className="flex-1 bg-brand-backgroundLighter rounded-2xl p-4">
-                <Flame size={24} color="#8b6699" strokeWidth={2} className="mb-2" />
-                <Text className="text-brand-text text-lg font-chillax-bold">
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', gap: 12 }}>
+              <View style={{ flex: 1, backgroundColor: '#28232a', borderRadius: 16, padding: 16 }}>
+                <Flame size={24} color="#452451" strokeWidth={2} style={{ marginBottom: 8 }} />
+                <Text style={{ color: '#ded7e0', fontSize: 18, fontFamily: fonts.chillax.bold }}>
                   {stats.streakDays}
                 </Text>
-                <Text className="text-brand-text font-chillax text-sm">
+                <Text style={{ color: '#8b6699', fontFamily: fonts.chillax.regular, fontSize: 14 }}>
                   Current Streak
                 </Text>
               </View>
 
-              <View className="flex-1 bg-brand-backgroundLighter rounded-2xl p-4">
-                <Star size={24} color="#8b6699" strokeWidth={2} className="mb-2" />
-                <Text className="text-brand-text text-lg font-chillax-bold">
+              <View style={{ flex: 1, backgroundColor: '#28232a', borderRadius: 16, padding: 16 }}>
+                <Star size={24} color="#452451" strokeWidth={2} style={{ marginBottom: 8 }} />
+                <Text style={{ color: '#ded7e0', fontSize: 18, fontFamily: fonts.chillax.bold }}>
                   {stats.averageRating.toFixed(1)}
                 </Text>
-                <Text className="text-brand-text font-chillax text-sm">
+                <Text style={{ color: '#8b6699', fontFamily: fonts.chillax.regular, fontSize: 14 }}>
                   Avg Rating
                 </Text>
               </View>
 
-              <View className="flex-1 bg-brand-backgroundLighter rounded-2xl p-4">
-                <TrendingUp size={24} color="#8b6699" strokeWidth={2} className="mb-2" />
-                <Text className="text-brand-text text-lg font-chillax-bold">
+              <View style={{ flex: 1, backgroundColor: '#28232a', borderRadius: 16, padding: 16 }}>
+                <TrendingUp size={24} color="#452451" strokeWidth={2} style={{ marginBottom: 8 }} />
+                <Text style={{ color: '#ded7e0', fontSize: 18, fontFamily: fonts.chillax.bold }}>
                   {stats.badges.length}
                 </Text>
-                <Text className="text-brand-text font-chillax text-sm">
+                <Text style={{ color: '#8b6699', fontFamily: fonts.chillax.regular, fontSize: 14 }}>
                   Badges
                 </Text>
               </View>
@@ -264,25 +285,29 @@ export default function ProfileScreen() {
           </View>
 
           {/* Settings */}
-          <View className="mb-8">
-            <Text className="text-brand-text text-xl font-chillax-bold mb-4">
+          <View style={{ marginBottom: 32 }}>
+            <Text style={{ color: '#ded7e0', fontSize: 20, fontFamily: fonts.chillax.bold, marginBottom: 16 }}>
               Settings
             </Text>
             
-            <TouchableOpacity className="bg-brand-backgroundLighter rounded-2xl p-4 mb-3">
-              <Text className="text-brand-text font-chillax-medium">Account Settings</Text>
+            <TouchableOpacity style={{ backgroundColor: '#28232a', borderRadius: 16, padding: 16, marginBottom: 12 }}>
+              <Text style={{ color: '#ded7e0', fontFamily: fonts.chillax.medium }}>Account Settings</Text>
             </TouchableOpacity>
             
-            <TouchableOpacity className="bg-brand-backgroundLighter rounded-2xl p-4 mb-3">
-              <Text className="text-brand-text font-chillax-medium">Privacy Settings</Text>
+            <TouchableOpacity style={{ backgroundColor: '#28232a', borderRadius: 16, padding: 16, marginBottom: 12 }}>
+              <Text style={{ color: '#ded7e0', fontFamily: fonts.chillax.medium }}>Privacy Settings</Text>
             </TouchableOpacity>
             
-            <TouchableOpacity className="bg-brand-backgroundLighter rounded-2xl p-4 mb-3">
-              <Text className="text-brand-text font-chillax-medium">Notifications</Text>
+            <TouchableOpacity style={{ backgroundColor: '#28232a', borderRadius: 16, padding: 16, marginBottom: 12 }}>
+              <Text style={{ color: '#ded7e0', fontFamily: fonts.chillax.medium }}>Notifications</Text>
             </TouchableOpacity>
             
-            <TouchableOpacity className="bg-brand-destructive rounded-2xl p-4">
-              <Text className="text-brand-text font-chillax-medium">Sign Out</Text>
+            <TouchableOpacity 
+              style={{ backgroundColor: '#51242d', borderRadius: 16, padding: 16, flexDirection: 'row', alignItems: 'center', gap: 12 }}
+              onPress={handleSignOut}
+            >
+              <LogOut size={20} color="#ded7e0" strokeWidth={2} />
+              <Text style={{ color: '#ded7e0', fontFamily: fonts.chillax.medium }}>Sign Out</Text>
             </TouchableOpacity>
           </View>
         </ScrollView>

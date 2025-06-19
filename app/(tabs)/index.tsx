@@ -11,6 +11,7 @@ import Animated, {
 } from 'react-native-reanimated';
 import { Audio, AVPlaybackStatus } from 'expo-av';
 import { supabase } from '@/lib/supabase';
+import { useAuth } from '@/contexts/AuthContext';
 import { fonts } from '@/lib/fonts';
 
 interface Track {
@@ -24,6 +25,7 @@ interface Track {
 }
 
 export default function DiscoverScreen() {
+  const { user } = useAuth();
   const [currentTrack, setCurrentTrack] = useState<Track | null>(null);
   const [rating, setRating] = useState(0);
   const [showRating, setShowRating] = useState(false);
@@ -34,18 +36,25 @@ export default function DiscoverScreen() {
   const [isPlaying, setIsPlaying] = useState(false);
   const [position, setPosition] = useState(0);
   const [duration, setDuration] = useState(0);
+  const [showWelcomeTip, setShowWelcomeTip] = useState(false);
 
   const pulseAnimation = useSharedValue(1);
   const progressAnimation = useSharedValue(0);
 
   useEffect(() => {
     loadNextTrack();
+    
+    // Check if this is user's first time in Discover
+    if (user?.profile?.onboarding_complete) {
+      checkFirstTimeUser();
+    }
+
     return () => {
       if (sound) {
         sound.unloadAsync();
       }
     };
-  }, []);
+  }, [user]);
 
   useEffect(() => {
     if (isPlaying) {
@@ -68,6 +77,27 @@ export default function DiscoverScreen() {
   const progressStyle = useAnimatedStyle(() => ({
     width: `${(position / duration) * 100}%`,
   }));
+
+  const checkFirstTimeUser = async () => {
+    if (!user?.id) return;
+
+    try {
+      const { data, error } = await supabase
+        .from('user_ratings')
+        .select('id')
+        .eq('profile_id', user.id)
+        .limit(1);
+
+      if (error) throw error;
+
+      // If no ratings exist, show welcome tip
+      if (!data || data.length === 0) {
+        setShowWelcomeTip(true);
+      }
+    } catch (error) {
+      console.error('Error checking first time user:', error);
+    }
+  };
 
   const loadNextTrack = async () => {
     try {
@@ -96,6 +126,7 @@ export default function DiscoverScreen() {
       setIsPlaying(false);
       setPosition(0);
       setDuration(0);
+      setShowWelcomeTip(false);
     } catch (error) {
       console.error('Error loading track:', error);
       setError('Failed to load track. Please try again.');
@@ -155,7 +186,7 @@ export default function DiscoverScreen() {
   };
 
   const submitRating = async (stars: number) => {
-    if (!currentTrack) return;
+    if (!currentTrack || !user?.id) return;
 
     setRating(stars);
     
@@ -165,7 +196,8 @@ export default function DiscoverScreen() {
         .insert({
           track_id: currentTrack.id,
           rating: stars,
-          user_id: 'demo-user', // Replace with actual user ID
+          profile_id: user.id,
+          user_id: user.id, // Keep for backward compatibility
         });
 
       if (error) throw error;
@@ -184,8 +216,8 @@ export default function DiscoverScreen() {
 
   if (isLoading) {
     return (
-      <View style={{ backgroundColor: '#19161a' }} className="flex-1">
-        <SafeAreaView className="flex-1 items-center justify-center">
+      <View style={{ backgroundColor: '#19161a', flex: 1 }}>
+        <SafeAreaView style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
           <ActivityIndicator size="large" color="#8b6699" />
           <Text style={{ color: 'white', marginTop: 16, fontFamily: fonts.chillax.regular }}>Loading track...</Text>
         </SafeAreaView>
@@ -195,14 +227,14 @@ export default function DiscoverScreen() {
 
   if (error) {
     return (
-      <View style={{ backgroundColor: '#19161a' }} className="flex-1">
-        <SafeAreaView className="flex-1 items-center justify-center px-6">
+      <View style={{ backgroundColor: '#19161a', flex: 1 }}>
+        <SafeAreaView style={{ flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 24 }}>
           <Text style={{ color: 'white', textAlign: 'center', marginBottom: 16, fontFamily: fonts.chillax.regular }}>{error}</Text>
           <TouchableOpacity
             onPress={loadNextTrack}
-            className="bg-brand-accent px-8 py-4 rounded-full"
+            style={{ backgroundColor: '#452451', paddingHorizontal: 32, paddingVertical: 16, borderRadius: 16 }}
           >
-            <Text style={{ color: 'black', fontFamily: fonts.chillax.bold, fontSize: 18 }}>
+            <Text style={{ color: '#ded7e0', fontFamily: fonts.chillax.bold, fontSize: 18 }}>
               Try Again
             </Text>
           </TouchableOpacity>
@@ -212,64 +244,99 @@ export default function DiscoverScreen() {
   }
 
   return (
-    <View style={{ backgroundColor: '#19161a' }} className="flex-1">
-      <SafeAreaView className="flex-1 px-6">
+    <View style={{ backgroundColor: '#19161a', flex: 1 }}>
+      <SafeAreaView style={{ flex: 1, paddingHorizontal: 24 }}>
         {/* Header */}
-        <View className="items-center pt-8 pb-12">
-          <Text className='text-brand-text' style={{ fontSize: 24, fontFamily: fonts.chillax.bold }}>unknown</Text>
-          <Text className='text-brand-gray' style={{ fontSize: 14, fontFamily: fonts.chillax.medium, marginTop: 8 }}>
+        <View style={{ alignItems: 'center', paddingTop: 32, paddingBottom: 48 }}>
+          <Text style={{ fontSize: 24, fontFamily: fonts.chillax.bold, color: '#ded7e0' }}>unknown</Text>
+          <Text style={{ fontSize: 14, fontFamily: fonts.chillax.medium, marginTop: 8, color: '#8b6699' }}>
             Discover underground music
           </Text>
         </View>
 
+        {/* Welcome Tip */}
+        {showWelcomeTip && (
+          <View style={{ backgroundColor: '#28232a', borderRadius: 16, padding: 16, marginBottom: 24 }}>
+            <Text style={{ fontSize: 16, fontFamily: fonts.chillax.bold, color: '#ded7e0', marginBottom: 8 }}>
+              Welcome to the Underground! 🎵
+            </Text>
+            <Text style={{ fontSize: 14, fontFamily: fonts.chillax.regular, color: '#8b6699' }}>
+              Tap play to start discovering hidden gems. Rate tracks to reveal the artist and add them to your collection.
+            </Text>
+          </View>
+        )}
+
         {/* Main Player Area */}
-        <View className="flex-1 justify-center items-center">
+        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
           {!trackRevealed ? (
             <>
               {/* Mystery Track Visualization */}
               <Animated.View
-                style={pulseStyle}
-                className="w-64 h-64 rounded-full bg-gradient-to-br from-brand-accent/20 to-brand-secondary/20 items-center justify-center mb-8"
+                style={[
+                  pulseStyle,
+                  {
+                    width: 256,
+                    height: 256,
+                    borderRadius: 128,
+                    backgroundColor: 'rgba(69, 36, 81, 0.2)',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    marginBottom: 32,
+                  }
+                ]}
               >
-                <View className="w-48 h-48 rounded-full bg-brand-backgroundLighter items-center justify-center">
+                <View style={{
+                  width: 192,
+                  height: 192,
+                  borderRadius: 96,
+                  backgroundColor: '#28232a',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}>
                   <TouchableOpacity
                     onPress={playPauseAudio}
-                    className="w-20 h-20 rounded-full bg-brand-accent items-center justify-center"
+                    style={{
+                      width: 80,
+                      height: 80,
+                      borderRadius: 40,
+                      backgroundColor: '#452451',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                    }}
                   >
                     {isPlaying ? (
-                      <Pause size={32} color="#8b6699" strokeWidth={2} />
+                      <Pause size={32} color="#ded7e0" strokeWidth={2} />
                     ) : (
-                      <Play size={32} color="#8b6699" strokeWidth={2} />
+                      <Play size={32} color="#ded7e0" strokeWidth={2} />
                     )}
                   </TouchableOpacity>
                 </View>
               </Animated.View>
 
               {/* Progress Bar */}
-              <View className="w-full max-w-sm h-1 bg-brand-backgroundLighter rounded-full mb-8">
+              <View style={{ width: '100%', maxWidth: 320, height: 4, backgroundColor: '#28232a', borderRadius: 2, marginBottom: 32 }}>
                 <Animated.View
-                  style={progressStyle}
-                  className="h-full bg-brand-accent rounded-full"
+                  style={[progressStyle, { height: '100%', backgroundColor: '#452451', borderRadius: 2 }]}
                 />
               </View>
 
               {/* Question Text */}
-              <Text className='text-brand-text' style={{ fontSize: 20, fontFamily: fonts.chillax.medium, textAlign: 'center', marginBottom: 48 }}>
+              <Text style={{ fontSize: 20, fontFamily: fonts.chillax.medium, textAlign: 'center', marginBottom: 48, color: '#ded7e0' }}>
                 How does this track make you feel?
               </Text>
 
               {/* Rating Stars */}
-              <View className="flex-row space-x-4 mb-8">
+              <View style={{ flexDirection: 'row', gap: 16, marginBottom: 32 }}>
                 {[1, 2, 3, 4, 5].map((star) => (
                   <TouchableOpacity
                     key={star}
                     onPress={() => submitRating(star)}
-                    className="p-2"
+                    style={{ padding: 8 }}
                   >
                     <Star
                       size={32}
-                      color={star <= rating ? '#8b6699' : '#d9d9d9'}
-                      fill={star <= rating ? '#8b6699' : 'transparent'}
+                      color={star <= rating ? '#452451' : '#8b6699'}
+                      fill={star <= rating ? '#452451' : 'transparent'}
                       strokeWidth={1.5}
                     />
                   </TouchableOpacity>
@@ -279,44 +346,44 @@ export default function DiscoverScreen() {
               {/* Skip Button */}
               <TouchableOpacity
                 onPress={skipTrack}
-                className="flex-row items-center space-x-2 p-4"
+                style={{ flexDirection: 'row', alignItems: 'center', gap: 8, padding: 16 }}
               >
-                <SkipForward size={20} color='#d9d9d9' strokeWidth={2} />
-                <Text className='text-brand-text' style={{ fontFamily: fonts.chillax.regular }}>Skip</Text>
+                <SkipForward size={20} color='#8b6699' strokeWidth={2} />
+                <Text style={{ fontFamily: fonts.chillax.regular, color: '#8b6699' }}>Skip</Text>
               </TouchableOpacity>
             </>
           ) : (
             /* Track Revealed */
-            <View className="items-center">
-              <View className="w-64 h-64 rounded-2xl bg-dark-200 mb-8 overflow-hidden">
+            <View style={{ alignItems: 'center' }}>
+              <View style={{ width: 256, height: 256, borderRadius: 24, backgroundColor: '#28232a', marginBottom: 32, overflow: 'hidden' }}>
                 {currentTrack?.artwork_url ? (
                   <Image
                     source={{ uri: currentTrack.artwork_url }}
-                    className="w-full h-full"
+                    style={{ width: '100%', height: '100%' }}
                     resizeMode="cover"
                   />
                 ) : (
-                  <View className="w-full h-full bg-brand-backgroundLighter items-center justify-center">
-                    <Text className="text-4xl">🎵</Text>
+                  <View style={{ width: '100%', height: '100%', backgroundColor: '#28232a', alignItems: 'center', justifyContent: 'center' }}>
+                    <Text style={{ fontSize: 48 }}>🎵</Text>
                   </View>
                 )}
               </View>
 
-              <Text style={{ color: 'white', fontSize: 24, fontFamily: fonts.chillax.bold, textAlign: 'center', marginBottom: 8 }}>
+              <Text style={{ color: '#ded7e0', fontSize: 24, fontFamily: fonts.chillax.bold, textAlign: 'center', marginBottom: 8 }}>
                 {currentTrack?.title}
               </Text>
-              <Text style={{ color: '#d1d5db', fontSize: 18, fontFamily: fonts.chillax.regular, textAlign: 'center', marginBottom: 16 }}>
+              <Text style={{ color: '#8b6699', fontSize: 18, fontFamily: fonts.chillax.regular, textAlign: 'center', marginBottom: 16 }}>
                 {currentTrack?.artist}
               </Text>
-              <Text style={{ color: '#8b6699', fontSize: 14, fontFamily: fonts.chillax.medium, marginBottom: 32 }}>
+              <Text style={{ color: '#452451', fontSize: 14, fontFamily: fonts.chillax.medium, marginBottom: 32 }}>
                 {currentTrack?.genre}
               </Text>
 
               <TouchableOpacity
                 onPress={loadNextTrack}
-                className="bg-brand-accent px-8 py-4 rounded-full"
+                style={{ backgroundColor: '#452451', paddingHorizontal: 32, paddingVertical: 16, borderRadius: 16 }}
               >
-                <Text style={{ color: 'black', fontFamily: fonts.chillax.bold, fontSize: 18 }}>
+                <Text style={{ color: '#ded7e0', fontFamily: fonts.chillax.bold, fontSize: 18 }}>
                   Discover Next
                 </Text>
               </TouchableOpacity>
