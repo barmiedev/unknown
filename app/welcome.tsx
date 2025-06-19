@@ -93,17 +93,11 @@ const styles = StyleSheet.create({
     fontFamily: fonts.chillax.bold,
     color: '#ded7e0',
     marginBottom: 12,
-    textShadowColor: 'rgba(0, 0, 0, 0.7)',
-    textShadowOffset: { width: 0, height: 2 },
-    textShadowRadius: 6,
   },
   tagline: {
     fontSize: 18,
     fontFamily: fonts.chillax.medium,
     color: '#8b6699',
-    textShadowColor: 'rgba(0, 0, 0, 0.5)',
-    textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 3,
   },
   welcomeContainer: {
     alignItems: 'center',
@@ -117,9 +111,6 @@ const styles = StyleSheet.create({
     color: '#ded7e0',
     textAlign: 'center',
     marginBottom: 24,
-    textShadowColor: 'rgba(0, 0, 0, 0.8)',
-    textShadowOffset: { width: 0, height: 2 },
-    textShadowRadius: 6,
     lineHeight: 40,
   },
   welcomeDescription: {
@@ -129,9 +120,6 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     lineHeight: 28,
     opacity: 0.9,
-    textShadowColor: 'rgba(0, 0, 0, 0.6)',
-    textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 3,
     maxWidth: 320,
   },
   buttonContainer: {
