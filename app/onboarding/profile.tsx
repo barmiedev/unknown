@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { View, Text, TextInput, TouchableOpacity, Alert, StyleSheet, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, useLocalSearchParams } from 'expo-router';
@@ -16,6 +16,7 @@ export default function ProfileCustomizationScreen() {
   const [usernameError, setUsernameError] = useState<string | null>(null);
   const [usernameValid, setUsernameValid] = useState(false);
   const { completeOnboarding } = useAuth();
+  const debounceRef = useRef<NodeJS.Timeout | null>(null);
 
   const validateUsername = (text: string) => {
     // Basic validation rules
@@ -47,24 +48,34 @@ export default function ProfileCustomizationScreen() {
 
     setCheckingUsername(true);
     setUsernameError(null);
+    setUsernameValid(false);
 
     try {
-      const { data, error } = await supabase
+      console.log('Checking username availability for:', username.toLowerCase());
+      
+      const { data, error, count } = await supabase
         .from('profiles')
-        .select('username')
-        .eq('username', username.toLowerCase())
-        .single();
+        .select('username', { count: 'exact', head: false })
+        .eq('username', username.toLowerCase());
 
-      if (error && error.code === 'PGRST116') {
-        // No rows returned, username is available
-        setUsernameValid(true);
-        setUsernameError(null);
-      } else if (data) {
+      console.log('Username check result:', { data, error, count });
+
+      if (error) {
+        console.error('Database error:', error);
+        setUsernameError('Error checking username availability');
+        setUsernameValid(false);
+        return;
+      }
+
+      // Check if any rows were returned
+      if (data && data.length > 0) {
         // Username exists
         setUsernameError('Username is already taken');
         setUsernameValid(false);
-      } else if (error) {
-        throw error;
+      } else {
+        // Username is available
+        setUsernameValid(true);
+        setUsernameError(null);
       }
     } catch (error) {
       console.error('Error checking username:', error);
@@ -82,13 +93,25 @@ export default function ProfileCustomizationScreen() {
     setUsernameError(null);
     setUsernameValid(false);
     
-    // Debounce the username check
-    const timeoutId = setTimeout(() => {
+    // Clear existing timeout
+    if (debounceRef.current) {
+      clearTimeout(debounceRef.current);
+    }
+    
+    // Set new timeout for debounced username check
+    debounceRef.current = setTimeout(() => {
       checkUsernameAvailability(text);
-    }, 500);
-
-    return () => clearTimeout(timeoutId);
+    }, 800); // Increased debounce time to 800ms
   };
+
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (debounceRef.current) {
+        clearTimeout(debounceRef.current);
+      }
+    };
+  }, []);
 
   const handleComplete = async () => {
     if (!username.trim()) {
@@ -116,7 +139,16 @@ export default function ProfileCustomizationScreen() {
       // Navigation will be handled by the auth state change
       router.replace('/(tabs)');
     } catch (error: any) {
-      Alert.alert('Error', error.message || 'Failed to complete onboarding');
+      console.error('Onboarding error:', error);
+      
+      // Check if it's a username conflict error
+      if (error.message && error.message.includes('duplicate key value violates unique constraint')) {
+        Alert.alert('Error', 'Username is already taken. Please choose a different one.');
+        setUsernameError('Username is already taken');
+        setUsernameValid(false);
+      } else {
+        Alert.alert('Error', error.message || 'Failed to complete onboarding');
+      }
     } finally {
       setLoading(false);
     }
