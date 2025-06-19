@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, Image, RefreshControl } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { ExternalLink, RefreshCw } from 'lucide-react-native';
+import { ExternalLink } from 'lucide-react-native';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/contexts/AuthContext';
 import { useFocusEffect } from '@react-navigation/native';
@@ -250,7 +250,6 @@ export default function HistoryScreen() {
                             style={{ padding: 8 }}
                             onPress={() => {
                               // Open Spotify URL - would need Linking.openURL in real app
-                              console.log('Open Spotify:', track.spotify_url);
                             }}
                           >
                             <ExternalLink size={16} color="#8b6699" strokeWidth={2} />

@@ -51,14 +51,10 @@ export default function ProfileCustomizationScreen() {
     setUsernameValid(false);
 
     try {
-      console.log('Checking username availability for:', username.toLowerCase());
-      
       // Use the dedicated function that bypasses RLS
       const { data, error } = await supabase.rpc('check_username_availability', {
         username_to_check: username.trim()
       });
-
-      console.log('Username availability result:', { data, error });
 
       if (error) {
         console.error('Database error:', error);
@@ -70,12 +66,10 @@ export default function ProfileCustomizationScreen() {
       // data is boolean: true if available, false if taken
       if (data === true) {
         // Username is available
-        console.log('Username is available');
         setUsernameValid(true);
         setUsernameError(null);
       } else {
         // Username is taken
-        console.log('Username is taken');
         setUsernameError('Username is already taken');
         setUsernameValid(false);
       }
@@ -103,7 +97,7 @@ export default function ProfileCustomizationScreen() {
     // Set new timeout for debounced username check
     debounceRef.current = setTimeout(() => {
       checkUsernameAvailability(text);
-    }, 800); // Increased debounce time to 800ms
+    }, 800);
   };
 
   // Cleanup timeout on unmount
