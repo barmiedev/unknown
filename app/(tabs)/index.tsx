@@ -139,10 +139,12 @@ export default function DiscoverScreen() {
     }
   };
 
-  const loadNextTrack = async () => {
+  const loadNextTrack = async (isBackgroundLoad = false) => {
     try {
-      setIsLoading(true);
-      setError(null);
+      if (!isBackgroundLoad) {
+        setIsLoading(true);
+        setError(null);
+      }
       
       if (sound) {
         await sound.unloadAsync();
@@ -227,20 +229,26 @@ export default function DiscoverScreen() {
       setPosition(0);
       setDuration(0);
       setShowWelcomeTip(false);
-      setShowThankYou(false);
+
+      // Only reset showThankYou if this is not a background load
+      if (!isBackgroundLoad) {
+        setShowThankYou(false);
+      }
 
     } catch (error) {
       console.error('Error loading track:', error);
       setError('Failed to load track. Please try again.');
     } finally {
-      setIsLoading(false);
+      if (!isBackgroundLoad) {
+        setIsLoading(false);
+      }
       setIsLoadingNext(false);
     }
   };
 
   const loadNextTrackInBackground = async () => {
     setIsLoadingNext(true);
-    await loadNextTrack();
+    await loadNextTrack(true);
   };
 
   const showThankYouMessage = () => {
@@ -378,7 +386,7 @@ export default function DiscoverScreen() {
         <SafeAreaView style={{ flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 24 }}>
           <Text style={{ color: 'white', textAlign: 'center', marginBottom: 16, fontFamily: fonts.chillax.regular }}>{error}</Text>
           <TouchableOpacity
-            onPress={loadNextTrack}
+            onPress={() => loadNextTrack()}
             style={{ backgroundColor: '#452451', paddingHorizontal: 32, paddingVertical: 16, borderRadius: 16 }}
           >
             <Text style={{ color: '#ded7e0', fontFamily: fonts.chillax.bold, fontSize: 18 }}>
@@ -431,33 +439,34 @@ export default function DiscoverScreen() {
             }
           ]}>
             <View style={{ alignItems: 'center' }}>
-              <Text style={{ fontSize: 32, marginBottom: 16 }}>🙏</Text>
+              <Text style={{ fontSize: 48, marginBottom: 24 }}>🙏</Text>
               <Text style={{ 
-                fontSize: 24, 
+                fontSize: 28, 
                 fontFamily: fonts.chillax.bold, 
                 color: '#ded7e0', 
                 textAlign: 'center',
-                marginBottom: 12 
+                marginBottom: 16 
               }}>
                 Thank you for your feedback!
               </Text>
               <Text style={{ 
-                fontSize: 16, 
+                fontSize: 18, 
                 fontFamily: fonts.chillax.regular, 
                 color: '#8b6699', 
                 textAlign: 'center',
-                lineHeight: 24 
+                lineHeight: 26,
+                marginBottom: 32 
               }}>
                 Your taste helps us discover better music for everyone
               </Text>
               {isLoadingNext && (
-                <View style={{ marginTop: 24, alignItems: 'center' }}>
-                  <ActivityIndicator size="small" color="#8b6699" />
+                <View style={{ alignItems: 'center' }}>
+                  <ActivityIndicator size="large" color="#452451" />
                   <Text style={{ 
-                    fontSize: 14, 
-                    fontFamily: fonts.chillax.regular, 
+                    fontSize: 16, 
+                    fontFamily: fonts.chillax.medium, 
                     color: '#8b6699',
-                    marginTop: 8 
+                    marginTop: 16 
                   }}>
                     Finding your next discovery...
                   </Text>
@@ -581,7 +590,7 @@ export default function DiscoverScreen() {
               </Text>
 
               <TouchableOpacity
-                onPress={loadNextTrack}
+                onPress={() => loadNextTrack()}
                 style={{ backgroundColor: '#452451', paddingHorizontal: 32, paddingVertical: 16, borderRadius: 16 }}
               >
                 <Text style={{ color: '#ded7e0', fontFamily: fonts.chillax.bold, fontSize: 18 }}>
