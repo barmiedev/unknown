@@ -20,8 +20,17 @@ interface Track {
   artist: string;
   audio_url: string;
   genre: string;
+  mood: string;
+  duration: number;
   spotify_streams: number;
   artwork_url?: string;
+}
+
+interface UserPreferences {
+  preferred_genres: string[];
+  preferred_moods: string[];
+  min_duration: number;
+  max_duration: number;
 }
 
 export default function DiscoverScreen() {
@@ -37,15 +46,15 @@ export default function DiscoverScreen() {
   const [position, setPosition] = useState(0);
   const [duration, setDuration] = useState(0);
   const [showWelcomeTip, setShowWelcomeTip] = useState(false);
+  const [userPreferences, setUserPreferences] = useState<UserPreferences | null>(null);
 
   const pulseAnimation = useSharedValue(1);
   const progressAnimation = useSharedValue(0);
 
   useEffect(() => {
-    loadNextTrack();
-    
-    // Check if this is user's first time in Discover
-    if (user?.profile?.onboarding_complete) {
+    if (user?.id) {
+      loadUserPreferences();
+      loadNextTrack();
       checkFirstTimeUser();
     }
 
@@ -78,6 +87,29 @@ export default function DiscoverScreen() {
     width: `${(position / duration) * 100}%`,
   }));
 
+  const loadUserPreferences = async () => {
+    if (!user?.id) return;
+
+    try {
+      const { data, error } = await supabase
+        .from('user_preferences')
+        .select('preferred_genres, preferred_moods, min_duration, max_duration')
+        .eq('profile_id', user.id)
+        .single();
+
+      if (error && error.code !== 'PGRST116') {
+        console.error('Error loading preferences:', error);
+        return;
+      }
+
+      if (data) {
+        setUserPreferences(data);
+      }
+    } catch (error) {
+      console.error('Error loading user preferences:', error);
+    }
+  };
+
   const checkFirstTimeUser = async () => {
     if (!user?.id) return;
 
@@ -108,18 +140,78 @@ export default function DiscoverScreen() {
         await sound.unloadAsync();
         setSound(null);
       }
-      
-      const { data, error } = await supabase
+
+      // Get tracks that user hasn't rated yet
+      const { data: ratedTrackIds, error: ratedError } = await supabase
+        .from('user_ratings')
+        .select('track_id')
+        .eq('profile_id', user?.id || '');
+
+      if (ratedError && ratedError.code !== 'PGRST116') {
+        throw ratedError;
+      }
+
+      const excludeIds = ratedTrackIds?.map(r => r.track_id) || [];
+
+      // Build query based on user preferences
+      let query = supabase
         .from('tracks')
         .select('*')
-        .lt('spotify_streams', 5000)
-        .limit(1)
-        .single();
+        .lt('spotify_streams', 5000); // Only underground tracks
 
-      if (error) throw error;
-      if (!data?.audio_url) throw new Error('No audio URL found');
+      // Exclude already rated tracks
+      if (excludeIds.length > 0) {
+        query = query.not('id', 'in', `(${excludeIds.join(',')})`);
+      }
 
-      setCurrentTrack(data);
+      // Apply user preferences if available
+      if (userPreferences) {
+        // Filter by preferred genres (if any selected)
+        if (userPreferences.preferred_genres && userPreferences.preferred_genres.length > 0) {
+          query = query.in('genre', userPreferences.preferred_genres);
+        }
+
+        // Filter by preferred moods (if any selected)
+        if (userPreferences.preferred_moods && userPreferences.preferred_moods.length > 0) {
+          query = query.in('mood', userPreferences.preferred_moods);
+        }
+
+        // Filter by duration preferences
+        query = query
+          .gte('duration', userPreferences.min_duration)
+          .lte('duration', userPreferences.max_duration);
+      }
+
+      // Get random track from filtered results
+      const { data: tracks, error: tracksError } = await query.limit(50);
+
+      if (tracksError) throw tracksError;
+
+      if (!tracks || tracks.length === 0) {
+        // If no tracks match preferences, try with relaxed filters
+        const { data: fallbackTracks, error: fallbackError } = await supabase
+          .from('tracks')
+          .select('*')
+          .lt('spotify_streams', 5000)
+          .not('id', 'in', excludeIds.length > 0 ? `(${excludeIds.join(',')})` : '()')
+          .limit(50);
+
+        if (fallbackError) throw fallbackError;
+
+        if (!fallbackTracks || fallbackTracks.length === 0) {
+          throw new Error('No more tracks available to discover');
+        }
+
+        // Pick random track from fallback results
+        const randomTrack = fallbackTracks[Math.floor(Math.random() * fallbackTracks.length)];
+        setCurrentTrack(randomTrack);
+      } else {
+        // Pick random track from preferred results
+        const randomTrack = tracks[Math.floor(Math.random() * tracks.length)];
+        setCurrentTrack(randomTrack);
+      }
+
+      // Reset UI state
       setRating(0);
       setShowRating(false);
       setTrackRevealed(false);
@@ -127,10 +219,10 @@ export default function DiscoverScreen() {
       setPosition(0);
       setDuration(0);
       setShowWelcomeTip(false);
+
     } catch (error) {
       console.error('Error loading track:', error);
       setError('Failed to load track. Please try again.');
-      Alert.alert('Error', 'Failed to load track');
     } finally {
       setIsLoading(false);
     }
@@ -200,7 +292,32 @@ export default function DiscoverScreen() {
           user_id: user.id, // Keep for backward compatibility
         });
 
-      if (error) throw error;
+      if (error) {
+        // If it's a duplicate key error, just continue (user already rated this track)
+        if (error.code !== '23505') {
+          throw error;
+        }
+      }
+
+      // Update user stats
+      try {
+        const { error: statsError } = await supabase
+          .from('user_stats')
+          .upsert({
+            profile_id: user.id,
+            user_id: user.id,
+            total_tracks_rated: 1, // This would need to be incremented properly
+            updated_at: new Date().toISOString(),
+          }, {
+            onConflict: 'user_id'
+          });
+
+        if (statsError) {
+          console.error('Error updating stats:', statsError);
+        }
+      } catch (statsError) {
+        console.error('Error updating user stats:', statsError);
+      }
 
       if (stars >= 4) {
         setTrackRevealed(true);
@@ -211,6 +328,7 @@ export default function DiscoverScreen() {
       }
     } catch (error) {
       console.error('Error submitting rating:', error);
+      Alert.alert('Error', 'Failed to submit rating');
     }
   };
 
@@ -376,7 +494,7 @@ export default function DiscoverScreen() {
                 {currentTrack?.artist}
               </Text>
               <Text style={{ color: '#452451', fontSize: 14, fontFamily: fonts.chillax.medium, marginBottom: 32 }}>
-                {currentTrack?.genre}
+                {currentTrack?.genre} • {currentTrack?.mood}
               </Text>
 
               <TouchableOpacity
