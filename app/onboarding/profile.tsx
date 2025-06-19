@@ -53,12 +53,14 @@ export default function ProfileCustomizationScreen() {
     try {
       console.log('Checking username availability for:', username.toLowerCase());
       
-      const { data, error, count } = await supabase
+      // Use a more explicit query to check for existing usernames
+      const { data, error } = await supabase
         .from('profiles')
-        .select('username', { count: 'exact', head: false })
-        .eq('username', username.toLowerCase());
+        .select('id, username')
+        .ilike('username', username.toLowerCase())
+        .limit(1);
 
-      console.log('Username check result:', { data, error, count });
+      console.log('Username check result:', { data, error, dataLength: data?.length });
 
       if (error) {
         console.error('Database error:', error);
@@ -70,10 +72,12 @@ export default function ProfileCustomizationScreen() {
       // Check if any rows were returned
       if (data && data.length > 0) {
         // Username exists
+        console.log('Username taken by user:', data[0]);
         setUsernameError('Username is already taken');
         setUsernameValid(false);
       } else {
         // Username is available
+        console.log('Username is available');
         setUsernameValid(true);
         setUsernameError(null);
       }
@@ -126,6 +130,21 @@ export default function ProfileCustomizationScreen() {
 
     setLoading(true);
     try {
+      // Double-check username availability before proceeding
+      const { data: existingUser } = await supabase
+        .from('profiles')
+        .select('id')
+        .ilike('username', username.trim().toLowerCase())
+        .limit(1);
+
+      if (existingUser && existingUser.length > 0) {
+        Alert.alert('Error', 'Username is already taken. Please choose a different one.');
+        setUsernameError('Username is already taken');
+        setUsernameValid(false);
+        setLoading(false);
+        return;
+      }
+
       const genres = params.genres ? JSON.parse(params.genres as string) : [];
       const moods = params.moods ? JSON.parse(params.moods as string) : [];
 
@@ -142,7 +161,10 @@ export default function ProfileCustomizationScreen() {
       console.error('Onboarding error:', error);
       
       // Check if it's a username conflict error
-      if (error.message && error.message.includes('duplicate key value violates unique constraint')) {
+      if (error.message && (
+        error.message.includes('duplicate key value violates unique constraint') ||
+        error.message.includes('profiles_username_key')
+      )) {
         Alert.alert('Error', 'Username is already taken. Please choose a different one.');
         setUsernameError('Username is already taken');
         setUsernameValid(false);
