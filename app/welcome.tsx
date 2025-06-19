@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, Image, StyleSheet } from 'react-native';
+import { View, Text, TouchableOpacity, Image, StyleSheet, ImageBackground } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { fonts } from '@/lib/fonts';
@@ -7,60 +7,63 @@ import { fonts } from '@/lib/fonts';
 export default function WelcomeScreen() {
   return (
     <View style={styles.container}>
-      <SafeAreaView style={styles.safeArea}>
-        {/* Header with Logo */}
-        <View style={styles.header}>
-          <Text style={styles.logo}>unknown</Text>
-          <Text style={styles.tagline}>Discover underground music</Text>
-        </View>
+      {/* Full-screen background image */}
+      <ImageBackground
+        source={{ uri: 'https://images.pexels.com/photos/1763075/pexels-photo-1763075.jpeg' }}
+        style={styles.backgroundImage}
+        resizeMode="cover"
+      >
+        {/* Dark overlay for text readability */}
+        <View style={styles.overlay} />
+        
+        <SafeAreaView style={styles.safeArea}>
+          {/* Header with Logo */}
+          <View style={styles.header}>
+            <Text style={styles.logo}>unknown</Text>
+            <Text style={styles.tagline}>Discover underground music</Text>
+          </View>
 
-        {/* Hero Image */}
-        <View style={styles.heroContainer}>
-          <Image
-            source={{ uri: 'https://images.pexels.com/photos/1763075/pexels-photo-1763075.jpeg' }}
-            style={styles.heroImage}
-            resizeMode="cover"
-          />
-          <View style={styles.heroOverlay}>
+          {/* Central Play Button Visual */}
+          <View style={styles.heroContainer}>
             <View style={styles.playButton}>
               <Text style={styles.playIcon}>▶</Text>
             </View>
           </View>
-        </View>
 
-        {/* Welcome Text */}
-        <View style={styles.welcomeContainer}>
-          <Text style={styles.welcomeTitle}>Welcome to the Underground</Text>
-          <Text style={styles.welcomeDescription}>
-            Discover hidden gems and rate tracks before they hit the mainstream. 
-            Your taste could predict the next big hit.
-          </Text>
-        </View>
+          {/* Welcome Text */}
+          <View style={styles.welcomeContainer}>
+            <Text style={styles.welcomeTitle}>Welcome to the Underground</Text>
+            <Text style={styles.welcomeDescription}>
+              Discover hidden gems and rate tracks before they hit the mainstream. 
+              Your taste could predict the next big hit.
+            </Text>
+          </View>
 
-        {/* Action Buttons */}
-        <View style={styles.buttonContainer}>
-          <TouchableOpacity
-            style={styles.primaryButton}
-            onPress={() => router.push('/register')}
-          >
-            <Text style={styles.primaryButtonText}>Get Started</Text>
-          </TouchableOpacity>
+          {/* Action Buttons */}
+          <View style={styles.buttonContainer}>
+            <TouchableOpacity
+              style={styles.primaryButton}
+              onPress={() => router.push('/register')}
+            >
+              <Text style={styles.primaryButtonText}>Get Started</Text>
+            </TouchableOpacity>
 
-          <TouchableOpacity
-            style={styles.secondaryButton}
-            onPress={() => router.push('/login')}
-          >
-            <Text style={styles.secondaryButtonText}>I Already Have an Account</Text>
-          </TouchableOpacity>
-        </View>
+            <TouchableOpacity
+              style={styles.secondaryButton}
+              onPress={() => router.push('/login')}
+            >
+              <Text style={styles.secondaryButtonText}>I Already Have an Account</Text>
+            </TouchableOpacity>
+          </View>
 
-        {/* Footer */}
-        <View style={styles.footer}>
-          <Text style={styles.footerText}>
-            Join thousands of music discoverers
-          </Text>
-        </View>
-      </SafeAreaView>
+          {/* Footer */}
+          <View style={styles.footer}>
+            <Text style={styles.footerText}>
+              Join thousands of music discoverers
+            </Text>
+          </View>
+        </SafeAreaView>
+      </ImageBackground>
     </View>
   );
 }
@@ -68,63 +71,72 @@ export default function WelcomeScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#19161a',
+  },
+  backgroundImage: {
+    flex: 1,
+    width: '100%',
+    height: '100%',
+  },
+  overlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(25, 22, 26, 0.85)', // Dark overlay with brand color
   },
   safeArea: {
     flex: 1,
     paddingHorizontal: 24,
+    justifyContent: 'space-between',
   },
   header: {
     alignItems: 'center',
     paddingTop: 32,
-    paddingBottom: 48,
   },
   logo: {
     fontSize: 32,
     fontFamily: fonts.chillax.bold,
     color: '#ded7e0',
     marginBottom: 8,
+    textShadowColor: 'rgba(0, 0, 0, 0.5)',
+    textShadowOffset: { width: 0, height: 2 },
+    textShadowRadius: 4,
   },
   tagline: {
     fontSize: 16,
     fontFamily: fonts.chillax.medium,
     color: '#8b6699',
+    textShadowColor: 'rgba(0, 0, 0, 0.5)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 2,
   },
   heroContainer: {
-    position: 'relative',
-    height: 280,
-    borderRadius: 24,
-    overflow: 'hidden',
-    marginBottom: 48,
-  },
-  heroImage: {
-    width: '100%',
-    height: '100%',
-  },
-  heroOverlay: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    backgroundColor: 'rgba(0, 0, 0, 0.4)',
-    justifyContent: 'center',
     alignItems: 'center',
+    justifyContent: 'center',
+    flex: 1,
   },
   playButton: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
+    width: 120,
+    height: 120,
+    borderRadius: 60,
     backgroundColor: '#452451',
     justifyContent: 'center',
     alignItems: 'center',
+    shadowColor: '#452451',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.4,
+    shadowRadius: 16,
+    elevation: 12,
   },
   playIcon: {
-    fontSize: 24,
+    fontSize: 32,
     color: '#ded7e0',
-    marginLeft: 4,
+    marginLeft: 6,
+    fontFamily: fonts.chillax.bold,
   },
   welcomeContainer: {
+    alignItems: 'center',
     marginBottom: 48,
   },
   welcomeTitle: {
@@ -133,6 +145,9 @@ const styles = StyleSheet.create({
     color: '#ded7e0',
     textAlign: 'center',
     marginBottom: 16,
+    textShadowColor: 'rgba(0, 0, 0, 0.7)',
+    textShadowOffset: { width: 0, height: 2 },
+    textShadowRadius: 4,
   },
   welcomeDescription: {
     fontSize: 16,
@@ -140,7 +155,10 @@ const styles = StyleSheet.create({
     color: '#ded7e0',
     textAlign: 'center',
     lineHeight: 24,
-    opacity: 0.8,
+    opacity: 0.9,
+    textShadowColor: 'rgba(0, 0, 0, 0.5)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 2,
   },
   buttonContainer: {
     gap: 16,
@@ -152,6 +170,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: 32,
     borderRadius: 16,
     alignItems: 'center',
+    shadowColor: '#452451',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 6,
   },
   primaryButtonText: {
     fontSize: 18,
@@ -159,13 +182,13 @@ const styles = StyleSheet.create({
     color: '#ded7e0',
   },
   secondaryButton: {
-    backgroundColor: 'transparent',
+    backgroundColor: 'rgba(40, 35, 42, 0.8)',
     paddingVertical: 16,
     paddingHorizontal: 32,
     borderRadius: 16,
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: '#28232a',
+    borderColor: 'rgba(139, 102, 153, 0.3)',
   },
   secondaryButtonText: {
     fontSize: 16,
@@ -180,5 +203,8 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontFamily: fonts.chillax.regular,
     color: '#8b6699',
+    textShadowColor: 'rgba(0, 0, 0, 0.5)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 2,
   },
 });
