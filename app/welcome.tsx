@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, Image, StyleSheet, ImageBackground } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, ImageBackground } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { fonts } from '@/lib/fonts';
@@ -21,13 +21,6 @@ export default function WelcomeScreen() {
           <View style={styles.header}>
             <Text style={styles.logo}>unknown</Text>
             <Text style={styles.tagline}>Discover underground music</Text>
-          </View>
-
-          {/* Central Play Button Visual */}
-          <View style={styles.heroContainer}>
-            <View style={styles.playButton}>
-              <Text style={styles.playIcon}>▶</Text>
-            </View>
           </View>
 
           {/* Welcome Text */}
@@ -92,73 +85,54 @@ const styles = StyleSheet.create({
   },
   header: {
     alignItems: 'center',
-    paddingTop: 32,
+    paddingTop: 64,
+    paddingBottom: 32,
   },
   logo: {
-    fontSize: 32,
+    fontSize: 40,
     fontFamily: fonts.chillax.bold,
     color: '#ded7e0',
-    marginBottom: 8,
-    textShadowColor: 'rgba(0, 0, 0, 0.5)',
+    marginBottom: 12,
+    textShadowColor: 'rgba(0, 0, 0, 0.7)',
     textShadowOffset: { width: 0, height: 2 },
-    textShadowRadius: 4,
+    textShadowRadius: 6,
   },
   tagline: {
-    fontSize: 16,
+    fontSize: 18,
     fontFamily: fonts.chillax.medium,
     color: '#8b6699',
     textShadowColor: 'rgba(0, 0, 0, 0.5)',
     textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 2,
-  },
-  heroContainer: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    flex: 1,
-  },
-  playButton: {
-    width: 120,
-    height: 120,
-    borderRadius: 60,
-    backgroundColor: '#452451',
-    justifyContent: 'center',
-    alignItems: 'center',
-    shadowColor: '#452451',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.4,
-    shadowRadius: 16,
-    elevation: 12,
-  },
-  playIcon: {
-    fontSize: 32,
-    color: '#ded7e0',
-    marginLeft: 6,
-    fontFamily: fonts.chillax.bold,
+    textShadowRadius: 3,
   },
   welcomeContainer: {
     alignItems: 'center',
-    marginBottom: 48,
+    paddingHorizontal: 16,
+    flex: 1,
+    justifyContent: 'center',
   },
   welcomeTitle: {
-    fontSize: 28,
+    fontSize: 32,
     fontFamily: fonts.chillax.bold,
     color: '#ded7e0',
     textAlign: 'center',
-    marginBottom: 16,
-    textShadowColor: 'rgba(0, 0, 0, 0.7)',
+    marginBottom: 24,
+    textShadowColor: 'rgba(0, 0, 0, 0.8)',
     textShadowOffset: { width: 0, height: 2 },
-    textShadowRadius: 4,
+    textShadowRadius: 6,
+    lineHeight: 40,
   },
   welcomeDescription: {
-    fontSize: 16,
+    fontSize: 18,
     fontFamily: fonts.chillax.regular,
     color: '#ded7e0',
     textAlign: 'center',
-    lineHeight: 24,
+    lineHeight: 28,
     opacity: 0.9,
-    textShadowColor: 'rgba(0, 0, 0, 0.5)',
+    textShadowColor: 'rgba(0, 0, 0, 0.6)',
     textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 2,
+    textShadowRadius: 3,
+    maxWidth: 320,
   },
   buttonContainer: {
     gap: 16,
@@ -166,15 +140,15 @@ const styles = StyleSheet.create({
   },
   primaryButton: {
     backgroundColor: '#452451',
-    paddingVertical: 16,
+    paddingVertical: 18,
     paddingHorizontal: 32,
     borderRadius: 16,
     alignItems: 'center',
     shadowColor: '#452451',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 6,
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.4,
+    shadowRadius: 12,
+    elevation: 8,
   },
   primaryButtonText: {
     fontSize: 18,
@@ -183,7 +157,7 @@ const styles = StyleSheet.create({
   },
   secondaryButton: {
     backgroundColor: 'rgba(40, 35, 42, 0.8)',
-    paddingVertical: 16,
+    paddingVertical: 18,
     paddingHorizontal: 32,
     borderRadius: 16,
     alignItems: 'center',
