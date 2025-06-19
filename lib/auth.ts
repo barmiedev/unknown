@@ -117,6 +117,8 @@ export class AuthService {
           min_duration: 60, // Default values
           max_duration: 300,
           updated_at: new Date().toISOString(),
+        }, {
+          onConflict: 'user_id'
         });
 
       if (prefsError) throw prefsError;
@@ -133,6 +135,8 @@ export class AuthService {
         longest_streak_days: 0,
         total_points: 0,
         updated_at: new Date().toISOString(),
+      }, {
+        onConflict: 'user_id'
       });
 
     if (statsError) throw statsError;

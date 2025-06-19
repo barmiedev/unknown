@@ -81,6 +81,8 @@ export default function PreferencesScreen() {
           min_duration: selectedDuration.min,
           max_duration: selectedDuration.max,
           updated_at: new Date().toISOString(),
+        }, {
+          onConflict: 'user_id'
         });
 
       if (error) throw error;
