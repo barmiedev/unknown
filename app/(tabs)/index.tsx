@@ -8,6 +8,7 @@ import Animated, {
   withTiming,
   withRepeat,
   withSequence,
+  runOnJS,
 } from 'react-native-reanimated';
 import { Audio, AVPlaybackStatus } from 'expo-av';
 import { supabase } from '@/lib/supabase';
@@ -47,9 +48,12 @@ export default function DiscoverScreen() {
   const [duration, setDuration] = useState(0);
   const [showWelcomeTip, setShowWelcomeTip] = useState(false);
   const [userPreferences, setUserPreferences] = useState<UserPreferences | null>(null);
+  const [showThankYou, setShowThankYou] = useState(false);
+  const [isLoadingNext, setIsLoadingNext] = useState(false);
 
   const pulseAnimation = useSharedValue(1);
   const progressAnimation = useSharedValue(0);
+  const thankYouOpacity = useSharedValue(0);
 
   useEffect(() => {
     if (user?.id) {
@@ -85,6 +89,10 @@ export default function DiscoverScreen() {
 
   const progressStyle = useAnimatedStyle(() => ({
     width: `${(position / duration) * 100}%`,
+  }));
+
+  const thankYouStyle = useAnimatedStyle(() => ({
+    opacity: thankYouOpacity.value,
   }));
 
   const loadUserPreferences = async () => {
@@ -219,13 +227,35 @@ export default function DiscoverScreen() {
       setPosition(0);
       setDuration(0);
       setShowWelcomeTip(false);
+      setShowThankYou(false);
 
     } catch (error) {
       console.error('Error loading track:', error);
       setError('Failed to load track. Please try again.');
     } finally {
       setIsLoading(false);
+      setIsLoadingNext(false);
     }
+  };
+
+  const loadNextTrackInBackground = async () => {
+    setIsLoadingNext(true);
+    await loadNextTrack();
+  };
+
+  const showThankYouMessage = () => {
+    setShowThankYou(true);
+    thankYouOpacity.value = withTiming(1, { duration: 300 });
+    
+    // Start loading next track in background
+    loadNextTrackInBackground();
+    
+    // Hide thank you message after 3 seconds
+    setTimeout(() => {
+      thankYouOpacity.value = withTiming(0, { duration: 300 }, () => {
+        runOnJS(setShowThankYou)(false);
+      });
+    }, 3000);
   };
 
   const playPauseAudio = async () => {
@@ -322,9 +352,8 @@ export default function DiscoverScreen() {
       if (stars >= 4) {
         setTrackRevealed(true);
       } else {
-        setTimeout(() => {
-          skipTrack();
-        }, 2000);
+        // Show thank you message for poor ratings
+        showThankYouMessage();
       }
     } catch (error) {
       console.error('Error submitting rating:', error);
@@ -382,6 +411,60 @@ export default function DiscoverScreen() {
               Tap play to start discovering hidden gems. Rate tracks to reveal the artist and add them to your collection.
             </Text>
           </View>
+        )}
+
+        {/* Thank You Overlay */}
+        {showThankYou && (
+          <Animated.View style={[
+            thankYouStyle,
+            {
+              position: 'absolute',
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              backgroundColor: 'rgba(25, 22, 26, 0.95)',
+              justifyContent: 'center',
+              alignItems: 'center',
+              zIndex: 1000,
+              paddingHorizontal: 24,
+            }
+          ]}>
+            <View style={{ alignItems: 'center' }}>
+              <Text style={{ fontSize: 32, marginBottom: 16 }}>🙏</Text>
+              <Text style={{ 
+                fontSize: 24, 
+                fontFamily: fonts.chillax.bold, 
+                color: '#ded7e0', 
+                textAlign: 'center',
+                marginBottom: 12 
+              }}>
+                Thank you for your feedback!
+              </Text>
+              <Text style={{ 
+                fontSize: 16, 
+                fontFamily: fonts.chillax.regular, 
+                color: '#8b6699', 
+                textAlign: 'center',
+                lineHeight: 24 
+              }}>
+                Your taste helps us discover better music for everyone
+              </Text>
+              {isLoadingNext && (
+                <View style={{ marginTop: 24, alignItems: 'center' }}>
+                  <ActivityIndicator size="small" color="#8b6699" />
+                  <Text style={{ 
+                    fontSize: 14, 
+                    fontFamily: fonts.chillax.regular, 
+                    color: '#8b6699',
+                    marginTop: 8 
+                  }}>
+                    Finding your next discovery...
+                  </Text>
+                </View>
+              )}
+            </View>
+          </Animated.View>
         )}
 
         {/* Main Player Area */}
