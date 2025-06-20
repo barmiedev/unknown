@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, Image, StyleSheet, Linking, Alert } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, Image, StyleSheet, Linking, Alert, Modal } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { 
   Instagram, 
@@ -14,7 +14,8 @@ import {
   MapPin,
   Music,
   Play,
-  SkipForward
+  SkipForward,
+  X
 } from 'lucide-react-native';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/contexts/AuthContext';
@@ -53,6 +54,8 @@ interface ArtistUnveilViewProps {
   onContinueListening?: () => void;
   onDiscoverNext?: () => void;
   showPlaybackControls?: boolean;
+  userRating?: number | null;
+  userReview?: string | null;
 }
 
 const PLATFORM_COLORS = {
@@ -71,7 +74,7 @@ const PLATFORM_NAMES = {
   youtube: 'YouTube Music',
 };
 
-const getSocialIcon = (platform: string, size: number = 24, color: string = '#8b6699') => {
+const getSocialIcon = (platform: string, size: number = 24, color: string = '#ded7e0') => {
   switch (platform.toLowerCase()) {
     case 'instagram':
       return <Instagram size={size} color={color} strokeWidth={2} />;
@@ -94,7 +97,9 @@ export default function ArtistUnveilView({
   track, 
   onContinueListening, 
   onDiscoverNext, 
-  showPlaybackControls = true 
+  showPlaybackControls = true,
+  userRating,
+  userReview
 }: ArtistUnveilViewProps) {
   const { user } = useAuth();
   const [artist, setArtist] = useState<Artist | null>(null);
@@ -103,6 +108,7 @@ export default function ArtistUnveilView({
   const [preferredPlatform, setPreferredPlatform] = useState<string>('spotify');
   const [isSubscribed, setIsSubscribed] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [showOtherPlatforms, setShowOtherPlatforms] = useState(false);
 
   useEffect(() => {
     loadArtistData();
@@ -240,6 +246,10 @@ export default function ArtistUnveilView({
     return streamingLinks.find(link => link.platform === preferredPlatform) || streamingLinks[0];
   };
 
+  const getOtherStreamingLinks = () => {
+    return streamingLinks.filter(link => link.platform !== preferredPlatform);
+  };
+
   if (loading) {
     return (
       <View style={styles.container}>
@@ -283,6 +293,25 @@ export default function ArtistUnveilView({
             </View>
           </View>
 
+          {/* User Rating Display */}
+          {userRating && (
+            <View style={styles.section}>
+              <View style={styles.userRatingContainer}>
+                <Text style={styles.userRatingTitle}>Your Rating</Text>
+                <View style={styles.userRatingStars}>
+                  {Array.from({ length: 5 }, (_, i) => (
+                    <Text key={i} style={{ color: i < userRating ? '#452451' : '#8b6699', fontSize: 18 }}>
+                      ★
+                    </Text>
+                  ))}
+                </View>
+                {userReview && (
+                  <Text style={styles.userReviewText}>"{userReview}"</Text>
+                )}
+              </View>
+            </View>
+          )}
+
           {/* Streaming Links */}
           {streamingLinks.length > 0 && (
             <View style={styles.section}>
@@ -291,7 +320,7 @@ export default function ArtistUnveilView({
                 {/* Preferred Platform First */}
                 {getPreferredStreamingLink() && (
                   <TouchableOpacity
-                    style={[styles.streamingButton, styles.preferredStreamingButton]}
+                    style={styles.preferredStreamingButton}
                     onPress={() => handleOpenLink(getPreferredStreamingLink()!.url)}
                   >
                     <ExternalLink size={20} color="#ded7e0" strokeWidth={2} />
@@ -301,26 +330,16 @@ export default function ArtistUnveilView({
                   </TouchableOpacity>
                 )}
 
-                {/* Other Platforms */}
-                <View style={styles.otherPlatformsContainer}>
-                  {streamingLinks
-                    .filter(link => link.platform !== preferredPlatform)
-                    .map((link) => (
-                      <TouchableOpacity
-                        key={link.platform}
-                        style={styles.platformButton}
-                        onPress={() => handleOpenLink(link.url)}
-                      >
-                        <Text style={[
-                          styles.platformButtonText,
-                          { color: PLATFORM_COLORS[link.platform as keyof typeof PLATFORM_COLORS] || '#8b6699' }
-                        ]}>
-                          {PLATFORM_NAMES[link.platform as keyof typeof PLATFORM_NAMES] || link.platform}
-                        </Text>
-                        <ExternalLink size={16} color={PLATFORM_COLORS[link.platform as keyof typeof PLATFORM_COLORS] || '#8b6699'} strokeWidth={2} />
-                      </TouchableOpacity>
-                    ))}
-                </View>
+                {/* Listen Elsewhere Button */}
+                {getOtherStreamingLinks().length > 0 && (
+                  <TouchableOpacity
+                    style={styles.otherPlatformsButton}
+                    onPress={() => setShowOtherPlatforms(true)}
+                  >
+                    <Text style={styles.otherPlatformsButtonText}>Listen elsewhere</Text>
+                    <ExternalLink size={16} color="#8b6699" strokeWidth={2} />
+                  </TouchableOpacity>
+                )}
               </View>
             </View>
           )}
@@ -328,10 +347,27 @@ export default function ArtistUnveilView({
           {/* Artist Info */}
           {artist && (
             <>
-              {/* Social Media Links */}
-              {socialLinks.length > 0 && (
-                <View style={styles.section}>
-                  <Text style={styles.sectionTitle}>Connect with {artist.name}</Text>
+              {/* Connect with Artist Section */}
+              <View style={styles.section}>
+                <Text style={styles.sectionTitle}>Connect with {artist.name}</Text>
+                
+                {/* Follow Button */}
+                <TouchableOpacity
+                  style={[styles.followButton, isSubscribed && styles.followingButton]}
+                  onPress={handleSubscribeToArtist}
+                >
+                  {isSubscribed ? (
+                    <HeartHandshake size={20} color="#ded7e0" strokeWidth={2} />
+                  ) : (
+                    <Heart size={20} color="#ded7e0" strokeWidth={2} />
+                  )}
+                  <Text style={styles.followButtonText}>
+                    {isSubscribed ? 'Following on unknown' : 'Follow on unknown'}
+                  </Text>
+                </TouchableOpacity>
+
+                {/* Social Media Links */}
+                {socialLinks.length > 0 && (
                   <View style={styles.socialLinksContainer}>
                     {socialLinks.map((link) => (
                       <TouchableOpacity
@@ -340,14 +376,11 @@ export default function ArtistUnveilView({
                         onPress={() => handleOpenLink(link.url)}
                       >
                         {getSocialIcon(link.platform, 24, '#ded7e0')}
-                        <Text style={styles.socialButtonText}>
-                          {link.platform.charAt(0).toUpperCase() + link.platform.slice(1)}
-                        </Text>
                       </TouchableOpacity>
                     ))}
                   </View>
-                </View>
-              )}
+                )}
+              </View>
 
               {/* About the Artist */}
               <View style={styles.section}>
@@ -385,23 +418,6 @@ export default function ArtistUnveilView({
                   <Text style={styles.artistBio}>{artist.bio}</Text>
                 )}
               </View>
-
-              {/* Subscribe Button */}
-              <View style={styles.section}>
-                <TouchableOpacity
-                  style={[styles.subscribeButton, isSubscribed && styles.subscribedButton]}
-                  onPress={handleSubscribeToArtist}
-                >
-                  {isSubscribed ? (
-                    <HeartHandshake size={20} color="#ded7e0" strokeWidth={2} />
-                  ) : (
-                    <Heart size={20} color="#ded7e0" strokeWidth={2} />
-                  )}
-                  <Text style={styles.subscribeButtonText}>
-                    {isSubscribed ? 'Following Artist' : 'Stay in Touch with Artist'}
-                  </Text>
-                </TouchableOpacity>
-              </View>
             </>
           )}
 
@@ -432,6 +448,49 @@ export default function ArtistUnveilView({
             </View>
           )}
         </ScrollView>
+
+        {/* Other Platforms Modal */}
+        <Modal
+          visible={showOtherPlatforms}
+          transparent={true}
+          animationType="fade"
+          onRequestClose={() => setShowOtherPlatforms(false)}
+        >
+          <View style={styles.modalOverlay}>
+            <View style={styles.modalContent}>
+              <View style={styles.modalHeader}>
+                <Text style={styles.modalTitle}>Listen elsewhere</Text>
+                <TouchableOpacity
+                  onPress={() => setShowOtherPlatforms(false)}
+                  style={styles.modalCloseButton}
+                >
+                  <X size={24} color="#8b6699" strokeWidth={2} />
+                </TouchableOpacity>
+              </View>
+              
+              <View style={styles.modalPlatformsList}>
+                {getOtherStreamingLinks().map((link) => (
+                  <TouchableOpacity
+                    key={link.platform}
+                    style={styles.modalPlatformButton}
+                    onPress={() => {
+                      handleOpenLink(link.url);
+                      setShowOtherPlatforms(false);
+                    }}
+                  >
+                    <Text style={[
+                      styles.modalPlatformButtonText,
+                      { color: PLATFORM_COLORS[link.platform as keyof typeof PLATFORM_COLORS] || '#8b6699' }
+                    ]}>
+                      {PLATFORM_NAMES[link.platform as keyof typeof PLATFORM_NAMES] || link.platform}
+                    </Text>
+                    <ExternalLink size={16} color={PLATFORM_COLORS[link.platform as keyof typeof PLATFORM_COLORS] || '#8b6699'} strokeWidth={2} />
+                  </TouchableOpacity>
+                ))}
+              </View>
+            </View>
+          </View>
+        </Modal>
       </SafeAreaView>
     </View>
   );
@@ -536,11 +595,35 @@ const styles = StyleSheet.create({
     color: '#ded7e0',
     marginBottom: 16,
   },
-  streamingLinksContainer: {
-    gap: 16,
-  },
-  streamingButton: {
+  userRatingContainer: {
     backgroundColor: '#28232a',
+    borderRadius: 16,
+    padding: 16,
+    alignItems: 'center',
+  },
+  userRatingTitle: {
+    fontSize: 16,
+    fontFamily: fonts.chillax.medium,
+    color: '#ded7e0',
+    marginBottom: 8,
+  },
+  userRatingStars: {
+    flexDirection: 'row',
+    gap: 4,
+    marginBottom: 8,
+  },
+  userReviewText: {
+    fontSize: 14,
+    fontFamily: fonts.chillax.regular,
+    color: '#8b6699',
+    textAlign: 'center',
+    fontStyle: 'italic',
+  },
+  streamingLinksContainer: {
+    gap: 12,
+  },
+  preferredStreamingButton: {
+    backgroundColor: '#452451',
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
@@ -549,50 +632,57 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     gap: 12,
   },
-  preferredStreamingButton: {
-    backgroundColor: '#452451',
-  },
   preferredStreamingButtonText: {
     fontSize: 16,
     fontFamily: fonts.chillax.bold,
     color: '#ded7e0',
   },
-  otherPlatformsContainer: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 12,
-  },
-  platformButton: {
+  otherPlatformsButton: {
     backgroundColor: '#28232a',
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 12,
-    paddingHorizontal: 16,
+    justifyContent: 'center',
+    paddingVertical: 14,
+    paddingHorizontal: 20,
     borderRadius: 12,
     gap: 8,
   },
-  platformButtonText: {
+  otherPlatformsButtonText: {
     fontSize: 14,
     fontFamily: fonts.chillax.medium,
+    color: '#8b6699',
+  },
+  followButton: {
+    backgroundColor: '#452451',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 16,
+    paddingHorizontal: 24,
+    borderRadius: 16,
+    gap: 12,
+    marginBottom: 16,
+  },
+  followingButton: {
+    backgroundColor: '#24512b',
+  },
+  followButtonText: {
+    fontSize: 16,
+    fontFamily: fonts.chillax.bold,
+    color: '#ded7e0',
   },
   socialLinksContainer: {
     flexDirection: 'row',
-    flexWrap: 'wrap',
+    justifyContent: 'center',
     gap: 12,
   },
   socialButton: {
     backgroundColor: '#28232a',
-    flexDirection: 'row',
+    width: 48,
+    height: 48,
+    borderRadius: 24,
     alignItems: 'center',
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    borderRadius: 12,
-    gap: 8,
-  },
-  socialButtonText: {
-    fontSize: 14,
-    fontFamily: fonts.chillax.medium,
-    color: '#ded7e0',
+    justifyContent: 'center',
   },
   artistDetailsContainer: {
     flexDirection: 'row',
@@ -644,24 +734,6 @@ const styles = StyleSheet.create({
     color: '#ded7e0',
     lineHeight: 24,
   },
-  subscribeButton: {
-    backgroundColor: '#452451',
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 16,
-    paddingHorizontal: 24,
-    borderRadius: 16,
-    gap: 12,
-  },
-  subscribedButton: {
-    backgroundColor: '#24512b',
-  },
-  subscribeButtonText: {
-    fontSize: 16,
-    fontFamily: fonts.chillax.bold,
-    color: '#ded7e0',
-  },
   playbackControls: {
     gap: 12,
   },
@@ -682,5 +754,49 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontFamily: fonts.chillax.bold,
     color: '#ded7e0',
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 24,
+  },
+  modalContent: {
+    backgroundColor: '#28232a',
+    borderRadius: 20,
+    padding: 24,
+    width: '100%',
+    maxWidth: 400,
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  modalTitle: {
+    fontSize: 20,
+    fontFamily: fonts.chillax.bold,
+    color: '#ded7e0',
+  },
+  modalCloseButton: {
+    padding: 4,
+  },
+  modalPlatformsList: {
+    gap: 12,
+  },
+  modalPlatformButton: {
+    backgroundColor: '#19161a',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 16,
+    paddingHorizontal: 20,
+    borderRadius: 12,
+  },
+  modalPlatformButtonText: {
+    fontSize: 16,
+    fontFamily: fonts.chillax.medium,
   },
 });

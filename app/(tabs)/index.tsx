@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { View, Text, TouchableOpacity, Alert, Image, ActivityIndicator, TextInput, Keyboard, TouchableWithoutFeedback, ScrollView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Play, Pause, Star, SkipForward, Shuffle } from 'lucide-react-native';
+import { Play, Pause, Star, SkipForward, Shuffle, ArrowLeft } from 'lucide-react-native';
 import Animated, { 
   useAnimatedStyle, 
   useSharedValue, 
@@ -38,7 +38,7 @@ interface UserPreferences {
   max_duration: number;
 }
 
-type DiscoverState = 'mood_selection' | 'loading' | 'playing' | 'rating' | 'revealed' | 'transitioning';
+type DiscoverState = 'mood_selection' | 'loading' | 'playing' | 'rating' | 'revealed' | 'transitioning' | 'full_listening';
 
 const ALL_MOODS = [
   'Energetic', 'Chill', 'Melancholic', 'Uplifting', 'Aggressive',
@@ -121,6 +121,8 @@ export default function DiscoverScreen() {
   const [isTransitioning, setIsTransitioning] = useState(false);
   const [showReviewInput, setShowReviewInput] = useState(false);
   const [isReviewFocused, setIsReviewFocused] = useState(false);
+  const [userRating, setUserRating] = useState<number | null>(null);
+  const [userReview, setUserReview] = useState<string | null>(null);
 
   // Ref hooks - always called in the same order
   const reviewInputRef = useRef<TextInput>(null);
@@ -551,6 +553,8 @@ export default function DiscoverScreen() {
       setCanSkip(true);
       setShowReviewInput(false);
       setIsReviewFocused(false);
+      setUserRating(null);
+      setUserReview(null);
       setState('playing');
 
       // Reset animations
@@ -678,6 +682,8 @@ export default function DiscoverScreen() {
     if (!currentTrack || !user?.id) return;
 
     setRating(stars);
+    setUserRating(stars);
+    setUserReview(review.trim() || null);
     
     try {
       const { error } = await supabase
@@ -746,18 +752,15 @@ export default function DiscoverScreen() {
   };
 
   const handleContinueListening = () => {
-    Alert.alert(
-      'Continue Listening',
-      'Would you like to listen to the full track? You won\'t be able to skip until it ends.',
-      [
-        { text: 'No, discover next', style: 'cancel', onPress: () => fadeAudioAndTransition(() => loadNextTrack(false, selectedSessionMood)) },
-        { text: 'Yes, continue', onPress: () => {
-          setCanSkip(false);
-          setState('playing');
-          setTrackRevealed(false);
-        }},
-      ]
-    );
+    setState('full_listening');
+    setCanSkip(true);
+    setTrackRevealed(false);
+  };
+
+  const handleBackToPlayer = () => {
+    setState('full_listening');
+    setCanSkip(true);
+    setTrackRevealed(false);
   };
 
   const handleNewSession = () => {
@@ -781,6 +784,39 @@ export default function DiscoverScreen() {
     Keyboard.dismiss();
     setIsReviewFocused(false);
   };
+
+  // Show Artist Unveil View when track is revealed
+  if (trackRevealed && currentTrack) {
+    return (
+      <View style={{ backgroundColor: '#19161a', flex: 1 }}>
+        <SafeAreaView style={{ flex: 1 }}>
+          {/* Floating Back Button */}
+          <View style={{ 
+            position: 'absolute', 
+            top: 60, 
+            left: 24, 
+            zIndex: 1000,
+            backgroundColor: 'rgba(40, 35, 42, 0.9)',
+            borderRadius: 20,
+            padding: 12,
+          }}>
+            <TouchableOpacity onPress={handleBackToPlayer}>
+              <ArrowLeft size={20} color="#ded7e0" strokeWidth={2} />
+            </TouchableOpacity>
+          </View>
+
+          <ArtistUnveilView
+            track={currentTrack}
+            onContinueListening={handleContinueListening}
+            onDiscoverNext={() => fadeAudioAndTransition(() => loadNextTrack(false, selectedSessionMood))}
+            showPlaybackControls={true}
+            userRating={userRating}
+            userReview={userReview}
+          />
+        </SafeAreaView>
+      </View>
+    );
+  }
 
   // Mood Selection Screen
   if (state === 'mood_selection') {
@@ -923,18 +959,6 @@ export default function DiscoverScreen() {
     );
   }
 
-  // Show Artist Unveil View when track is revealed
-  if (trackRevealed && currentTrack) {
-    return (
-      <ArtistUnveilView
-        track={currentTrack}
-        onContinueListening={handleContinueListening}
-        onDiscoverNext={() => fadeAudioAndTransition(() => loadNextTrack(false, selectedSessionMood))}
-        showPlaybackControls={true}
-      />
-    );
-  }
-
   return (
     <TouchableWithoutFeedback onPress={dismissKeyboard}>
       <View style={{ backgroundColor: '#19161a', flex: 1 }}>
@@ -1066,7 +1090,120 @@ export default function DiscoverScreen() {
 
             {/* Main Player Area */}
             <Animated.View style={[fadeStyle, { flex: 1, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 24 }]}>
-              {!showRating ? (
+              {state === 'full_listening' ? (
+                /* Full Listening Mode - Show rating info and normal controls */
+                <>
+                  {/* Track Info */}
+                  <View style={{ alignItems: 'center', marginBottom: 40 }}>
+                    <Text style={{ 
+                      color: '#ded7e0', 
+                      fontSize: 24, 
+                      fontFamily: fonts.chillax.bold, 
+                      textAlign: 'center',
+                      marginBottom: 8
+                    }}>
+                      {currentTrack?.title}
+                    </Text>
+                    <Text style={{ 
+                      color: '#8b6699', 
+                      fontSize: 18, 
+                      fontFamily: fonts.chillax.regular, 
+                      textAlign: 'center',
+                      marginBottom: 16
+                    }}>
+                      {currentTrack?.artist}
+                    </Text>
+                    
+                    {/* Rating Display */}
+                    {userRating && (
+                      <View style={{ 
+                        backgroundColor: '#28232a', 
+                        paddingHorizontal: 16, 
+                        paddingVertical: 12, 
+                        borderRadius: 12,
+                        alignItems: 'center'
+                      }}>
+                        <Text style={{ 
+                          color: '#ded7e0', 
+                          fontSize: 14, 
+                          fontFamily: fonts.chillax.medium,
+                          marginBottom: 8
+                        }}>
+                          Your Rating
+                        </Text>
+                        <View style={{ flexDirection: 'row', gap: 4, marginBottom: userReview ? 8 : 0 }}>
+                          {Array.from({ length: 5 }, (_, i) => (
+                            <Text key={i} style={{ color: i < userRating ? '#452451' : '#8b6699', fontSize: 16 }}>
+                              ★
+                            </Text>
+                          ))}
+                        </View>
+                        {userReview && (
+                          <Text style={{ 
+                            color: '#8b6699', 
+                            fontSize: 12, 
+                            fontFamily: fonts.chillax.regular,
+                            textAlign: 'center',
+                            fontStyle: 'italic'
+                          }}>
+                            "{userReview}"
+                          </Text>
+                        )}
+                      </View>
+                    )}
+                  </View>
+
+                  {/* Play Button */}
+                  <Animated.View style={[pulseStyle, { marginBottom: 40 }]}>
+                    <TouchableOpacity
+                      onPress={playPauseAudio}
+                      style={{
+                        width: 120,
+                        height: 120,
+                        borderRadius: 60,
+                        backgroundColor: '#452451',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        shadowColor: '#452451',
+                        shadowOffset: { width: 0, height: 8 },
+                        shadowOpacity: 0.3,
+                        shadowRadius: 16,
+                        elevation: 8,
+                      }}
+                    >
+                      {isPlaying ? (
+                        <Pause size={40} color="#ded7e0" strokeWidth={2} />
+                      ) : (
+                        <Play size={40} color="#ded7e0" strokeWidth={2} style={{ marginLeft: 4 }} />
+                      )}
+                    </TouchableOpacity>
+                  </Animated.View>
+
+                  {/* Progress Bar */}
+                  <View style={{ width: '100%', maxWidth: 320, height: 4, backgroundColor: '#28232a', borderRadius: 2, marginBottom: 40 }}>
+                    <Animated.View
+                      style={[progressStyle, { height: '100%', backgroundColor: '#452451', borderRadius: 2 }]}
+                    />
+                  </View>
+
+                  {/* Skip Button */}
+                  <TouchableOpacity
+                    onPress={skipTrack}
+                    style={{ 
+                      flexDirection: 'row', 
+                      alignItems: 'center', 
+                      gap: 8, 
+                      paddingHorizontal: 24,
+                      paddingVertical: 16,
+                      backgroundColor: '#28232a',
+                      borderRadius: 16,
+                    }}
+                  >
+                    <SkipForward size={20} color='#8b6699' strokeWidth={2} />
+                    <Text style={{ fontFamily: fonts.chillax.medium, color: '#8b6699', fontSize: 16 }}>Skip</Text>
+                  </TouchableOpacity>
+                </>
+              ) : !showRating ? (
                 <>
                   {/* Play Button */}
                   <Animated.View style={[pulseStyle, { marginBottom: 40 }]}>
