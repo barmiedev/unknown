@@ -339,7 +339,7 @@ export default function ArtistUnveilView({
                   {/* Preferred Platform First */}
                   {getPreferredStreamingLink() && (
                     <TouchableOpacity
-                      style={[styles.preferredStreamingButton, { flex: 1, marginRight: getOtherStreamingLinks().length > 0 ? 8 : 0 }]}
+                      style={[styles.preferredStreamingButton, { flex: 1, marginRight: getOtherStreamingLinks().length > 0 ? 4 : 0 }]}
                       onPress={() => handleOpenLink(getPreferredStreamingLink()!.url)}
                     >
                       <Text style={[
@@ -354,7 +354,7 @@ export default function ArtistUnveilView({
                   {/* Listen Elsewhere Button */}
                   {getOtherStreamingLinks().length > 0 && (
                     <TouchableOpacity
-                      style={[styles.otherPlatformsButton, { flex: 1, marginLeft: getPreferredStreamingLink() ? 8 : 0 }]}
+                      style={[styles.otherPlatformsButton, { flex: 1, marginLeft: getPreferredStreamingLink() ? 4 : 0 }]}
                       onPress={() => setShowOtherPlatforms(true)}
                     >
                       <Text style={styles.otherPlatformsButtonText}>Elsewhere</Text>
@@ -388,7 +388,7 @@ export default function ArtistUnveilView({
                   </Text>
                 </TouchableOpacity>
 
-                {/* Social Media Links - Rectangular buttons that fill width */}
+                {/* Social Media Links - Rectangular buttons that fill width with consistent gap */}
                 {socialLinks.length > 0 && (
                   <View style={styles.socialLinksContainer}>
                     {socialLinks.map((link) => (
@@ -671,7 +671,7 @@ const styles = StyleSheet.create({
   },
   streamingButtonsRow: {
     flexDirection: 'row',
-    gap: 8,
+    gap: 4,
   },
   preferredStreamingButton: {
     backgroundColor: '#28232a',
@@ -723,7 +723,7 @@ const styles = StyleSheet.create({
   },
   socialLinksContainer: {
     flexDirection: 'row',
-    gap: 12,
+    gap: 4,
   },
   socialButton: {
     backgroundColor: '#28232a',

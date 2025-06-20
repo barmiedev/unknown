@@ -1107,29 +1107,80 @@ export default function DiscoverScreen() {
             {/* Main Player Area */}
             <Animated.View style={[fadeStyle, { flex: 1, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 24 }]}>
               {state === 'full_listening' ? (
-                /* Full Listening Mode - Show track info with cover art background and normal controls */
+                /* Full Listening Mode - Show track info with cover art and normal controls */
                 <>
-                  {/* Cover Art Background */}
-                  {currentTrack?.artwork_url && (
-                    <View style={{
-                      position: 'absolute',
-                      top: 0,
-                      left: 0,
-                      right: 0,
-                      bottom: 0,
-                      opacity: 0.1,
+                  {/* Cover Art with Play Button in Center */}
+                  <View style={{ alignItems: 'center', marginBottom: 32 }}>
+                    <View style={{ 
+                      width: 280, 
+                      height: 280, 
+                      borderRadius: 24, 
+                      overflow: 'hidden',
+                      position: 'relative',
+                      shadowColor: '#000',
+                      shadowOffset: { width: 0, height: 8 },
+                      shadowOpacity: 0.3,
+                      shadowRadius: 16,
+                      elevation: 8,
                     }}>
-                      <Image
-                        source={{ uri: currentTrack.artwork_url }}
-                        style={{ width: '100%', height: '100%' }}
-                        resizeMode="cover"
-                        blurRadius={20}
-                      />
+                      {currentTrack?.artwork_url ? (
+                        <Image
+                          source={{ uri: currentTrack.artwork_url }}
+                          style={{ width: '100%', height: '100%' }}
+                          resizeMode="cover"
+                        />
+                      ) : (
+                        <View style={{ 
+                          width: '100%', 
+                          height: '100%', 
+                          backgroundColor: '#28232a', 
+                          alignItems: 'center', 
+                          justifyContent: 'center' 
+                        }}>
+                          <Text style={{ fontSize: 64 }}>🎵</Text>
+                        </View>
+                      )}
+                      
+                      {/* Play/Pause Button Overlay */}
+                      <View style={{
+                        position: 'absolute',
+                        top: 0,
+                        left: 0,
+                        right: 0,
+                        bottom: 0,
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                      }}>
+                        <Animated.View style={[pulseStyle]}>
+                          <TouchableOpacity
+                            onPress={playPauseAudio}
+                            style={{
+                              width: 80,
+                              height: 80,
+                              borderRadius: 40,
+                              backgroundColor: 'rgba(69, 36, 81, 0.9)',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              shadowColor: '#452451',
+                              shadowOffset: { width: 0, height: 4 },
+                              shadowOpacity: 0.3,
+                              shadowRadius: 8,
+                              elevation: 8,
+                            }}
+                          >
+                            {isPlaying ? (
+                              <Pause size={32} color="#ded7e0" strokeWidth={2} />
+                            ) : (
+                              <Play size={32} color="#ded7e0" strokeWidth={2} style={{ marginLeft: 2 }} />
+                            )}
+                          </TouchableOpacity>
+                        </Animated.View>
+                      </View>
                     </View>
-                  )}
+                  </View>
 
-                  {/* Track Info with Progress Bar */}
-                  <View style={{ alignItems: 'center', marginBottom: 40, zIndex: 1 }}>
+                  {/* Track Info */}
+                  <View style={{ alignItems: 'center', marginBottom: 24 }}>
                     <Text style={{ 
                       color: '#ded7e0', 
                       fontSize: 24, 
@@ -1144,76 +1195,18 @@ export default function DiscoverScreen() {
                       fontSize: 18, 
                       fontFamily: fonts.chillax.regular, 
                       textAlign: 'center',
-                      marginBottom: 24
+                      marginBottom: 16
                     }}>
                       {currentTrack?.artist}
                     </Text>
                     
                     {/* Progress Bar */}
-                    <View style={{ width: '100%', maxWidth: 320, height: 4, backgroundColor: '#28232a', borderRadius: 2, marginBottom: 24 }}>
+                    <View style={{ width: '100%', maxWidth: 320, height: 4, backgroundColor: '#28232a', borderRadius: 2 }}>
                       <Animated.View
                         style={[progressStyle, { height: '100%', backgroundColor: '#452451', borderRadius: 2 }]}
                       />
                     </View>
-                    
-                    {/* Rating Display */}
-                    {userRating && (
-                      <View style={{ alignItems: 'flex-start', alignSelf: 'flex-start' }}>
-                        <Text style={{ 
-                          color: '#ded7e0', 
-                          fontSize: 14, 
-                          fontFamily: fonts.chillax.medium,
-                          marginBottom: 8
-                        }}>
-                          Your Rating
-                        </Text>
-                        <View style={{ flexDirection: 'row', gap: 4, marginBottom: userReview ? 8 : 0 }}>
-                          {Array.from({ length: 5 }, (_, i) => (
-                            <Text key={i} style={{ color: i < userRating ? '#ded7e0' : '#8b6699', fontSize: 16 }}>
-                              ★
-                            </Text>
-                          ))}
-                        </View>
-                        {userReview && (
-                          <Text style={{ 
-                            color: '#8b6699', 
-                            fontSize: 14, 
-                            fontFamily: fonts.chillax.regular,
-                            fontStyle: 'italic',
-                            maxWidth: 280
-                          }}>
-                            "{userReview}"
-                          </Text>
-                        )}
-                      </View>
-                    )}
                   </View>
-
-                  {/* Play Button */}
-                  <Animated.View style={[pulseStyle, { marginBottom: 40, zIndex: 1 }]}>
-                    <TouchableOpacity
-                      onPress={playPauseAudio}
-                      style={{
-                        width: 120,
-                        height: 120,
-                        borderRadius: 60,
-                        backgroundColor: '#452451',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        shadowColor: '#452451',
-                        shadowOffset: { width: 0, height: 8 },
-                        shadowOpacity: 0.3,
-                        shadowRadius: 16,
-                        elevation: 8,
-                      }}
-                    >
-                      {isPlaying ? (
-                        <Pause size={40} color="#ded7e0" strokeWidth={2} />
-                      ) : (
-                        <Play size={40} color="#ded7e0" strokeWidth={2} style={{ marginLeft: 4 }} />
-                      )}
-                    </TouchableOpacity>
-                  </Animated.View>
 
                   {/* Skip Button */}
                   <TouchableOpacity
@@ -1226,12 +1219,64 @@ export default function DiscoverScreen() {
                       paddingVertical: 16,
                       backgroundColor: '#28232a',
                       borderRadius: 16,
-                      zIndex: 1,
+                      marginBottom: 24,
                     }}
                   >
                     <SkipForward size={20} color='#8b6699' strokeWidth={2} />
                     <Text style={{ fontFamily: fonts.chillax.medium, color: '#8b6699', fontSize: 16 }}>Skip</Text>
                   </TouchableOpacity>
+
+                  {/* Rating Display */}
+                  {userRating && (
+                    <View style={{ alignItems: 'flex-start', alignSelf: 'flex-start' }}>
+                      <Text style={{ 
+                        color: '#ded7e0', 
+                        fontSize: 14, 
+                        fontFamily: fonts.chillax.medium,
+                        marginBottom: 8
+                      }}>
+                        Your Rating
+                      </Text>
+                      <View style={{ flexDirection: 'row', gap: 4, marginBottom: userReview ? 8 : 0 }}>
+                        {Array.from({ length: 5 }, (_, i) => (
+                          <Text key={i} style={{ color: i < userRating ? '#ded7e0' : '#8b6699', fontSize: 16 }}>
+                            ★
+                          </Text>
+                        ))}
+                      </View>
+                      {userReview && (
+                        <View style={{ flexDirection: 'row', alignItems: 'flex-start', maxWidth: '100%' }}>
+                          <Text style={{ 
+                            fontSize: 20,
+                            fontFamily: fonts.chillax.bold,
+                            color: '#452451',
+                            lineHeight: 20,
+                          }}>
+                            "
+                          </Text>
+                          <Text style={{ 
+                            color: '#8b6699', 
+                            fontSize: 14, 
+                            fontFamily: fonts.chillax.regular,
+                            fontStyle: 'italic',
+                            flex: 1,
+                            marginHorizontal: 6,
+                            lineHeight: 20,
+                          }}>
+                            {userReview}
+                          </Text>
+                          <Text style={{ 
+                            fontSize: 20,
+                            fontFamily: fonts.chillax.bold,
+                            color: '#452451',
+                            lineHeight: 20,
+                          }}>
+                            "
+                          </Text>
+                        </View>
+                      )}
+                    </View>
+                  )}
                 </>
               ) : !showRating ? (
                 <>
