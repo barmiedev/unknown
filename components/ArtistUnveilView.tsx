@@ -56,6 +56,7 @@ interface ArtistUnveilViewProps {
   showPlaybackControls?: boolean;
   userRating?: number | null;
   userReview?: string | null;
+  onPlayInApp?: () => void;
 }
 
 const PLATFORM_COLORS = {
@@ -99,7 +100,8 @@ export default function ArtistUnveilView({
   onDiscoverNext, 
   showPlaybackControls = true,
   userRating,
-  userReview
+  userReview,
+  onPlayInApp
 }: ArtistUnveilViewProps) {
   const { user } = useAuth();
   const [artist, setArtist] = useState<Artist | null>(null);
@@ -321,6 +323,17 @@ export default function ArtistUnveilView({
             <View style={styles.section}>
               <Text style={styles.sectionTitle}>Listen Now</Text>
               <View style={styles.streamingLinksContainer}>
+                {/* Play in App Button - Priority button */}
+                {onPlayInApp && (
+                  <TouchableOpacity
+                    style={styles.playInAppButton}
+                    onPress={onPlayInApp}
+                  >
+                    <Play size={20} color="#ded7e0" strokeWidth={2} />
+                    <Text style={styles.playInAppButtonText}>Play in unknown</Text>
+                  </TouchableOpacity>
+                )}
+
                 {/* Preferred Platform and Listen Elsewhere in one row on wider screens */}
                 <View style={styles.streamingButtonsRow}>
                   {/* Preferred Platform First */}
@@ -579,8 +592,8 @@ const styles = StyleSheet.create({
   genreTag: {
     fontSize: 14,
     fontFamily: fonts.chillax.medium,
-    color: '#452451',
-    backgroundColor: 'rgba(69, 36, 81, 0.2)',
+    color: '#ded7e0',
+    backgroundColor: 'rgba(222, 215, 224, 0.15)',
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 12,
@@ -588,8 +601,8 @@ const styles = StyleSheet.create({
   moodTag: {
     fontSize: 14,
     fontFamily: fonts.chillax.medium,
-    color: '#8b6699',
-    backgroundColor: 'rgba(139, 102, 153, 0.2)',
+    color: '#ded7e0',
+    backgroundColor: 'rgba(222, 215, 224, 0.15)',
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 12,
@@ -639,7 +652,22 @@ const styles = StyleSheet.create({
     lineHeight: 24,
   },
   streamingLinksContainer: {
+    gap: 16,
+  },
+  playInAppButton: {
+    backgroundColor: '#452451',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 16,
+    paddingHorizontal: 24,
+    borderRadius: 16,
     gap: 12,
+  },
+  playInAppButtonText: {
+    fontSize: 16,
+    fontFamily: fonts.chillax.bold,
+    color: '#ded7e0',
   },
   streamingButtonsRow: {
     flexDirection: 'row',
@@ -742,8 +770,8 @@ const styles = StyleSheet.create({
   artistGenreTag: {
     fontSize: 12,
     fontFamily: fonts.chillax.medium,
-    color: '#452451',
-    backgroundColor: 'rgba(69, 36, 81, 0.2)',
+    color: '#ded7e0',
+    backgroundColor: 'rgba(222, 215, 224, 0.15)',
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 8,
@@ -755,7 +783,7 @@ const styles = StyleSheet.create({
     lineHeight: 24,
   },
   playbackControls: {
-    gap: 12,
+    gap: 16,
   },
   playbackButton: {
     backgroundColor: '#452451',

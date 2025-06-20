@@ -964,19 +964,21 @@ export default function DiscoverScreen() {
       <View style={{ backgroundColor: '#19161a', flex: 1 }}>
         <SafeAreaView style={{ flex: 1 }}>
           <AnimationBackground>
-            {/* Header with Logo and Session Info */}
+            {/* Header with Logo and Session Info - Same background as player */}
             <View style={{ 
               flexDirection: 'row', 
-              alignItems: 'center', 
+              alignItems: 'flex-start', 
               justifyContent: 'space-between',
               paddingHorizontal: 24, 
               paddingTop: 24, 
               paddingBottom: 32 
             }}>
-              {/* Logo on the left */}
-              <Text style={{ fontSize: 24, fontFamily: fonts.chillax.bold, color: '#ded7e0' }}>
-                unknown
-              </Text>
+              {/* Logo on the left - positioned at top */}
+              <View style={{ alignItems: 'flex-start' }}>
+                <Text style={{ fontSize: 24, fontFamily: fonts.chillax.bold, color: '#ded7e0' }}>
+                  unknown
+                </Text>
+              </View>
               
               {/* Mood session info on the right */}
               <View style={{ alignItems: 'flex-end' }}>
