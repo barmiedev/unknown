@@ -88,7 +88,7 @@ export default function DiscoverScreen() {
   const [showWelcomeTip, setShowWelcomeTip] = useState(false);
   const [userPreferences, setUserPreferences] = useState<UserPreferences | null>(null);
   const [showThankYou, setShowThankYou] = useState(false);
-  const [ratingThreshold] = useState(0.01); // Fixed: was 0.01, should be 0.8 for 80%
+  const [ratingThreshold] = useState(0.8); // 80% of track length
   const [canSkip, setCanSkip] = useState(true);
   const [isTransitioning, setIsTransitioning] = useState(false);
   const [showReviewInput, setShowReviewInput] = useState(false);
@@ -316,21 +316,21 @@ export default function DiscoverScreen() {
 
   // Function definitions
   const animateRatingAppearance = () => {
-    // Container animation
-    ratingContainerOpacity.value = withTiming(1, { duration: 400 });
-    ratingContainerScale.value = withTiming(1, { duration: 400 });
+    // Container animation - faster
+    ratingContainerOpacity.value = withTiming(1, { duration: 250 });
+    ratingContainerScale.value = withTiming(1, { duration: 250 });
 
-    // Staggered star animations
-    star1Animation.value = withDelay(200, withTiming(1, { duration: 300 }));
-    star2Animation.value = withDelay(300, withTiming(1, { duration: 300 }));
-    star3Animation.value = withDelay(400, withTiming(1, { duration: 300 }));
-    star4Animation.value = withDelay(500, withTiming(1, { duration: 300 }));
-    star5Animation.value = withDelay(600, withTiming(1, { duration: 300 }));
+    // Staggered star animations - faster and tighter timing
+    star1Animation.value = withDelay(100, withTiming(1, { duration: 200 }));
+    star2Animation.value = withDelay(150, withTiming(1, { duration: 200 }));
+    star3Animation.value = withDelay(200, withTiming(1, { duration: 200 }));
+    star4Animation.value = withDelay(250, withTiming(1, { duration: 200 }));
+    star5Animation.value = withDelay(300, withTiming(1, { duration: 200 }));
   };
 
   const animateReviewInput = () => {
-    reviewInputAnimation.value = withTiming(1, { duration: 400 });
-    reviewInputHeight.value = withTiming(1, { duration: 400 });
+    reviewInputAnimation.value = withTiming(1, { duration: 250 });
+    reviewInputHeight.value = withTiming(1, { duration: 250 });
   };
 
   const resetRatingAnimations = () => {
@@ -658,7 +658,7 @@ export default function DiscoverScreen() {
       // Animate review input appearance
       setTimeout(() => {
         animateReviewInput();
-      }, 100);
+      }, 50);
     } else {
       submitRating(stars);
     }
@@ -854,7 +854,7 @@ export default function DiscoverScreen() {
                     />
                   </View>
 
-                  {/* Skip Button */}
+                  {/* Skip Button - only show when not rating */}
                   {canSkip && (
                     <TouchableOpacity
                       onPress={skipTrack}
@@ -874,7 +874,7 @@ export default function DiscoverScreen() {
                   )}
                 </>
               ) : showRating && !trackRevealed ? (
-                /* Rating Interface */
+                /* Rating Interface - Skip button removed since user is engaged */
                 <Animated.View style={[ratingContainerStyle, { alignItems: 'center', width: '100%' }]}>
                   <Text style={{ fontSize: 20, fontFamily: fonts.chillax.medium, textAlign: 'center', marginBottom: 48, color: '#ded7e0' }}>
                     How does this track make you feel?
@@ -991,23 +991,6 @@ export default function DiscoverScreen() {
                       </Animated.View>
                     </Animated.View>
                   )}
-
-                  {/* Skip Button */}
-                  <TouchableOpacity
-                    onPress={skipTrack}
-                    style={{ 
-                      flexDirection: 'row', 
-                      alignItems: 'center', 
-                      gap: 8, 
-                      paddingHorizontal: 24,
-                      paddingVertical: 16,
-                      backgroundColor: '#28232a',
-                      borderRadius: 16,
-                    }}
-                  >
-                    <SkipForward size={20} color='#8b6699' strokeWidth={2} />
-                    <Text style={{ fontFamily: fonts.chillax.medium, color: '#8b6699', fontSize: 16 }}>Skip</Text>
-                  </TouchableOpacity>
                 </Animated.View>
               ) : trackRevealed && currentTrack ? (
                 /* Track Revealed */
