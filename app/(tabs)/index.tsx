@@ -793,7 +793,7 @@ export default function DiscoverScreen() {
           {/* Floating Back Button */}
           <View style={{ 
             position: 'absolute', 
-            top: 60, 
+            top: 64, 
             left: 24, 
             zIndex: 1000,
             backgroundColor: 'rgba(40, 35, 42, 0.9)',
@@ -964,41 +964,55 @@ export default function DiscoverScreen() {
       <View style={{ backgroundColor: '#19161a', flex: 1 }}>
         <SafeAreaView style={{ flex: 1 }}>
           <AnimationBackground>
-            {/* Header with Session Info */}
-            <View style={{ alignItems: 'center', paddingTop: 24, paddingBottom: 32, paddingHorizontal: 24 }}>
-              <Text style={{ fontSize: 24, fontFamily: fonts.chillax.bold, color: '#ded7e0' }}>unknown</Text>
-              {selectedSessionMood && (
-                <View style={{ 
-                  flexDirection: 'row', 
-                  alignItems: 'center', 
-                  backgroundColor: '#28232a', 
-                  paddingHorizontal: 16, 
-                  paddingVertical: 8, 
-                  borderRadius: 12, 
-                  marginTop: 12 
-                }}>
-                  <Text style={{ fontSize: 16, marginRight: 8 }}>
-                    {MOOD_EMOJIS[selectedSessionMood]}
+            {/* Header with Logo and Session Info */}
+            <View style={{ 
+              flexDirection: 'row', 
+              alignItems: 'center', 
+              justifyContent: 'space-between',
+              paddingHorizontal: 24, 
+              paddingTop: 24, 
+              paddingBottom: 32 
+            }}>
+              {/* Logo on the left */}
+              <Text style={{ fontSize: 24, fontFamily: fonts.chillax.bold, color: '#ded7e0' }}>
+                unknown
+              </Text>
+              
+              {/* Mood session info on the right */}
+              <View style={{ alignItems: 'flex-end' }}>
+                {selectedSessionMood ? (
+                  <View style={{ 
+                    flexDirection: 'row', 
+                    alignItems: 'center', 
+                    backgroundColor: '#28232a', 
+                    paddingHorizontal: 16, 
+                    paddingVertical: 8, 
+                    borderRadius: 12,
+                    marginBottom: 8
+                  }}>
+                    <Text style={{ fontSize: 16, marginRight: 8 }}>
+                      {MOOD_EMOJIS[selectedSessionMood]}
+                    </Text>
+                    <Text style={{ fontSize: 14, fontFamily: fonts.chillax.medium, color: '#8b6699' }}>
+                      {selectedSessionMood}
+                    </Text>
+                  </View>
+                ) : null}
+                
+                <TouchableOpacity
+                  onPress={handleNewSession}
+                  style={{ 
+                    backgroundColor: '#28232a', 
+                    paddingHorizontal: 16, 
+                    paddingVertical: 8, 
+                    borderRadius: 12 
+                  }}
+                >
+                  <Text style={{ fontSize: 12, fontFamily: fonts.chillax.medium, color: '#8b6699' }}>
+                    Change mood
                   </Text>
-                  <Text style={{ fontSize: 14, fontFamily: fonts.chillax.medium, color: '#8b6699' }}>
-                    {selectedSessionMood} session
-                  </Text>
-                </View>
-              )}
-              <TouchableOpacity
-                onPress={handleNewSession}
-                style={{ 
-                  backgroundColor: '#28232a', 
-                  paddingHorizontal: 16, 
-                  paddingVertical: 8, 
-                  borderRadius: 12, 
-                  marginTop: 8 
-                }}
-              >
-                <Text style={{ fontSize: 12, fontFamily: fonts.chillax.medium, color: '#8b6699' }}>
-                  Change mood
-                </Text>
-              </TouchableOpacity>
+                </TouchableOpacity>
+              </View>
             </View>
 
             {/* Welcome Tip */}
@@ -1091,10 +1105,29 @@ export default function DiscoverScreen() {
             {/* Main Player Area */}
             <Animated.View style={[fadeStyle, { flex: 1, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 24 }]}>
               {state === 'full_listening' ? (
-                /* Full Listening Mode - Show rating info and normal controls */
+                /* Full Listening Mode - Show track info with cover art background and normal controls */
                 <>
-                  {/* Track Info */}
-                  <View style={{ alignItems: 'center', marginBottom: 40 }}>
+                  {/* Cover Art Background */}
+                  {currentTrack?.artwork_url && (
+                    <View style={{
+                      position: 'absolute',
+                      top: 0,
+                      left: 0,
+                      right: 0,
+                      bottom: 0,
+                      opacity: 0.1,
+                    }}>
+                      <Image
+                        source={{ uri: currentTrack.artwork_url }}
+                        style={{ width: '100%', height: '100%' }}
+                        resizeMode="cover"
+                        blurRadius={20}
+                      />
+                    </View>
+                  )}
+
+                  {/* Track Info with Progress Bar */}
+                  <View style={{ alignItems: 'center', marginBottom: 40, zIndex: 1 }}>
                     <Text style={{ 
                       color: '#ded7e0', 
                       fontSize: 24, 
@@ -1109,20 +1142,21 @@ export default function DiscoverScreen() {
                       fontSize: 18, 
                       fontFamily: fonts.chillax.regular, 
                       textAlign: 'center',
-                      marginBottom: 16
+                      marginBottom: 24
                     }}>
                       {currentTrack?.artist}
                     </Text>
                     
+                    {/* Progress Bar */}
+                    <View style={{ width: '100%', maxWidth: 320, height: 4, backgroundColor: '#28232a', borderRadius: 2, marginBottom: 24 }}>
+                      <Animated.View
+                        style={[progressStyle, { height: '100%', backgroundColor: '#452451', borderRadius: 2 }]}
+                      />
+                    </View>
+                    
                     {/* Rating Display */}
                     {userRating && (
-                      <View style={{ 
-                        backgroundColor: '#28232a', 
-                        paddingHorizontal: 16, 
-                        paddingVertical: 12, 
-                        borderRadius: 12,
-                        alignItems: 'center'
-                      }}>
+                      <View style={{ alignItems: 'flex-start', alignSelf: 'flex-start' }}>
                         <Text style={{ 
                           color: '#ded7e0', 
                           fontSize: 14, 
@@ -1133,7 +1167,7 @@ export default function DiscoverScreen() {
                         </Text>
                         <View style={{ flexDirection: 'row', gap: 4, marginBottom: userReview ? 8 : 0 }}>
                           {Array.from({ length: 5 }, (_, i) => (
-                            <Text key={i} style={{ color: i < userRating ? '#452451' : '#8b6699', fontSize: 16 }}>
+                            <Text key={i} style={{ color: i < userRating ? '#ded7e0' : '#8b6699', fontSize: 16 }}>
                               ★
                             </Text>
                           ))}
@@ -1141,10 +1175,10 @@ export default function DiscoverScreen() {
                         {userReview && (
                           <Text style={{ 
                             color: '#8b6699', 
-                            fontSize: 12, 
+                            fontSize: 14, 
                             fontFamily: fonts.chillax.regular,
-                            textAlign: 'center',
-                            fontStyle: 'italic'
+                            fontStyle: 'italic',
+                            maxWidth: 280
                           }}>
                             "{userReview}"
                           </Text>
@@ -1154,7 +1188,7 @@ export default function DiscoverScreen() {
                   </View>
 
                   {/* Play Button */}
-                  <Animated.View style={[pulseStyle, { marginBottom: 40 }]}>
+                  <Animated.View style={[pulseStyle, { marginBottom: 40, zIndex: 1 }]}>
                     <TouchableOpacity
                       onPress={playPauseAudio}
                       style={{
@@ -1179,13 +1213,6 @@ export default function DiscoverScreen() {
                     </TouchableOpacity>
                   </Animated.View>
 
-                  {/* Progress Bar */}
-                  <View style={{ width: '100%', maxWidth: 320, height: 4, backgroundColor: '#28232a', borderRadius: 2, marginBottom: 40 }}>
-                    <Animated.View
-                      style={[progressStyle, { height: '100%', backgroundColor: '#452451', borderRadius: 2 }]}
-                    />
-                  </View>
-
                   {/* Skip Button */}
                   <TouchableOpacity
                     onPress={skipTrack}
@@ -1197,6 +1224,7 @@ export default function DiscoverScreen() {
                       paddingVertical: 16,
                       backgroundColor: '#28232a',
                       borderRadius: 16,
+                      zIndex: 1,
                     }}
                   >
                     <SkipForward size={20} color='#8b6699' strokeWidth={2} />
@@ -1258,13 +1286,13 @@ export default function DiscoverScreen() {
                   )}
                 </>
               ) : (
-                /* Rating Interface - Compact spacing */
-                <Animated.View style={[ratingContainerStyle, { alignItems: 'center', width: '100%' }]}>
-                  <Text style={{ fontSize: 18, fontFamily: fonts.chillax.medium, textAlign: 'center', marginBottom: 32, color: '#ded7e0' }}>
+                /* Rating Interface - Left aligned and improved styling */
+                <Animated.View style={[ratingContainerStyle, { alignItems: 'flex-start', width: '100%', paddingHorizontal: 24 }]}>
+                  <Text style={{ fontSize: 18, fontFamily: fonts.chillax.medium, marginBottom: 32, color: '#ded7e0' }}>
                     How does this track make you feel?
                   </Text>
 
-                  {/* Rating Stars with Individual Animated Styles - Reduced gap */}
+                  {/* Rating Stars with Individual Animated Styles - Left aligned */}
                   <View style={{ flexDirection: 'row', gap: 12, marginBottom: 24 }}>
                     <Animated.View style={star1Style}>
                       <TouchableOpacity
@@ -1273,8 +1301,8 @@ export default function DiscoverScreen() {
                       >
                         <Star
                           size={28}
-                          color={1 <= rating ? '#452451' : '#8b6699'}
-                          fill={1 <= rating ? '#452451' : 'transparent'}
+                          color={1 <= rating ? '#ded7e0' : '#8b6699'}
+                          fill={1 <= rating ? '#ded7e0' : 'transparent'}
                           strokeWidth={1.5}
                         />
                       </TouchableOpacity>
@@ -1287,8 +1315,8 @@ export default function DiscoverScreen() {
                       >
                         <Star
                           size={28}
-                          color={2 <= rating ? '#452451' : '#8b6699'}
-                          fill={2 <= rating ? '#452451' : 'transparent'}
+                          color={2 <= rating ? '#ded7e0' : '#8b6699'}
+                          fill={2 <= rating ? '#ded7e0' : 'transparent'}
                           strokeWidth={1.5}
                         />
                       </TouchableOpacity>
@@ -1301,8 +1329,8 @@ export default function DiscoverScreen() {
                       >
                         <Star
                           size={28}
-                          color={3 <= rating ? '#452451' : '#8b6699'}
-                          fill={3 <= rating ? '#452451' : 'transparent'}
+                          color={3 <= rating ? '#ded7e0' : '#8b6699'}
+                          fill={3 <= rating ? '#ded7e0' : 'transparent'}
                           strokeWidth={1.5}
                         />
                       </TouchableOpacity>
@@ -1315,8 +1343,8 @@ export default function DiscoverScreen() {
                       >
                         <Star
                           size={28}
-                          color={4 <= rating ? '#452451' : '#8b6699'}
-                          fill={4 <= rating ? '#452451' : 'transparent'}
+                          color={4 <= rating ? '#ded7e0' : '#8b6699'}
+                          fill={4 <= rating ? '#ded7e0' : 'transparent'}
                           strokeWidth={1.5}
                         />
                       </TouchableOpacity>
@@ -1329,15 +1357,15 @@ export default function DiscoverScreen() {
                       >
                         <Star
                           size={28}
-                          color={5 <= rating ? '#452451' : '#8b6699'}
-                          fill={5 <= rating ? '#452451' : 'transparent'}
+                          color={5 <= rating ? '#ded7e0' : '#8b6699'}
+                          fill={5 <= rating ? '#ded7e0' : 'transparent'}
                           strokeWidth={1.5}
                         />
                       </TouchableOpacity>
                     </Animated.View>
                   </View>
 
-                  {/* Review Input for High Ratings - Reduced spacing */}
+                  {/* Review Input for High Ratings */}
                   {showReviewInput && (
                     <Animated.View style={[reviewInputContainerStyle, { width: '100%', overflow: 'hidden' }]}>
                       <Animated.View style={[reviewInputStyle, { width: '100%', marginBottom: 20 }]}>

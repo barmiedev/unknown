@@ -293,20 +293,24 @@ export default function ArtistUnveilView({
             </View>
           </View>
 
-          {/* User Rating Display */}
+          {/* User Rating Display - Left aligned with artistic quote styling */}
           {userRating && (
             <View style={styles.section}>
               <View style={styles.userRatingContainer}>
                 <Text style={styles.userRatingTitle}>Your Rating</Text>
                 <View style={styles.userRatingStars}>
                   {Array.from({ length: 5 }, (_, i) => (
-                    <Text key={i} style={{ color: i < userRating ? '#452451' : '#8b6699', fontSize: 18 }}>
+                    <Text key={i} style={{ color: i < userRating ? '#ded7e0' : '#8b6699', fontSize: 18 }}>
                       ★
                     </Text>
                   ))}
                 </View>
                 {userReview && (
-                  <Text style={styles.userReviewText}>"{userReview}"</Text>
+                  <View style={styles.artisticQuoteContainer}>
+                    <Text style={styles.quoteSymbol}>"</Text>
+                    <Text style={styles.userReviewText}>{userReview}</Text>
+                    <Text style={styles.quoteSymbol}>"</Text>
+                  </View>
                 )}
               </View>
             </View>
@@ -317,29 +321,34 @@ export default function ArtistUnveilView({
             <View style={styles.section}>
               <Text style={styles.sectionTitle}>Listen Now</Text>
               <View style={styles.streamingLinksContainer}>
-                {/* Preferred Platform First */}
-                {getPreferredStreamingLink() && (
-                  <TouchableOpacity
-                    style={styles.preferredStreamingButton}
-                    onPress={() => handleOpenLink(getPreferredStreamingLink()!.url)}
-                  >
-                    <ExternalLink size={20} color="#ded7e0" strokeWidth={2} />
-                    <Text style={styles.preferredStreamingButtonText}>
-                      Listen on {PLATFORM_NAMES[getPreferredStreamingLink()!.platform as keyof typeof PLATFORM_NAMES] || getPreferredStreamingLink()!.platform}
-                    </Text>
-                  </TouchableOpacity>
-                )}
+                {/* Preferred Platform and Listen Elsewhere in one row on wider screens */}
+                <View style={styles.streamingButtonsRow}>
+                  {/* Preferred Platform First */}
+                  {getPreferredStreamingLink() && (
+                    <TouchableOpacity
+                      style={[styles.preferredStreamingButton, { flex: 1, marginRight: getOtherStreamingLinks().length > 0 ? 8 : 0 }]}
+                      onPress={() => handleOpenLink(getPreferredStreamingLink()!.url)}
+                    >
+                      <Text style={[
+                        styles.preferredStreamingButtonText,
+                        { color: PLATFORM_COLORS[getPreferredStreamingLink()!.platform as keyof typeof PLATFORM_COLORS] || '#1DB954' }
+                      ]}>
+                        {PLATFORM_NAMES[getPreferredStreamingLink()!.platform as keyof typeof PLATFORM_NAMES] || getPreferredStreamingLink()!.platform}
+                      </Text>
+                    </TouchableOpacity>
+                  )}
 
-                {/* Listen Elsewhere Button */}
-                {getOtherStreamingLinks().length > 0 && (
-                  <TouchableOpacity
-                    style={styles.otherPlatformsButton}
-                    onPress={() => setShowOtherPlatforms(true)}
-                  >
-                    <Text style={styles.otherPlatformsButtonText}>Listen elsewhere</Text>
-                    <ExternalLink size={16} color="#8b6699" strokeWidth={2} />
-                  </TouchableOpacity>
-                )}
+                  {/* Listen Elsewhere Button */}
+                  {getOtherStreamingLinks().length > 0 && (
+                    <TouchableOpacity
+                      style={[styles.otherPlatformsButton, { flex: 1, marginLeft: getPreferredStreamingLink() ? 8 : 0 }]}
+                      onPress={() => setShowOtherPlatforms(true)}
+                    >
+                      <Text style={styles.otherPlatformsButtonText}>Elsewhere</Text>
+                      <ExternalLink size={16} color="#8b6699" strokeWidth={2} />
+                    </TouchableOpacity>
+                  )}
+                </View>
               </View>
             </View>
           )}
@@ -366,13 +375,13 @@ export default function ArtistUnveilView({
                   </Text>
                 </TouchableOpacity>
 
-                {/* Social Media Links */}
+                {/* Social Media Links - Rectangular buttons that fill width */}
                 {socialLinks.length > 0 && (
                   <View style={styles.socialLinksContainer}>
                     {socialLinks.map((link) => (
                       <TouchableOpacity
                         key={link.platform}
-                        style={styles.socialButton}
+                        style={[styles.socialButton, { flex: 1 }]}
                         onPress={() => handleOpenLink(link.url)}
                       >
                         {getSocialIcon(link.platform, 24, '#ded7e0')}
@@ -596,10 +605,7 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   userRatingContainer: {
-    backgroundColor: '#28232a',
-    borderRadius: 16,
-    padding: 16,
-    alignItems: 'center',
+    alignItems: 'flex-start',
   },
   userRatingTitle: {
     fontSize: 16,
@@ -610,20 +616,37 @@ const styles = StyleSheet.create({
   userRatingStars: {
     flexDirection: 'row',
     gap: 4,
-    marginBottom: 8,
+    marginBottom: 12,
+  },
+  artisticQuoteContainer: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    maxWidth: '100%',
+  },
+  quoteSymbol: {
+    fontSize: 24,
+    fontFamily: fonts.chillax.bold,
+    color: '#452451',
+    lineHeight: 20,
   },
   userReviewText: {
-    fontSize: 14,
+    fontSize: 16,
     fontFamily: fonts.chillax.regular,
     color: '#8b6699',
-    textAlign: 'center',
     fontStyle: 'italic',
+    flex: 1,
+    marginHorizontal: 8,
+    lineHeight: 24,
   },
   streamingLinksContainer: {
     gap: 12,
   },
+  streamingButtonsRow: {
+    flexDirection: 'row',
+    gap: 8,
+  },
   preferredStreamingButton: {
-    backgroundColor: '#452451',
+    backgroundColor: '#28232a',
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
@@ -634,8 +657,7 @@ const styles = StyleSheet.create({
   },
   preferredStreamingButtonText: {
     fontSize: 16,
-    fontFamily: fonts.chillax.bold,
-    color: '#ded7e0',
+    fontFamily: fonts.chillax.medium,
   },
   otherPlatformsButton: {
     backgroundColor: '#28232a',
@@ -648,7 +670,7 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   otherPlatformsButtonText: {
-    fontSize: 14,
+    fontSize: 16,
     fontFamily: fonts.chillax.medium,
     color: '#8b6699',
   },
@@ -673,14 +695,12 @@ const styles = StyleSheet.create({
   },
   socialLinksContainer: {
     flexDirection: 'row',
-    justifyContent: 'center',
     gap: 12,
   },
   socialButton: {
     backgroundColor: '#28232a',
-    width: 48,
     height: 48,
-    borderRadius: 24,
+    borderRadius: 16,
     alignItems: 'center',
     justifyContent: 'center',
   },
