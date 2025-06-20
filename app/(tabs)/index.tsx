@@ -395,27 +395,25 @@ export default function DiscoverScreen() {
 
       if (data) {
         setUserPreferences(data);
-        // Set available moods based on user preferences or random selection
+        // Set available moods - only 3 moods, preferably from user preferences
         if (data.preferred_moods && data.preferred_moods.length > 0) {
-          // Show user's preferred moods first, then add some random ones
-          const userMoods = data.preferred_moods.slice(0, 4);
-          const remainingMoods = ALL_MOODS.filter(mood => !userMoods.includes(mood));
-          const randomMoods = remainingMoods.sort(() => 0.5 - Math.random()).slice(0, 2);
-          setAvailableMoods([...userMoods, ...randomMoods]);
+          // Shuffle user's preferred moods and take 3
+          const shuffledUserMoods = data.preferred_moods.sort(() => 0.5 - Math.random()).slice(0, 3);
+          setAvailableMoods(shuffledUserMoods);
         } else {
-          // Show random moods if no preferences
-          const randomMoods = ALL_MOODS.sort(() => 0.5 - Math.random()).slice(0, 6);
+          // Show 3 random moods if no preferences
+          const randomMoods = ALL_MOODS.sort(() => 0.5 - Math.random()).slice(0, 3);
           setAvailableMoods(randomMoods);
         }
       } else {
-        // No preferences found, show random moods
-        const randomMoods = ALL_MOODS.sort(() => 0.5 - Math.random()).slice(0, 6);
+        // No preferences found, show 3 random moods
+        const randomMoods = ALL_MOODS.sort(() => 0.5 - Math.random()).slice(0, 3);
         setAvailableMoods(randomMoods);
       }
     } catch (error) {
       console.error('Error loading user preferences:', error);
-      // Fallback to random moods
-      const randomMoods = ALL_MOODS.sort(() => 0.5 - Math.random()).slice(0, 6);
+      // Fallback to 3 random moods
+      const randomMoods = ALL_MOODS.sort(() => 0.5 - Math.random()).slice(0, 3);
       setAvailableMoods(randomMoods);
     }
   };
@@ -773,6 +771,9 @@ export default function DiscoverScreen() {
     setPosition(0);
     setDuration(0);
     resetRatingAnimations();
+    
+    // Refresh available moods for new session
+    loadUserPreferences();
   };
 
   const dismissKeyboard = () => {
@@ -788,26 +789,23 @@ export default function DiscoverScreen() {
           <AnimationBackground>
             <Animated.View style={[moodSelectionStyle, { flex: 1, paddingHorizontal: 24 }]}>
               {/* Header */}
-              <View style={{ alignItems: 'center', paddingTop: 32, paddingBottom: 48 }}>
-                <Text style={{ fontSize: 24, fontFamily: fonts.chillax.bold, color: '#ded7e0', marginBottom: 16 }}>
+              <View style={{ alignItems: 'center', paddingTop: 32, paddingBottom: 64 }}>
+                <Text style={{ fontSize: 24, fontFamily: fonts.chillax.bold, color: '#ded7e0', marginBottom: 32 }}>
                   unknown
                 </Text>
-                <Text style={{ fontSize: 32, fontFamily: fonts.chillax.bold, color: '#ded7e0', textAlign: 'center', marginBottom: 16 }}>
+                <Text style={{ fontSize: 28, fontFamily: fonts.chillax.bold, color: '#ded7e0', textAlign: 'center' }}>
                   How do you feel today?
-                </Text>
-                <Text style={{ fontSize: 16, fontFamily: fonts.chillax.regular, color: '#8b6699', textAlign: 'center', lineHeight: 24 }}>
-                  Choose a mood to discover music that matches your vibe
                 </Text>
               </View>
 
-              {/* Mood Options */}
-              <ScrollView style={{ flex: 1 }} showsVerticalScrollIndicator={false}>
+              {/* Mood Options - Only 3 moods */}
+              <View style={{ flex: 1, justifyContent: 'center' }}>
                 <View style={{ 
                   flexDirection: 'row', 
                   flexWrap: 'wrap', 
-                  gap: 16, 
+                  gap: 20, 
                   justifyContent: 'center',
-                  paddingBottom: 32
+                  marginBottom: 48
                 }}>
                   {availableMoods.map((mood) => (
                     <TouchableOpacity
@@ -815,11 +813,11 @@ export default function DiscoverScreen() {
                       onPress={() => handleMoodSelection(mood)}
                       style={{
                         backgroundColor: '#28232a',
-                        paddingHorizontal: 24,
-                        paddingVertical: 20,
-                        borderRadius: 20,
+                        paddingHorizontal: 20,
+                        paddingVertical: 16,
+                        borderRadius: 16,
                         alignItems: 'center',
-                        minWidth: 140,
+                        minWidth: 120,
                         shadowColor: '#452451',
                         shadowOffset: { width: 0, height: 4 },
                         shadowOpacity: 0.2,
@@ -827,12 +825,12 @@ export default function DiscoverScreen() {
                         elevation: 4,
                       }}
                     >
-                      <Text style={{ fontSize: 32, marginBottom: 8 }}>
+                      <Text style={{ fontSize: 28, marginBottom: 6 }}>
                         {MOOD_EMOJIS[mood] || '🎵'}
                       </Text>
                       <Text style={{ 
-                        fontSize: 16, 
-                        fontFamily: fonts.chillax.bold, 
+                        fontSize: 14, 
+                        fontFamily: fonts.chillax.regular, 
                         color: '#ded7e0',
                         textAlign: 'center'
                       }}>
@@ -843,17 +841,17 @@ export default function DiscoverScreen() {
                 </View>
 
                 {/* Surprise Me Button */}
-                <View style={{ alignItems: 'center', paddingBottom: 48 }}>
+                <View style={{ alignItems: 'center' }}>
                   <TouchableOpacity
                     onPress={() => handleMoodSelection(null)}
                     style={{
                       backgroundColor: '#452451',
-                      paddingHorizontal: 32,
-                      paddingVertical: 20,
-                      borderRadius: 20,
+                      paddingHorizontal: 28,
+                      paddingVertical: 16,
+                      borderRadius: 16,
                       flexDirection: 'row',
                       alignItems: 'center',
-                      gap: 12,
+                      gap: 10,
                       shadowColor: '#452451',
                       shadowOffset: { width: 0, height: 6 },
                       shadowOpacity: 0.4,
@@ -861,9 +859,9 @@ export default function DiscoverScreen() {
                       elevation: 8,
                     }}
                   >
-                    <Shuffle size={24} color="#ded7e0" strokeWidth={2} />
+                    <Shuffle size={20} color="#ded7e0" strokeWidth={2} />
                     <Text style={{ 
-                      fontSize: 18, 
+                      fontSize: 16, 
                       fontFamily: fonts.chillax.bold, 
                       color: '#ded7e0'
                     }}>
@@ -871,7 +869,7 @@ export default function DiscoverScreen() {
                     </Text>
                   </TouchableOpacity>
                 </View>
-              </ScrollView>
+              </View>
             </Animated.View>
           </AnimationBackground>
         </SafeAreaView>
