@@ -69,7 +69,10 @@ function AnimationBackground({ animationUrl, children }: AnimationBackgroundProp
 }
 
 export default function DiscoverScreen() {
+  // All hooks must be called at the top level in the same order every time
   const { user } = useAuth();
+  
+  // State hooks - always called in the same order
   const [currentTrack, setCurrentTrack] = useState<Track | null>(null);
   const [state, setState] = useState<DiscoverState>('loading');
   const [rating, setRating] = useState(0);
@@ -85,22 +88,21 @@ export default function DiscoverScreen() {
   const [showWelcomeTip, setShowWelcomeTip] = useState(false);
   const [userPreferences, setUserPreferences] = useState<UserPreferences | null>(null);
   const [showThankYou, setShowThankYou] = useState(false);
-  const [ratingThreshold] = useState(0.01); // 80% of track length
+  const [ratingThreshold] = useState(0.8); // Fixed: was 0.01, should be 0.8 for 80%
   const [canSkip, setCanSkip] = useState(true);
   const [isTransitioning, setIsTransitioning] = useState(false);
   const [showReviewInput, setShowReviewInput] = useState(false);
   const [isReviewFocused, setIsReviewFocused] = useState(false);
 
+  // Ref hooks - always called in the same order
   const reviewInputRef = useRef<TextInput>(null);
 
-  // Animation values
+  // Animation shared values - always called in the same order
   const pulseAnimation = useSharedValue(1);
   const progressAnimation = useSharedValue(0);
   const thankYouOpacity = useSharedValue(0);
   const fadeOpacity = useSharedValue(1);
   const transitionTextOpacity = useSharedValue(0);
-  
-  // Rating animation values
   const ratingContainerOpacity = useSharedValue(0);
   const ratingContainerScale = useSharedValue(0.8);
   const star1Animation = useSharedValue(0);
@@ -111,6 +113,166 @@ export default function DiscoverScreen() {
   const reviewInputAnimation = useSharedValue(0);
   const reviewInputHeight = useSharedValue(0);
 
+  // Animated styles - always called in the same order
+  const pulseStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: pulseAnimation.value }],
+  }));
+
+  const progressStyle = useAnimatedStyle(() => ({
+    width: `${(position / duration) * 100}%`,
+  }));
+
+  const thankYouStyle = useAnimatedStyle(() => ({
+    opacity: thankYouOpacity.value,
+  }));
+
+  const fadeStyle = useAnimatedStyle(() => ({
+    opacity: fadeOpacity.value,
+  }));
+
+  const transitionTextStyle = useAnimatedStyle(() => ({
+    opacity: transitionTextOpacity.value,
+  }));
+
+  const ratingContainerStyle = useAnimatedStyle(() => ({
+    opacity: ratingContainerOpacity.value,
+    transform: [{ scale: ratingContainerScale.value }],
+  }));
+
+  const star1Style = useAnimatedStyle(() => ({
+    opacity: star1Animation.value,
+    transform: [
+      { 
+        scale: interpolate(
+          star1Animation.value,
+          [0, 1],
+          [0.3, 1],
+          Extrapolate.CLAMP
+        )
+      },
+      {
+        translateY: interpolate(
+          star1Animation.value,
+          [0, 1],
+          [20, 0],
+          Extrapolate.CLAMP
+        )
+      }
+    ],
+  }));
+
+  const star2Style = useAnimatedStyle(() => ({
+    opacity: star2Animation.value,
+    transform: [
+      { 
+        scale: interpolate(
+          star2Animation.value,
+          [0, 1],
+          [0.3, 1],
+          Extrapolate.CLAMP
+        )
+      },
+      {
+        translateY: interpolate(
+          star2Animation.value,
+          [0, 1],
+          [20, 0],
+          Extrapolate.CLAMP
+        )
+      }
+    ],
+  }));
+
+  const star3Style = useAnimatedStyle(() => ({
+    opacity: star3Animation.value,
+    transform: [
+      { 
+        scale: interpolate(
+          star3Animation.value,
+          [0, 1],
+          [0.3, 1],
+          Extrapolate.CLAMP
+        )
+      },
+      {
+        translateY: interpolate(
+          star3Animation.value,
+          [0, 1],
+          [20, 0],
+          Extrapolate.CLAMP
+        )
+      }
+    ],
+  }));
+
+  const star4Style = useAnimatedStyle(() => ({
+    opacity: star4Animation.value,
+    transform: [
+      { 
+        scale: interpolate(
+          star4Animation.value,
+          [0, 1],
+          [0.3, 1],
+          Extrapolate.CLAMP
+        )
+      },
+      {
+        translateY: interpolate(
+          star4Animation.value,
+          [0, 1],
+          [20, 0],
+          Extrapolate.CLAMP
+        )
+      }
+    ],
+  }));
+
+  const star5Style = useAnimatedStyle(() => ({
+    opacity: star5Animation.value,
+    transform: [
+      { 
+        scale: interpolate(
+          star5Animation.value,
+          [0, 1],
+          [0.3, 1],
+          Extrapolate.CLAMP
+        )
+      },
+      {
+        translateY: interpolate(
+          star5Animation.value,
+          [0, 1],
+          [20, 0],
+          Extrapolate.CLAMP
+        )
+      }
+    ],
+  }));
+
+  const reviewInputStyle = useAnimatedStyle(() => ({
+    opacity: reviewInputAnimation.value,
+    transform: [
+      {
+        translateY: interpolate(
+          reviewInputAnimation.value,
+          [0, 1],
+          [30, 0],
+          Extrapolate.CLAMP
+        )
+      }
+    ],
+  }));
+
+  const reviewInputContainerStyle = useAnimatedStyle(() => ({
+    maxHeight: interpolate(
+      reviewInputHeight.value,
+      [0, 1],
+      [0, 200],
+      Extrapolate.CLAMP
+    ),
+  }));
+
+  // Effect hooks - always called in the same order
   useEffect(() => {
     if (user?.id) {
       loadUserPreferences();
@@ -152,7 +314,7 @@ export default function DiscoverScreen() {
     }
   }, [position, duration, ratingThreshold, state]);
 
-  // Animate rating interface appearance
+  // Function definitions
   const animateRatingAppearance = () => {
     // Container animation
     ratingContainerOpacity.value = withTiming(1, { duration: 400 });
@@ -166,13 +328,11 @@ export default function DiscoverScreen() {
     star5Animation.value = withDelay(600, withTiming(1, { duration: 300 }));
   };
 
-  // Animate review input appearance
   const animateReviewInput = () => {
     reviewInputAnimation.value = withTiming(1, { duration: 400 });
     reviewInputHeight.value = withTiming(1, { duration: 400 });
   };
 
-  // Reset rating animations
   const resetRatingAnimations = () => {
     ratingContainerOpacity.value = 0;
     ratingContainerScale.value = 0.8;
@@ -184,79 +344,6 @@ export default function DiscoverScreen() {
     reviewInputAnimation.value = 0;
     reviewInputHeight.value = 0;
   };
-
-  // Animated styles
-  const pulseStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: pulseAnimation.value }],
-  }));
-
-  const progressStyle = useAnimatedStyle(() => ({
-    width: `${(position / duration) * 100}%`,
-  }));
-
-  const thankYouStyle = useAnimatedStyle(() => ({
-    opacity: thankYouOpacity.value,
-  }));
-
-  const fadeStyle = useAnimatedStyle(() => ({
-    opacity: fadeOpacity.value,
-  }));
-
-  const transitionTextStyle = useAnimatedStyle(() => ({
-    opacity: transitionTextOpacity.value,
-  }));
-
-  const ratingContainerStyle = useAnimatedStyle(() => ({
-    opacity: ratingContainerOpacity.value,
-    transform: [{ scale: ratingContainerScale.value }],
-  }));
-
-  const createStarAnimatedStyle = (animationValue: Animated.SharedValue<number>) => {
-    return useAnimatedStyle(() => ({
-      opacity: animationValue.value,
-      transform: [
-        { 
-          scale: interpolate(
-            animationValue.value,
-            [0, 1],
-            [0.3, 1],
-            Extrapolate.CLAMP
-          )
-        },
-        {
-          translateY: interpolate(
-            animationValue.value,
-            [0, 1],
-            [20, 0],
-            Extrapolate.CLAMP
-          )
-        }
-      ],
-    }));
-  };
-
-  const reviewInputStyle = useAnimatedStyle(() => ({
-    opacity: reviewInputAnimation.value,
-    transform: [
-      {
-        translateY: interpolate(
-          reviewInputAnimation.value,
-          [0, 1],
-          [30, 0],
-          Extrapolate.CLAMP
-        )
-      }
-    ],
-  }));
-
-  const reviewInputContainerStyle = useAnimatedStyle(() => ({
-    maxHeight: interpolate(
-      reviewInputHeight.value,
-      [0, 1],
-      [0, 200],
-      Extrapolate.CLAMP
-    ),
-  }));
 
   const loadUserPreferences = async () => {
     if (!user?.id) return;
@@ -793,29 +880,77 @@ export default function DiscoverScreen() {
                     How does this track make you feel?
                   </Text>
 
-                  {/* Rating Stars with Staggered Animation */}
+                  {/* Rating Stars with Individual Animated Styles */}
                   <View style={{ flexDirection: 'row', gap: 16, marginBottom: 32 }}>
-                    {[
-                      { index: 1, animation: star1Animation },
-                      { index: 2, animation: star2Animation },
-                      { index: 3, animation: star3Animation },
-                      { index: 4, animation: star4Animation },
-                      { index: 5, animation: star5Animation },
-                    ].map(({ index, animation }) => (
-                      <Animated.View key={index} style={createStarAnimatedStyle(animation)}>
-                        <TouchableOpacity
-                          onPress={() => handleStarPress(index)}
-                          style={{ padding: 8 }}
-                        >
-                          <Star
-                            size={32}
-                            color={index <= rating ? '#452451' : '#8b6699'}
-                            fill={index <= rating ? '#452451' : 'transparent'}
-                            strokeWidth={1.5}
-                          />
-                        </TouchableOpacity>
-                      </Animated.View>
-                    ))}
+                    <Animated.View style={star1Style}>
+                      <TouchableOpacity
+                        onPress={() => handleStarPress(1)}
+                        style={{ padding: 8 }}
+                      >
+                        <Star
+                          size={32}
+                          color={1 <= rating ? '#452451' : '#8b6699'}
+                          fill={1 <= rating ? '#452451' : 'transparent'}
+                          strokeWidth={1.5}
+                        />
+                      </TouchableOpacity>
+                    </Animated.View>
+
+                    <Animated.View style={star2Style}>
+                      <TouchableOpacity
+                        onPress={() => handleStarPress(2)}
+                        style={{ padding: 8 }}
+                      >
+                        <Star
+                          size={32}
+                          color={2 <= rating ? '#452451' : '#8b6699'}
+                          fill={2 <= rating ? '#452451' : 'transparent'}
+                          strokeWidth={1.5}
+                        />
+                      </TouchableOpacity>
+                    </Animated.View>
+
+                    <Animated.View style={star3Style}>
+                      <TouchableOpacity
+                        onPress={() => handleStarPress(3)}
+                        style={{ padding: 8 }}
+                      >
+                        <Star
+                          size={32}
+                          color={3 <= rating ? '#452451' : '#8b6699'}
+                          fill={3 <= rating ? '#452451' : 'transparent'}
+                          strokeWidth={1.5}
+                        />
+                      </TouchableOpacity>
+                    </Animated.View>
+
+                    <Animated.View style={star4Style}>
+                      <TouchableOpacity
+                        onPress={() => handleStarPress(4)}
+                        style={{ padding: 8 }}
+                      >
+                        <Star
+                          size={32}
+                          color={4 <= rating ? '#452451' : '#8b6699'}
+                          fill={4 <= rating ? '#452451' : 'transparent'}
+                          strokeWidth={1.5}
+                        />
+                      </TouchableOpacity>
+                    </Animated.View>
+
+                    <Animated.View style={star5Style}>
+                      <TouchableOpacity
+                        onPress={() => handleStarPress(5)}
+                        style={{ padding: 8 }}
+                      >
+                        <Star
+                          size={32}
+                          color={5 <= rating ? '#452451' : '#8b6699'}
+                          fill={5 <= rating ? '#452451' : 'transparent'}
+                          strokeWidth={1.5}
+                        />
+                      </TouchableOpacity>
+                    </Animated.View>
                   </View>
 
                   {/* Review Input for High Ratings */}
