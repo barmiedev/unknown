@@ -174,11 +174,12 @@ export default function ArtistUnveilView({
     if (!user?.id) return;
 
     try {
+      // Use maybeSingle() to handle no results gracefully
       const { data, error } = await supabase
         .from('user_streaming_preferences')
         .select('preferred_platform')
         .eq('profile_id', user.id)
-        .single();
+        .maybeSingle();
 
       if (data) {
         setPreferredPlatform(data.preferred_platform);

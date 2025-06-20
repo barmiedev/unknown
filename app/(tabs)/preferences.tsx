@@ -70,12 +70,12 @@ export default function PreferencesScreen() {
         });
       }
 
-      // Load streaming preferences
+      // Load streaming preferences - use maybeSingle() to handle no results gracefully
       const { data: streamingPrefs, error: streamingError } = await supabase
         .from('user_streaming_preferences')
         .select('preferred_platform')
         .eq('profile_id', user.id)
-        .single();
+        .maybeSingle();
 
       if (streamingPrefs) {
         setPreferredPlatform(streamingPrefs.preferred_platform);
