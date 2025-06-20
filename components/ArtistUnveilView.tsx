@@ -141,16 +141,16 @@ export default function ArtistUnveilView({
         if (socialError) throw socialError;
         setSocialLinks(socialData || []);
 
-        // Check if user is subscribed
+        // Check if user is subscribed - Remove .single() to avoid 406 error
         if (user?.id) {
           const { data: subscriptionData } = await supabase
             .from('user_artist_subscriptions')
             .select('id')
             .eq('profile_id', user.id)
-            .eq('artist_id', artistData.artists.id)
-            .single();
+            .eq('artist_id', artistData.artists.id);
 
-          setIsSubscribed(!!subscriptionData);
+          // Check if subscription exists by checking if data array is not empty
+          setIsSubscribed(subscriptionData && subscriptionData.length > 0);
         }
       }
 
