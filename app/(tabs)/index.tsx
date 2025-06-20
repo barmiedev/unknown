@@ -8,7 +8,10 @@ import Animated, {
   withTiming,
   withRepeat,
   withSequence,
+  withDelay,
   runOnJS,
+  interpolate,
+  Extrapolate,
 } from 'react-native-reanimated';
 import { Audio, AVPlaybackStatus } from 'expo-av';
 import { supabase } from '@/lib/supabase';
@@ -90,11 +93,23 @@ export default function DiscoverScreen() {
 
   const reviewInputRef = useRef<TextInput>(null);
 
+  // Animation values
   const pulseAnimation = useSharedValue(1);
   const progressAnimation = useSharedValue(0);
   const thankYouOpacity = useSharedValue(0);
   const fadeOpacity = useSharedValue(1);
   const transitionTextOpacity = useSharedValue(0);
+  
+  // Rating animation values
+  const ratingContainerOpacity = useSharedValue(0);
+  const ratingContainerScale = useSharedValue(0.8);
+  const star1Animation = useSharedValue(0);
+  const star2Animation = useSharedValue(0);
+  const star3Animation = useSharedValue(0);
+  const star4Animation = useSharedValue(0);
+  const star5Animation = useSharedValue(0);
+  const reviewInputAnimation = useSharedValue(0);
+  const reviewInputHeight = useSharedValue(0);
 
   useEffect(() => {
     if (user?.id) {
@@ -131,10 +146,46 @@ export default function DiscoverScreen() {
       if (progress >= ratingThreshold) {
         setState('rating');
         setShowRating(true);
+        // Trigger rating animations
+        animateRatingAppearance();
       }
     }
   }, [position, duration, ratingThreshold, state]);
 
+  // Animate rating interface appearance
+  const animateRatingAppearance = () => {
+    // Container animation
+    ratingContainerOpacity.value = withTiming(1, { duration: 400 });
+    ratingContainerScale.value = withTiming(1, { duration: 400 });
+
+    // Staggered star animations
+    star1Animation.value = withDelay(200, withTiming(1, { duration: 300 }));
+    star2Animation.value = withDelay(300, withTiming(1, { duration: 300 }));
+    star3Animation.value = withDelay(400, withTiming(1, { duration: 300 }));
+    star4Animation.value = withDelay(500, withTiming(1, { duration: 300 }));
+    star5Animation.value = withDelay(600, withTiming(1, { duration: 300 }));
+  };
+
+  // Animate review input appearance
+  const animateReviewInput = () => {
+    reviewInputAnimation.value = withTiming(1, { duration: 400 });
+    reviewInputHeight.value = withTiming(1, { duration: 400 });
+  };
+
+  // Reset rating animations
+  const resetRatingAnimations = () => {
+    ratingContainerOpacity.value = 0;
+    ratingContainerScale.value = 0.8;
+    star1Animation.value = 0;
+    star2Animation.value = 0;
+    star3Animation.value = 0;
+    star4Animation.value = 0;
+    star5Animation.value = 0;
+    reviewInputAnimation.value = 0;
+    reviewInputHeight.value = 0;
+  };
+
+  // Animated styles
   const pulseStyle = useAnimatedStyle(() => ({
     transform: [{ scale: pulseAnimation.value }],
   }));
@@ -153,6 +204,58 @@ export default function DiscoverScreen() {
 
   const transitionTextStyle = useAnimatedStyle(() => ({
     opacity: transitionTextOpacity.value,
+  }));
+
+  const ratingContainerStyle = useAnimatedStyle(() => ({
+    opacity: ratingContainerOpacity.value,
+    transform: [{ scale: ratingContainerScale.value }],
+  }));
+
+  const createStarAnimatedStyle = (animationValue: Animated.SharedValue<number>) => {
+    return useAnimatedStyle(() => ({
+      opacity: animationValue.value,
+      transform: [
+        { 
+          scale: interpolate(
+            animationValue.value,
+            [0, 1],
+            [0.3, 1],
+            Extrapolate.CLAMP
+          )
+        },
+        {
+          translateY: interpolate(
+            animationValue.value,
+            [0, 1],
+            [20, 0],
+            Extrapolate.CLAMP
+          )
+        }
+      ],
+    }));
+  };
+
+  const reviewInputStyle = useAnimatedStyle(() => ({
+    opacity: reviewInputAnimation.value,
+    transform: [
+      {
+        translateY: interpolate(
+          reviewInputAnimation.value,
+          [0, 1],
+          [30, 0],
+          Extrapolate.CLAMP
+        )
+      }
+    ],
+  }));
+
+  const reviewInputContainerStyle = useAnimatedStyle(() => ({
+    maxHeight: interpolate(
+      reviewInputHeight.value,
+      [0, 1],
+      [0, 200],
+      Extrapolate.CLAMP
+    ),
   }));
 
   const loadUserPreferences = async () => {
@@ -289,6 +392,9 @@ export default function DiscoverScreen() {
       setShowReviewInput(false);
       setIsReviewFocused(false);
       setState('playing');
+
+      // Reset animations
+      resetRatingAnimations();
 
       if (!isBackgroundLoad) {
         setShowThankYou(false);
@@ -462,6 +568,10 @@ export default function DiscoverScreen() {
     if (stars >= 4) {
       setShowReviewInput(true);
       setRating(stars);
+      // Animate review input appearance
+      setTimeout(() => {
+        animateReviewInput();
+      }, 100);
     } else {
       submitRating(stars);
     }
@@ -678,64 +788,73 @@ export default function DiscoverScreen() {
                 </>
               ) : showRating && !trackRevealed ? (
                 /* Rating Interface */
-                <View style={{ alignItems: 'center', width: '100%' }}>
+                <Animated.View style={[ratingContainerStyle, { alignItems: 'center', width: '100%' }]}>
                   <Text style={{ fontSize: 20, fontFamily: fonts.chillax.medium, textAlign: 'center', marginBottom: 48, color: '#ded7e0' }}>
                     How does this track make you feel?
                   </Text>
 
-                  {/* Rating Stars */}
+                  {/* Rating Stars with Staggered Animation */}
                   <View style={{ flexDirection: 'row', gap: 16, marginBottom: 32 }}>
-                    {[1, 2, 3, 4, 5].map((star) => (
-                      <TouchableOpacity
-                        key={star}
-                        onPress={() => handleStarPress(star)}
-                        style={{ padding: 8 }}
-                      >
-                        <Star
-                          size={32}
-                          color={star <= rating ? '#452451' : '#8b6699'}
-                          fill={star <= rating ? '#452451' : 'transparent'}
-                          strokeWidth={1.5}
-                        />
-                      </TouchableOpacity>
+                    {[
+                      { index: 1, animation: star1Animation },
+                      { index: 2, animation: star2Animation },
+                      { index: 3, animation: star3Animation },
+                      { index: 4, animation: star4Animation },
+                      { index: 5, animation: star5Animation },
+                    ].map(({ index, animation }) => (
+                      <Animated.View key={index} style={createStarAnimatedStyle(animation)}>
+                        <TouchableOpacity
+                          onPress={() => handleStarPress(index)}
+                          style={{ padding: 8 }}
+                        >
+                          <Star
+                            size={32}
+                            color={index <= rating ? '#452451' : '#8b6699'}
+                            fill={index <= rating ? '#452451' : 'transparent'}
+                            strokeWidth={1.5}
+                          />
+                        </TouchableOpacity>
+                      </Animated.View>
                     ))}
                   </View>
 
                   {/* Review Input for High Ratings */}
                   {showReviewInput && (
-                    <View style={{ width: '100%', marginBottom: 32 }}>
-                      <Text style={{ fontSize: 16, fontFamily: fonts.chillax.medium, color: '#ded7e0', marginBottom: 12 }}>
-                        Share your thoughts (optional)
-                      </Text>
-                      <View style={{ backgroundColor: '#28232a', borderRadius: 16, padding: 16 }}>
-                        <TextInput
-                          ref={reviewInputRef}
-                          style={{ 
-                            fontSize: 16, 
-                            fontFamily: fonts.chillax.regular, 
-                            color: '#ded7e0',
-                            minHeight: 80,
-                            textAlignVertical: 'top'
-                          }}
-                          placeholder="What did you love about this track?"
-                          placeholderTextColor="#8b6699"
-                          value={review}
-                          onChangeText={setReview}
-                          multiline
-                          onFocus={() => setIsReviewFocused(true)}
-                          onBlur={() => setIsReviewFocused(false)}
-                        />
-                      </View>
-                      
-                      <TouchableOpacity
-                        onPress={handleSubmitWithReview}
-                        style={{ backgroundColor: '#452451', paddingVertical: 16, borderRadius: 16, alignItems: 'center', marginTop: 16 }}
-                      >
-                        <Text style={{ color: '#ded7e0', fontFamily: fonts.chillax.bold, fontSize: 18 }}>
-                          Submit Rating
+                    <Animated.View style={[reviewInputContainerStyle, { width: '100%', overflow: 'hidden' }]}>
+                      <Animated.View style={[reviewInputStyle, { width: '100%', marginBottom: 32 }]}>
+                        <Text style={{ fontSize: 16, fontFamily: fonts.chillax.medium, color: '#ded7e0', marginBottom: 12 }}>
+                          Share your thoughts (optional)
                         </Text>
-                      </TouchableOpacity>
-                    </View>
+                        <View style={{ backgroundColor: '#28232a', borderRadius: 16, padding: 16 }}>
+                          <TextInput
+                            ref={reviewInputRef}
+                            style={{ 
+                              fontSize: 16, 
+                              fontFamily: fonts.chillax.regular, 
+                              color: '#ded7e0',
+                              minHeight: 80,
+                              textAlignVertical: 'top'
+                            }}
+                            placeholder="What did you love about this track?"
+                            placeholderTextColor="#8b6699"
+                            value={review}
+                            onChangeText={setReview}
+                            multiline
+                            onFocus={() => setIsReviewFocused(true)}
+                            onBlur={() => setIsReviewFocused(false)}
+                          />
+                        </View>
+                        
+                        <TouchableOpacity
+                          onPress={handleSubmitWithReview}
+                          style={{ backgroundColor: '#452451', paddingVertical: 16, borderRadius: 16, alignItems: 'center', marginTop: 16 }}
+                        >
+                          <Text style={{ color: '#ded7e0', fontFamily: fonts.chillax.bold, fontSize: 18 }}>
+                            Submit Rating
+                          </Text>
+                        </TouchableOpacity>
+                      </Animated.View>
+                    </Animated.View>
                   )}
 
                   {/* Skip Button */}
@@ -754,7 +873,7 @@ export default function DiscoverScreen() {
                     <SkipForward size={20} color='#8b6699' strokeWidth={2} />
                     <Text style={{ fontFamily: fonts.chillax.medium, color: '#8b6699', fontSize: 16 }}>Skip</Text>
                   </TouchableOpacity>
-                </View>
+                </Animated.View>
               ) : trackRevealed && currentTrack ? (
                 /* Track Revealed */
                 <View style={{ alignItems: 'center' }}>
