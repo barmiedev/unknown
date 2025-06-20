@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { View, Text, TouchableOpacity, Alert, Image, ActivityIndicator, TextInput, Keyboard, TouchableWithoutFeedback } from 'react-native';
+import { View, Text, TouchableOpacity, Alert, Image, ActivityIndicator, TextInput, Keyboard, TouchableWithoutFeedback, ScrollView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Play, Pause, Star, SkipForward } from 'lucide-react-native';
+import { Play, Pause, Star, SkipForward, Shuffle } from 'lucide-react-native';
 import Animated, { 
   useAnimatedStyle, 
   useSharedValue, 
@@ -37,7 +37,32 @@ interface UserPreferences {
   max_duration: number;
 }
 
-type DiscoverState = 'loading' | 'playing' | 'rating' | 'revealed' | 'transitioning';
+type DiscoverState = 'mood_selection' | 'loading' | 'playing' | 'rating' | 'revealed' | 'transitioning';
+
+const ALL_MOODS = [
+  'Energetic', 'Chill', 'Melancholic', 'Uplifting', 'Aggressive',
+  'Romantic', 'Mysterious', 'Nostalgic', 'Experimental', 'Peaceful',
+  'Dark', 'Dreamy', 'Intense', 'Playful', 'Contemplative', 'Euphoric'
+];
+
+const MOOD_EMOJIS: { [key: string]: string } = {
+  'Energetic': '⚡',
+  'Chill': '😌',
+  'Melancholic': '🌧️',
+  'Uplifting': '☀️',
+  'Aggressive': '🔥',
+  'Romantic': '💕',
+  'Mysterious': '🌙',
+  'Nostalgic': '🍂',
+  'Experimental': '🧪',
+  'Peaceful': '🕊️',
+  'Dark': '🖤',
+  'Dreamy': '☁️',
+  'Intense': '💥',
+  'Playful': '🎈',
+  'Contemplative': '🤔',
+  'Euphoric': '🌟'
+};
 
 interface AnimationBackgroundProps {
   animationUrl?: string;
@@ -74,12 +99,14 @@ export default function DiscoverScreen() {
   
   // State hooks - always called in the same order
   const [currentTrack, setCurrentTrack] = useState<Track | null>(null);
-  const [state, setState] = useState<DiscoverState>('loading');
+  const [state, setState] = useState<DiscoverState>('mood_selection');
+  const [selectedSessionMood, setSelectedSessionMood] = useState<string | null>(null);
+  const [availableMoods, setAvailableMoods] = useState<string[]>([]);
   const [rating, setRating] = useState(0);
   const [review, setReview] = useState('');
   const [showRating, setShowRating] = useState(false);
   const [trackRevealed, setTrackRevealed] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [sound, setSound] = useState<Audio.Sound | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
@@ -112,6 +139,8 @@ export default function DiscoverScreen() {
   const star5Animation = useSharedValue(0);
   const reviewInputAnimation = useSharedValue(0);
   const reviewInputHeight = useSharedValue(0);
+  const moodSelectionOpacity = useSharedValue(1);
+  const moodSelectionScale = useSharedValue(1);
 
   // Animated styles - always called in the same order
   const pulseStyle = useAnimatedStyle(() => ({
@@ -272,11 +301,15 @@ export default function DiscoverScreen() {
     ),
   }));
 
+  const moodSelectionStyle = useAnimatedStyle(() => ({
+    opacity: moodSelectionOpacity.value,
+    transform: [{ scale: moodSelectionScale.value }],
+  }));
+
   // Effect hooks - always called in the same order
   useEffect(() => {
     if (user?.id) {
       loadUserPreferences();
-      loadNextTrack();
       checkFirstTimeUser();
     }
 
@@ -362,9 +395,28 @@ export default function DiscoverScreen() {
 
       if (data) {
         setUserPreferences(data);
+        // Set available moods based on user preferences or random selection
+        if (data.preferred_moods && data.preferred_moods.length > 0) {
+          // Show user's preferred moods first, then add some random ones
+          const userMoods = data.preferred_moods.slice(0, 4);
+          const remainingMoods = ALL_MOODS.filter(mood => !userMoods.includes(mood));
+          const randomMoods = remainingMoods.sort(() => 0.5 - Math.random()).slice(0, 2);
+          setAvailableMoods([...userMoods, ...randomMoods]);
+        } else {
+          // Show random moods if no preferences
+          const randomMoods = ALL_MOODS.sort(() => 0.5 - Math.random()).slice(0, 6);
+          setAvailableMoods(randomMoods);
+        }
+      } else {
+        // No preferences found, show random moods
+        const randomMoods = ALL_MOODS.sort(() => 0.5 - Math.random()).slice(0, 6);
+        setAvailableMoods(randomMoods);
       }
     } catch (error) {
       console.error('Error loading user preferences:', error);
+      // Fallback to random moods
+      const randomMoods = ALL_MOODS.sort(() => 0.5 - Math.random()).slice(0, 6);
+      setAvailableMoods(randomMoods);
     }
   };
 
@@ -388,7 +440,24 @@ export default function DiscoverScreen() {
     }
   };
 
-  const loadNextTrack = async (isBackgroundLoad = false) => {
+  const handleMoodSelection = async (mood: string | null) => {
+    setSelectedSessionMood(mood);
+    
+    // Animate mood selection fade out
+    moodSelectionOpacity.value = withTiming(0, { duration: 500 });
+    moodSelectionScale.value = withTiming(0.95, { duration: 500 });
+    
+    // Start loading track
+    setState('loading');
+    setIsLoading(true);
+    
+    // Wait for animation to complete, then load track
+    setTimeout(() => {
+      loadNextTrack(false, mood);
+    }, 500);
+  };
+
+  const loadNextTrack = async (isBackgroundLoad = false, sessionMood: string | null = null) => {
     try {
       if (!isBackgroundLoad) {
         setIsLoading(true);
@@ -413,7 +482,7 @@ export default function DiscoverScreen() {
 
       const excludeIds = ratedTrackIds?.map(r => r.track_id) || [];
 
-      // Build query based on user preferences
+      // Build query based on user preferences and session mood
       let query = supabase
         .from('tracks')
         .select('*')
@@ -424,8 +493,13 @@ export default function DiscoverScreen() {
         query = query.not('id', 'in', `(${excludeIds.join(',')})`);
       }
 
-      // Apply user preferences if available
-      if (userPreferences) {
+      // Apply session mood filter if selected (not "Surprise me")
+      if (sessionMood) {
+        query = query.eq('mood', sessionMood);
+      }
+
+      // Apply user preferences if available and no specific session mood
+      if (userPreferences && !sessionMood) {
         if (userPreferences.preferred_genres && userPreferences.preferred_genres.length > 0) {
           query = query.in('genre', userPreferences.preferred_genres);
         }
@@ -482,6 +556,10 @@ export default function DiscoverScreen() {
 
       // Reset animations
       resetRatingAnimations();
+      
+      // Reset mood selection animations for next time
+      moodSelectionOpacity.value = 1;
+      moodSelectionScale.value = 1;
 
       if (!isBackgroundLoad) {
         setShowThankYou(false);
@@ -498,7 +576,7 @@ export default function DiscoverScreen() {
   };
 
   const loadNextTrackInBackground = async () => {
-    await loadNextTrack(true);
+    await loadNextTrack(true, selectedSessionMood);
   };
 
   const fadeAudioAndTransition = async (callback: () => void) => {
@@ -529,7 +607,7 @@ export default function DiscoverScreen() {
         fadeOpacity.value = withTiming(1, { duration: 300 });
         setIsTransitioning(false);
       }, 1000);
-    }, 3000);
+    }, 2000);
   };
 
   const showThankYouMessage = () => {
@@ -593,7 +671,7 @@ export default function DiscoverScreen() {
     if (!canSkip) return;
     
     fadeAudioAndTransition(() => {
-      loadNextTrack();
+      loadNextTrack(false, selectedSessionMood);
     });
   };
 
@@ -673,7 +751,7 @@ export default function DiscoverScreen() {
       'Continue Listening',
       'Would you like to listen to the full track? You won\'t be able to skip until it ends.',
       [
-        { text: 'No, discover next', style: 'cancel', onPress: () => fadeAudioAndTransition(() => loadNextTrack()) },
+        { text: 'No, discover next', style: 'cancel', onPress: () => fadeAudioAndTransition(() => loadNextTrack(false, selectedSessionMood)) },
         { text: 'Yes, continue', onPress: () => {
           setCanSkip(false);
           setState('playing');
@@ -683,17 +761,138 @@ export default function DiscoverScreen() {
     );
   };
 
+  const handleNewSession = () => {
+    setState('mood_selection');
+    setSelectedSessionMood(null);
+    setCurrentTrack(null);
+    if (sound) {
+      sound.unloadAsync();
+      setSound(null);
+    }
+    setIsPlaying(false);
+    setPosition(0);
+    setDuration(0);
+    resetRatingAnimations();
+  };
+
   const dismissKeyboard = () => {
     Keyboard.dismiss();
     setIsReviewFocused(false);
   };
 
+  // Mood Selection Screen
+  if (state === 'mood_selection') {
+    return (
+      <View style={{ backgroundColor: '#19161a', flex: 1 }}>
+        <SafeAreaView style={{ flex: 1 }}>
+          <AnimationBackground>
+            <Animated.View style={[moodSelectionStyle, { flex: 1, paddingHorizontal: 24 }]}>
+              {/* Header */}
+              <View style={{ alignItems: 'center', paddingTop: 32, paddingBottom: 48 }}>
+                <Text style={{ fontSize: 24, fontFamily: fonts.chillax.bold, color: '#ded7e0', marginBottom: 16 }}>
+                  unknown
+                </Text>
+                <Text style={{ fontSize: 32, fontFamily: fonts.chillax.bold, color: '#ded7e0', textAlign: 'center', marginBottom: 16 }}>
+                  How do you feel today?
+                </Text>
+                <Text style={{ fontSize: 16, fontFamily: fonts.chillax.regular, color: '#8b6699', textAlign: 'center', lineHeight: 24 }}>
+                  Choose a mood to discover music that matches your vibe
+                </Text>
+              </View>
+
+              {/* Mood Options */}
+              <ScrollView style={{ flex: 1 }} showsVerticalScrollIndicator={false}>
+                <View style={{ 
+                  flexDirection: 'row', 
+                  flexWrap: 'wrap', 
+                  gap: 16, 
+                  justifyContent: 'center',
+                  paddingBottom: 32
+                }}>
+                  {availableMoods.map((mood) => (
+                    <TouchableOpacity
+                      key={mood}
+                      onPress={() => handleMoodSelection(mood)}
+                      style={{
+                        backgroundColor: '#28232a',
+                        paddingHorizontal: 24,
+                        paddingVertical: 20,
+                        borderRadius: 20,
+                        alignItems: 'center',
+                        minWidth: 140,
+                        shadowColor: '#452451',
+                        shadowOffset: { width: 0, height: 4 },
+                        shadowOpacity: 0.2,
+                        shadowRadius: 8,
+                        elevation: 4,
+                      }}
+                    >
+                      <Text style={{ fontSize: 32, marginBottom: 8 }}>
+                        {MOOD_EMOJIS[mood] || '🎵'}
+                      </Text>
+                      <Text style={{ 
+                        fontSize: 16, 
+                        fontFamily: fonts.chillax.bold, 
+                        color: '#ded7e0',
+                        textAlign: 'center'
+                      }}>
+                        {mood}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+
+                {/* Surprise Me Button */}
+                <View style={{ alignItems: 'center', paddingBottom: 48 }}>
+                  <TouchableOpacity
+                    onPress={() => handleMoodSelection(null)}
+                    style={{
+                      backgroundColor: '#452451',
+                      paddingHorizontal: 32,
+                      paddingVertical: 20,
+                      borderRadius: 20,
+                      flexDirection: 'row',
+                      alignItems: 'center',
+                      gap: 12,
+                      shadowColor: '#452451',
+                      shadowOffset: { width: 0, height: 6 },
+                      shadowOpacity: 0.4,
+                      shadowRadius: 12,
+                      elevation: 8,
+                    }}
+                  >
+                    <Shuffle size={24} color="#ded7e0" strokeWidth={2} />
+                    <Text style={{ 
+                      fontSize: 18, 
+                      fontFamily: fonts.chillax.bold, 
+                      color: '#ded7e0'
+                    }}>
+                      Surprise me
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+              </ScrollView>
+            </Animated.View>
+          </AnimationBackground>
+        </SafeAreaView>
+      </View>
+    );
+  }
+
   if (isLoading) {
     return (
       <View style={{ backgroundColor: '#19161a', flex: 1 }}>
         <SafeAreaView style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
+          <Text style={{ fontSize: 48, marginBottom: 32 }}>🎵</Text>
           <ActivityIndicator size="large" color="#8b6699" />
-          <Text style={{ color: 'white', marginTop: 16, fontFamily: fonts.chillax.regular }}>Loading track...</Text>
+          <Text style={{ color: '#ded7e0', marginTop: 16, fontFamily: fonts.chillax.regular, fontSize: 18 }}>
+            Finding your perfect track...
+          </Text>
+          {selectedSessionMood && (
+            <Text style={{ color: '#8b6699', marginTop: 8, fontFamily: fonts.chillax.regular, fontSize: 16 }}>
+              {MOOD_EMOJIS[selectedSessionMood]} {selectedSessionMood} vibes
+            </Text>
+          )}
         </SafeAreaView>
       </View>
     );
@@ -705,11 +904,19 @@ export default function DiscoverScreen() {
         <SafeAreaView style={{ flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 24 }}>
           <Text style={{ color: 'white', textAlign: 'center', marginBottom: 16, fontFamily: fonts.chillax.regular }}>{error}</Text>
           <TouchableOpacity
-            onPress={() => loadNextTrack()}
-            style={{ backgroundColor: '#452451', paddingHorizontal: 32, paddingVertical: 16, borderRadius: 16 }}
+            onPress={() => loadNextTrack(false, selectedSessionMood)}
+            style={{ backgroundColor: '#452451', paddingHorizontal: 32, paddingVertical: 16, borderRadius: 16, marginBottom: 16 }}
           >
             <Text style={{ color: '#ded7e0', fontFamily: fonts.chillax.bold, fontSize: 18 }}>
               Try Again
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            onPress={handleNewSession}
+            style={{ backgroundColor: '#28232a', paddingHorizontal: 32, paddingVertical: 16, borderRadius: 16 }}
+          >
+            <Text style={{ color: '#ded7e0', fontFamily: fonts.chillax.medium, fontSize: 16 }}>
+              Choose Different Mood
             </Text>
           </TouchableOpacity>
         </SafeAreaView>
@@ -722,9 +929,41 @@ export default function DiscoverScreen() {
       <View style={{ backgroundColor: '#19161a', flex: 1 }}>
         <SafeAreaView style={{ flex: 1 }}>
           <AnimationBackground>
-            {/* Header - Removed subheader to save space */}
-            <View style={{ alignItems: 'center', paddingTop: 24, paddingBottom: 32 }}>
+            {/* Header with Session Info */}
+            <View style={{ alignItems: 'center', paddingTop: 24, paddingBottom: 32, paddingHorizontal: 24 }}>
               <Text style={{ fontSize: 24, fontFamily: fonts.chillax.bold, color: '#ded7e0' }}>unknown</Text>
+              {selectedSessionMood && (
+                <View style={{ 
+                  flexDirection: 'row', 
+                  alignItems: 'center', 
+                  backgroundColor: '#28232a', 
+                  paddingHorizontal: 16, 
+                  paddingVertical: 8, 
+                  borderRadius: 12, 
+                  marginTop: 12 
+                }}>
+                  <Text style={{ fontSize: 16, marginRight: 8 }}>
+                    {MOOD_EMOJIS[selectedSessionMood]}
+                  </Text>
+                  <Text style={{ fontSize: 14, fontFamily: fonts.chillax.medium, color: '#8b6699' }}>
+                    {selectedSessionMood} session
+                  </Text>
+                </View>
+              )}
+              <TouchableOpacity
+                onPress={handleNewSession}
+                style={{ 
+                  backgroundColor: '#28232a', 
+                  paddingHorizontal: 16, 
+                  paddingVertical: 8, 
+                  borderRadius: 12, 
+                  marginTop: 8 
+                }}
+              >
+                <Text style={{ fontSize: 12, fontFamily: fonts.chillax.medium, color: '#8b6699' }}>
+                  Change mood
+                </Text>
+              </TouchableOpacity>
             </View>
 
             {/* Welcome Tip */}
@@ -1026,7 +1265,7 @@ export default function DiscoverScreen() {
                   </TouchableOpacity>
 
                   <TouchableOpacity
-                    onPress={() => fadeAudioAndTransition(() => loadNextTrack())}
+                    onPress={() => fadeAudioAndTransition(() => loadNextTrack(false, selectedSessionMood))}
                     style={{ backgroundColor: '#28232a', paddingHorizontal: 32, paddingVertical: 16, borderRadius: 16 }}
                   >
                     <Text style={{ color: '#ded7e0', fontFamily: fonts.chillax.bold, fontSize: 18 }}>
