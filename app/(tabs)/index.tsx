@@ -722,12 +722,9 @@ export default function DiscoverScreen() {
       <View style={{ backgroundColor: '#19161a', flex: 1 }}>
         <SafeAreaView style={{ flex: 1 }}>
           <AnimationBackground>
-            {/* Header */}
-            <View style={{ alignItems: 'center', paddingTop: 32, paddingBottom: 48 }}>
+            {/* Header - Removed subheader to save space */}
+            <View style={{ alignItems: 'center', paddingTop: 24, paddingBottom: 32 }}>
               <Text style={{ fontSize: 24, fontFamily: fonts.chillax.bold, color: '#ded7e0' }}>unknown</Text>
-              <Text style={{ fontSize: 14, fontFamily: fonts.chillax.medium, marginTop: 8, color: '#8b6699' }}>
-                Discover underground music
-              </Text>
             </View>
 
             {/* Welcome Tip */}
@@ -822,7 +819,7 @@ export default function DiscoverScreen() {
               {!showRating && !trackRevealed ? (
                 <>
                   {/* Play Button */}
-                  <Animated.View style={[pulseStyle, { marginBottom: 48 }]}>
+                  <Animated.View style={[pulseStyle, { marginBottom: 40 }]}>
                     <TouchableOpacity
                       onPress={playPauseAudio}
                       style={{
@@ -848,7 +845,7 @@ export default function DiscoverScreen() {
                   </Animated.View>
 
                   {/* Progress Bar */}
-                  <View style={{ width: '100%', maxWidth: 320, height: 4, backgroundColor: '#28232a', borderRadius: 2, marginBottom: 48 }}>
+                  <View style={{ width: '100%', maxWidth: 320, height: 4, backgroundColor: '#28232a', borderRadius: 2, marginBottom: 40 }}>
                     <Animated.View
                       style={[progressStyle, { height: '100%', backgroundColor: '#452451', borderRadius: 2 }]}
                     />
@@ -874,21 +871,21 @@ export default function DiscoverScreen() {
                   )}
                 </>
               ) : showRating && !trackRevealed ? (
-                /* Rating Interface - Skip button removed since user is engaged */
+                /* Rating Interface - Compact spacing */
                 <Animated.View style={[ratingContainerStyle, { alignItems: 'center', width: '100%' }]}>
-                  <Text style={{ fontSize: 20, fontFamily: fonts.chillax.medium, textAlign: 'center', marginBottom: 48, color: '#ded7e0' }}>
+                  <Text style={{ fontSize: 18, fontFamily: fonts.chillax.medium, textAlign: 'center', marginBottom: 32, color: '#ded7e0' }}>
                     How does this track make you feel?
                   </Text>
 
-                  {/* Rating Stars with Individual Animated Styles */}
-                  <View style={{ flexDirection: 'row', gap: 16, marginBottom: 32 }}>
+                  {/* Rating Stars with Individual Animated Styles - Reduced gap */}
+                  <View style={{ flexDirection: 'row', gap: 12, marginBottom: 24 }}>
                     <Animated.View style={star1Style}>
                       <TouchableOpacity
                         onPress={() => handleStarPress(1)}
-                        style={{ padding: 8 }}
+                        style={{ padding: 6 }}
                       >
                         <Star
-                          size={32}
+                          size={28}
                           color={1 <= rating ? '#452451' : '#8b6699'}
                           fill={1 <= rating ? '#452451' : 'transparent'}
                           strokeWidth={1.5}
@@ -899,10 +896,10 @@ export default function DiscoverScreen() {
                     <Animated.View style={star2Style}>
                       <TouchableOpacity
                         onPress={() => handleStarPress(2)}
-                        style={{ padding: 8 }}
+                        style={{ padding: 6 }}
                       >
                         <Star
-                          size={32}
+                          size={28}
                           color={2 <= rating ? '#452451' : '#8b6699'}
                           fill={2 <= rating ? '#452451' : 'transparent'}
                           strokeWidth={1.5}
@@ -913,10 +910,10 @@ export default function DiscoverScreen() {
                     <Animated.View style={star3Style}>
                       <TouchableOpacity
                         onPress={() => handleStarPress(3)}
-                        style={{ padding: 8 }}
+                        style={{ padding: 6 }}
                       >
                         <Star
-                          size={32}
+                          size={28}
                           color={3 <= rating ? '#452451' : '#8b6699'}
                           fill={3 <= rating ? '#452451' : 'transparent'}
                           strokeWidth={1.5}
@@ -927,10 +924,10 @@ export default function DiscoverScreen() {
                     <Animated.View style={star4Style}>
                       <TouchableOpacity
                         onPress={() => handleStarPress(4)}
-                        style={{ padding: 8 }}
+                        style={{ padding: 6 }}
                       >
                         <Star
-                          size={32}
+                          size={28}
                           color={4 <= rating ? '#452451' : '#8b6699'}
                           fill={4 <= rating ? '#452451' : 'transparent'}
                           strokeWidth={1.5}
@@ -941,10 +938,10 @@ export default function DiscoverScreen() {
                     <Animated.View style={star5Style}>
                       <TouchableOpacity
                         onPress={() => handleStarPress(5)}
-                        style={{ padding: 8 }}
+                        style={{ padding: 6 }}
                       >
                         <Star
-                          size={32}
+                          size={28}
                           color={5 <= rating ? '#452451' : '#8b6699'}
                           fill={5 <= rating ? '#452451' : 'transparent'}
                           strokeWidth={1.5}
@@ -953,21 +950,21 @@ export default function DiscoverScreen() {
                     </Animated.View>
                   </View>
 
-                  {/* Review Input for High Ratings */}
+                  {/* Review Input for High Ratings - Reduced spacing */}
                   {showReviewInput && (
                     <Animated.View style={[reviewInputContainerStyle, { width: '100%', overflow: 'hidden' }]}>
-                      <Animated.View style={[reviewInputStyle, { width: '100%', marginBottom: 32 }]}>
-                        <Text style={{ fontSize: 16, fontFamily: fonts.chillax.medium, color: '#ded7e0', marginBottom: 12 }}>
+                      <Animated.View style={[reviewInputStyle, { width: '100%', marginBottom: 20 }]}>
+                        <Text style={{ fontSize: 16, fontFamily: fonts.chillax.medium, color: '#ded7e0', marginBottom: 10 }}>
                           Share your thoughts (optional)
                         </Text>
-                        <View style={{ backgroundColor: '#28232a', borderRadius: 16, padding: 16 }}>
+                        <View style={{ backgroundColor: '#28232a', borderRadius: 16, padding: 14 }}>
                           <TextInput
                             ref={reviewInputRef}
                             style={{ 
                               fontSize: 16, 
                               fontFamily: fonts.chillax.regular, 
                               color: '#ded7e0',
-                              minHeight: 80,
+                              minHeight: 70,
                               textAlignVertical: 'top'
                             }}
                             placeholder="What did you love about this track?"
@@ -982,9 +979,9 @@ export default function DiscoverScreen() {
                         
                         <TouchableOpacity
                           onPress={handleSubmitWithReview}
-                          style={{ backgroundColor: '#452451', paddingVertical: 16, borderRadius: 16, alignItems: 'center', marginTop: 16 }}
+                          style={{ backgroundColor: '#452451', paddingVertical: 14, borderRadius: 16, alignItems: 'center', marginTop: 12 }}
                         >
-                          <Text style={{ color: '#ded7e0', fontFamily: fonts.chillax.bold, fontSize: 18 }}>
+                          <Text style={{ color: '#ded7e0', fontFamily: fonts.chillax.bold, fontSize: 16 }}>
                             Submit Rating
                           </Text>
                         </TouchableOpacity>
