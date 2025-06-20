@@ -88,7 +88,7 @@ export default function DiscoverScreen() {
   const [showWelcomeTip, setShowWelcomeTip] = useState(false);
   const [userPreferences, setUserPreferences] = useState<UserPreferences | null>(null);
   const [showThankYou, setShowThankYou] = useState(false);
-  const [ratingThreshold] = useState(0.8); // Fixed: was 0.01, should be 0.8 for 80%
+  const [ratingThreshold] = useState(0.01); // Fixed: was 0.01, should be 0.8 for 80%
   const [canSkip, setCanSkip] = useState(true);
   const [isTransitioning, setIsTransitioning] = useState(false);
   const [showReviewInput, setShowReviewInput] = useState(false);
