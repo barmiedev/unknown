@@ -17,6 +17,7 @@ import { Audio, AVPlaybackStatus } from 'expo-av';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/contexts/AuthContext';
 import { fonts } from '@/lib/fonts';
+import ArtistUnveilView from '@/components/ArtistUnveilView';
 
 interface Track {
   id: string;
@@ -922,6 +923,18 @@ export default function DiscoverScreen() {
     );
   }
 
+  // Show Artist Unveil View when track is revealed
+  if (trackRevealed && currentTrack) {
+    return (
+      <ArtistUnveilView
+        track={currentTrack}
+        onContinueListening={handleContinueListening}
+        onDiscoverNext={() => fadeAudioAndTransition(() => loadNextTrack(false, selectedSessionMood))}
+        showPlaybackControls={true}
+      />
+    );
+  }
+
   return (
     <TouchableWithoutFeedback onPress={dismissKeyboard}>
       <View style={{ backgroundColor: '#19161a', flex: 1 }}>
@@ -1053,7 +1066,7 @@ export default function DiscoverScreen() {
 
             {/* Main Player Area */}
             <Animated.View style={[fadeStyle, { flex: 1, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 24 }]}>
-              {!showRating && !trackRevealed ? (
+              {!showRating ? (
                 <>
                   {/* Play Button */}
                   <Animated.View style={[pulseStyle, { marginBottom: 40 }]}>
@@ -1107,7 +1120,7 @@ export default function DiscoverScreen() {
                     </TouchableOpacity>
                   )}
                 </>
-              ) : showRating && !trackRevealed ? (
+              ) : (
                 /* Rating Interface - Compact spacing */
                 <Animated.View style={[ratingContainerStyle, { alignItems: 'center', width: '100%' }]}>
                   <Text style={{ fontSize: 18, fontFamily: fonts.chillax.medium, textAlign: 'center', marginBottom: 32, color: '#ded7e0' }}>
@@ -1226,52 +1239,7 @@ export default function DiscoverScreen() {
                     </Animated.View>
                   )}
                 </Animated.View>
-              ) : trackRevealed && currentTrack ? (
-                /* Track Revealed */
-                <View style={{ alignItems: 'center' }}>
-                  <View style={{ width: 256, height: 256, borderRadius: 24, backgroundColor: '#28232a', marginBottom: 32, overflow: 'hidden' }}>
-                    {currentTrack?.artwork_url ? (
-                      <Image
-                        source={{ uri: currentTrack.artwork_url }}
-                        style={{ width: '100%', height: '100%' }}
-                        resizeMode="cover"
-                      />
-                    ) : (
-                      <View style={{ width: '100%', height: '100%', backgroundColor: '#28232a', alignItems: 'center', justifyContent: 'center' }}>
-                        <Text style={{ fontSize: 48 }}>🎵</Text>
-                      </View>
-                    )}
-                  </View>
-
-                  <Text style={{ color: '#ded7e0', fontSize: 24, fontFamily: fonts.chillax.bold, textAlign: 'center', marginBottom: 8 }}>
-                    {currentTrack?.title}
-                  </Text>
-                  <Text style={{ color: '#8b6699', fontSize: 18, fontFamily: fonts.chillax.regular, textAlign: 'center', marginBottom: 16 }}>
-                    {currentTrack?.artist}
-                  </Text>
-                  <Text style={{ color: '#452451', fontSize: 14, fontFamily: fonts.chillax.medium, marginBottom: 32 }}>
-                    {currentTrack?.genre} • {currentTrack?.mood}
-                  </Text>
-
-                  <TouchableOpacity
-                    onPress={handleContinueListening}
-                    style={{ backgroundColor: '#452451', paddingHorizontal: 32, paddingVertical: 16, borderRadius: 16, marginBottom: 16 }}
-                  >
-                    <Text style={{ color: '#ded7e0', fontFamily: fonts.chillax.bold, fontSize: 18 }}>
-                      Listen to Full Track
-                    </Text>
-                  </TouchableOpacity>
-
-                  <TouchableOpacity
-                    onPress={() => fadeAudioAndTransition(() => loadNextTrack(false, selectedSessionMood))}
-                    style={{ backgroundColor: '#28232a', paddingHorizontal: 32, paddingVertical: 16, borderRadius: 16 }}
-                  >
-                    <Text style={{ color: '#ded7e0', fontFamily: fonts.chillax.bold, fontSize: 18 }}>
-                      Discover Next
-                    </Text>
-                  </TouchableOpacity>
-                </View>
-              ) : null}
+              )}
             </Animated.View>
           </AnimationBackground>
         </SafeAreaView>

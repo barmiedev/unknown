@@ -27,11 +27,20 @@ const DURATION_OPTIONS = [
   { label: '5min+', min: 300, max: 600 },
 ];
 
+const STREAMING_PLATFORMS = [
+  { id: 'spotify', name: 'Spotify', color: '#1DB954' },
+  { id: 'apple_music', name: 'Apple Music', color: '#FA243C' },
+  { id: 'soundcloud', name: 'SoundCloud', color: '#FF5500' },
+  { id: 'bandcamp', name: 'Bandcamp', color: '#629AA0' },
+  { id: 'youtube', name: 'YouTube Music', color: '#FF0000' },
+];
+
 export default function PreferencesScreen() {
   const { user } = useAuth();
   const [selectedGenres, setSelectedGenres] = useState<string[]>([]);
   const [selectedMoods, setSelectedMoods] = useState<string[]>([]);
   const [selectedDuration, setSelectedDuration] = useState({ min: 60, max: 300 });
+  const [preferredPlatform, setPreferredPlatform] = useState('spotify');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
@@ -45,20 +54,33 @@ export default function PreferencesScreen() {
     if (!user?.id) return;
 
     try {
-      const { data, error } = await supabase
+      // Load music preferences
+      const { data: musicPrefs, error: musicError } = await supabase
         .from('user_preferences')
         .select('*')
         .eq('profile_id', user.id)
         .single();
 
-      if (data) {
-        setSelectedGenres(data.preferred_genres || []);
-        setSelectedMoods(data.preferred_moods || []);
+      if (musicPrefs) {
+        setSelectedGenres(musicPrefs.preferred_genres || []);
+        setSelectedMoods(musicPrefs.preferred_moods || []);
         setSelectedDuration({
-          min: data.min_duration || 60,
-          max: data.max_duration || 300,
+          min: musicPrefs.min_duration || 60,
+          max: musicPrefs.max_duration || 300,
         });
       }
+
+      // Load streaming preferences
+      const { data: streamingPrefs, error: streamingError } = await supabase
+        .from('user_streaming_preferences')
+        .select('preferred_platform')
+        .eq('profile_id', user.id)
+        .single();
+
+      if (streamingPrefs) {
+        setPreferredPlatform(streamingPrefs.preferred_platform);
+      }
+
     } catch (error) {
       console.error('Error loading preferences:', error);
     } finally {
@@ -71,7 +93,8 @@ export default function PreferencesScreen() {
 
     setSaving(true);
     try {
-      const { error } = await supabase
+      // Save music preferences
+      const { error: musicError } = await supabase
         .from('user_preferences')
         .upsert({
           profile_id: user.id,
@@ -85,7 +108,20 @@ export default function PreferencesScreen() {
           onConflict: 'user_id'
         });
 
-      if (error) throw error;
+      if (musicError) throw musicError;
+
+      // Save streaming preferences
+      const { error: streamingError } = await supabase
+        .from('user_streaming_preferences')
+        .upsert({
+          profile_id: user.id,
+          preferred_platform: preferredPlatform,
+          updated_at: new Date().toISOString(),
+        }, {
+          onConflict: 'profile_id'
+        });
+
+      if (streamingError) throw streamingError;
 
       Alert.alert('Success', 'Your preferences have been saved!');
     } catch (error) {
@@ -140,6 +176,39 @@ export default function PreferencesScreen() {
         </View>
 
         <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
+          {/* Streaming Platform Section */}
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>
+              Preferred Streaming Platform
+            </Text>
+            <Text style={styles.sectionDescription}>
+              Choose your default platform for listening to discovered tracks
+            </Text>
+            
+            <View style={styles.platformOptions}>
+              {STREAMING_PLATFORMS.map((platform) => (
+                <TouchableOpacity
+                  key={platform.id}
+                  onPress={() => setPreferredPlatform(platform.id)}
+                  style={[
+                    styles.platformButton,
+                    preferredPlatform === platform.id && styles.platformButtonSelected
+                  ]}
+                >
+                  <Text style={[
+                    styles.platformText,
+                    preferredPlatform === platform.id && styles.platformTextSelected
+                  ]}>
+                    {platform.name}
+                  </Text>
+                  {preferredPlatform === platform.id && (
+                    <Check size={16} color="#ded7e0" strokeWidth={2} />
+                  )}
+                </TouchableOpacity>
+              ))}
+            </View>
+          </View>
+
           {/* Genres Section */}
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>
@@ -314,6 +383,29 @@ const styles = StyleSheet.create({
     fontSize: 16,
     marginBottom: 16,
     lineHeight: 24,
+  },
+  platformOptions: {
+    gap: 12,
+  },
+  platformButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: '#28232a',
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    borderRadius: 16,
+  },
+  platformButtonSelected: {
+    backgroundColor: '#452451',
+  },
+  platformText: {
+    fontFamily: fonts.chillax.medium,
+    color: '#8b6699',
+    fontSize: 16,
+  },
+  platformTextSelected: {
+    color: '#ded7e0',
   },
   optionsGrid: {
     flexDirection: 'row',
