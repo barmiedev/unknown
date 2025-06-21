@@ -1,5 +1,5 @@
 import { Tabs } from 'expo-router';
-import { Home, History, Settings, User } from 'lucide-react-native';
+import { Chrome as Home, History, Settings, User } from 'lucide-react-native';
 import Animated, { FadeIn, FadeOut } from 'react-native-reanimated';
 
 export default function TabLayout() {
