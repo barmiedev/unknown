@@ -900,7 +900,7 @@ export default function DiscoverScreen() {
             <MoodSelector
               availableMoods={availableMoods}
               moodEmojis={MOOD_EMOJIS}
-              onMoodSelection={handleMoodSelection}
+              onMoodSelect={handleMoodSelection}
               moodSelectionStyle={moodSelectionStyle}
             />
           </AnimationBackground>
