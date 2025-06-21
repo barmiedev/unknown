@@ -68,20 +68,23 @@ export function FilterBar({
       onPress={onPress}
       activeOpacity={0.8}
     >
-      <Text 
-        variant="body" 
-        color="primary"
-        style={[styles.filterButtonText]}
-        numberOfLines={1}
-        ellipsizeMode="tail"
-      >
-        {label}
-      </Text>
-      <ChevronDown 
-        size={16} 
-        color={colors.text.primary} 
-        strokeWidth={2} 
-      />
+      <View style={styles.filterButtonContent}>
+        <Text 
+          variant="body" 
+          color="primary"
+          style={styles.filterButtonText}
+          numberOfLines={1}
+          ellipsizeMode="tail"
+        >
+          {label}
+        </Text>
+        <ChevronDown 
+          size={14} 
+          color={colors.text.primary} 
+          strokeWidth={2}
+          style={styles.chevronIcon}
+        />
+      </View>
     </TouchableOpacity>
   );
 
@@ -240,20 +243,18 @@ const styles = StyleSheet.create({
   },
   filterRow: {
     flexDirection: 'row',
-    gap: spacing.sm,
+    gap: spacing.xs,
   },
   filterButton: {
     flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
     backgroundColor: colors.surface,
-    paddingHorizontal: spacing.md,
+    paddingHorizontal: spacing.sm,
     paddingVertical: spacing.sm,
-    borderRadius: borderRadius.lg,
+    borderRadius: borderRadius.md,
     borderWidth: 2,
     borderColor: 'transparent',
-    minHeight: 44,
+    minHeight: 40,
+    maxHeight: 40,
   },
   filterButtonActive: {
     borderColor: colors.text.secondary,
@@ -261,10 +262,21 @@ const styles = StyleSheet.create({
   filterButtonFiltered: {
     backgroundColor: colors.primary,
   },
-  filterButtonText: {
-    fontSize: 14,
+  filterButtonContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
     flex: 1,
-    marginRight: spacing.xs,
+    height: '100%',
+  },
+  filterButtonText: {
+    fontSize: 13,
+    flex: 1,
+    textAlign: 'left',
+  },
+  chevronIcon: {
+    marginLeft: spacing.xs,
+    flexShrink: 0,
   },
   modalOverlay: {
     flex: 1,
