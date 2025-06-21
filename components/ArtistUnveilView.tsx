@@ -474,7 +474,7 @@ export default function ArtistUnveilView({
                     onPress={onDiscoverNext}
                   >
                     <SkipForward size={20} color="#ded7e0" strokeWidth={2} />
-                    <Text style={styles.playbackButtonText}>Discover More</Text>
+                    <Text style={styles.playbackButtonText}>Discover Next</Text>
                   </TouchableOpacity>
                 )}
               </View>
