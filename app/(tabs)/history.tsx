@@ -187,7 +187,7 @@ export default function HistoryScreen() {
           onPress={handleBackToHistory}
           style={styles.backButton}
         >
-          ← Back to History
+          <Text>← Back to History</Text>
         </Button>
         
         <ArtistUnveilView
@@ -208,7 +208,7 @@ export default function HistoryScreen() {
           onPress={handleBackToHistory}
           style={styles.backButton}
         >
-          ← Back to History
+          <Text>← Back to History</Text>
         </Button>
 
         {/* Artist Header */}
