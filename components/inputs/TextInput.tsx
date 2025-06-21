@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { forwardRef } from 'react';
 import { View, TextInput as RNTextInput, StyleSheet } from 'react-native';
 import { colors } from '@/utils/colors';
 import { spacing, borderRadius } from '@/utils/spacing';
@@ -24,7 +24,7 @@ interface TextInputProps {
   maxLength?: number;
 }
 
-export function TextInput({
+export const TextInput = forwardRef<RNTextInput, TextInputProps>(({
   placeholder,
   value,
   onChangeText,
@@ -41,16 +41,17 @@ export function TextInput({
   autoCapitalize = 'none',
   autoCorrect = false,
   maxLength,
-}: TextInputProps) {
+}, ref) => {
   return (
     <View style={styles.container}>
       <View style={[styles.inputWrapper, error && styles.inputError, style]}>
         {icon && <View style={styles.icon}>{icon}</View>}
         <RNTextInput
+          ref={ref}
           style={[
             styles.input, 
-            icon && styles.inputWithIcon,
-            multiline && styles.multilineInput
+            ...(icon ? [styles.inputWithIcon] : []),
+            ...(multiline ? [styles.multilineInput] : [])
           ]}
           placeholder={placeholder}
           placeholderTextColor={colors.text.secondary}
@@ -76,7 +77,7 @@ export function TextInput({
       )}
     </View>
   );
-}
+});
 
 const styles = StyleSheet.create({
   container: {

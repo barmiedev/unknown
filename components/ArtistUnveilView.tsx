@@ -139,27 +139,32 @@ export default function ArtistUnveilView({
       if (artistError) throw artistError;
 
       if (artistData?.artists) {
-        setArtist(artistData.artists);
+        // Handle the case where artists might be an array or single object
+        const artist = Array.isArray(artistData.artists) ? artistData.artists[0] : artistData.artists;
+        
+        if (artist) {
+          setArtist(artist);
 
-        // Get social links
-        const { data: socialData, error: socialError } = await supabase
-          .from('artist_social_links')
-          .select('platform, url')
-          .eq('artist_id', artistData.artists.id);
+          // Get social links
+          const { data: socialData, error: socialError } = await supabase
+            .from('artist_social_links')
+            .select('platform, url')
+            .eq('artist_id', artist.id);
 
-        if (socialError) throw socialError;
-        setSocialLinks(socialData || []);
+          if (socialError) throw socialError;
+          setSocialLinks(socialData || []);
 
-        // Check if user is subscribed - Remove .single() to avoid 406 error
-        if (user?.id) {
-          const { data: subscriptionData } = await supabase
-            .from('user_artist_subscriptions')
-            .select('id')
-            .eq('profile_id', user.id)
-            .eq('artist_id', artistData.artists.id);
+          // Check if user is subscribed
+          if (user?.id) {
+            const { data: subscriptionData } = await supabase
+              .from('user_artist_subscriptions')
+              .select('id')
+              .eq('profile_id', user.id)
+              .eq('artist_id', artist.id);
 
-          // Check if subscription exists by checking if data array is not empty
-          setIsSubscribed(subscriptionData && subscriptionData.length > 0);
+            // Check if subscription exists by checking if data array is not empty
+            setIsSubscribed(Boolean(subscriptionData && subscriptionData.length > 0));
+          }
         }
       }
 

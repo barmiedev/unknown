@@ -19,6 +19,7 @@ import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/contexts/AuthContext';
 import { fonts } from '@/lib/fonts';
 import ArtistUnveilView from '@/components/ArtistUnveilView';
+import { Track } from '@/types';
 import {
   MoodSelector,
   LoadingState,
@@ -33,18 +34,6 @@ import {
   NoTracksInPreferencesState,
   NoTracksAtAllState,
 } from '@/components/discover';
-
-interface Track {
-  id: string;
-  title: string;
-  artist: string;
-  audio_url: string;
-  genre: string;
-  mood: string;
-  duration: number;
-  spotify_streams: number;
-  artwork_url?: string;
-}
 
 interface UserPreferences {
   preferred_genres: string[];
@@ -654,7 +643,7 @@ export default function DiscoverScreen() {
     // Fade out audio volume over 0.2 seconds
     if (sound) {
       try {
-        await sound.setVolumeAsync(0, { duration: 200 });
+        await sound.setVolumeAsync(0);
       } catch (error) {
         console.error('Error fading audio:', error);
       }
@@ -706,12 +695,12 @@ export default function DiscoverScreen() {
         if (status.isLoaded) {
           if (isPlaying) {
             // Fade out volume over 0.2 seconds when pausing
-            await sound.setVolumeAsync(0, { duration: 200 });
+            await sound.setVolumeAsync(0);
             await sound.pauseAsync();
             setIsPlaying(false);
           } else {
             // Restore volume and play
-            await sound.setVolumeAsync(1, { duration: 200 });
+            await sound.setVolumeAsync(1);
             await sound.playAsync();
             setIsPlaying(true);
           }
@@ -737,9 +726,10 @@ export default function DiscoverScreen() {
       
       // Provide more specific error messages for web
       if (Platform.OS === 'web') {
-        if (error.message?.includes('no supported source')) {
+        const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+        if (errorMessage.includes('no supported source')) {
           setError('Audio format not supported in web browser. Please ensure the audio file is in MP3, WAV, or OGG format and served with proper CORS headers.');
-        } else if (error.message?.includes('CORS')) {
+        } else if (errorMessage.includes('CORS')) {
           setError('Unable to load audio due to CORS restrictions. Please ensure the audio server allows cross-origin requests.');
         } else {
           setError('Failed to load audio. Please check the audio file format and server configuration.');
@@ -905,7 +895,7 @@ export default function DiscoverScreen() {
       <View style={{ backgroundColor: '#19161a', flex: 1 }}>
         <SafeAreaView style={{ flex: 1 }}>
           <SessionHeader
-            selectedSessionMood={selectedSessionMood}
+            selectedMood={selectedSessionMood}
             onNewSession={handleNewSession}
           />
           <NoTracksInPreferencesState
@@ -924,7 +914,7 @@ export default function DiscoverScreen() {
       <View style={{ backgroundColor: '#19161a', flex: 1 }}>
         <SafeAreaView style={{ flex: 1 }}>
           <SessionHeader
-            selectedSessionMood={selectedSessionMood}
+            selectedMood={selectedSessionMood}
             onNewSession={handleNewSession}
           />
           <NoTracksAtAllState
@@ -944,9 +934,7 @@ export default function DiscoverScreen() {
           <AnimationBackground>
             <MoodSelector
               availableMoods={availableMoods}
-              moodEmojis={MOOD_EMOJIS}
               onMoodSelect={handleMoodSelection}
-              moodSelectionStyle={moodSelectionStyle}
             />
           </AnimationBackground>
         </SafeAreaView>
@@ -959,8 +947,7 @@ export default function DiscoverScreen() {
       <View style={{ backgroundColor: '#19161a', flex: 1 }}>
         <SafeAreaView style={{ flex: 1 }}>
           <LoadingState
-            selectedSessionMood={selectedSessionMood}
-            moodEmojis={MOOD_EMOJIS}
+            selectedMood={selectedSessionMood}
           />
         </SafeAreaView>
       </View>
@@ -973,7 +960,7 @@ export default function DiscoverScreen() {
         <SafeAreaView style={{ flex: 1 }}>
           <ErrorState
             error={error}
-            onTryAgain={() => loadNextTrack(false, selectedSessionMood)}
+            onRetry={() => loadNextTrack(false, selectedSessionMood)}
             onNewSession={handleNewSession}
           />
         </SafeAreaView>
@@ -983,9 +970,15 @@ export default function DiscoverScreen() {
 
   // Show artist unveil view when track is revealed
   if (trackRevealed && currentTrack) {
+    // Ensure artwork_url is provided for ArtistUnveilView
+    const trackWithRequiredArtwork: Track & { artwork_url: string } = {
+      ...currentTrack,
+      artwork_url: currentTrack.artwork_url || ''
+    };
+    
     return (
       <ArtistUnveilView
-        track={currentTrack}
+        track={trackWithRequiredArtwork}
         onContinueListening={handleContinueListening}
         onDiscoverNext={handleDiscoverNext}
         userRating={rating}
@@ -1000,9 +993,8 @@ export default function DiscoverScreen() {
         <SafeAreaView style={{ flex: 1 }}>
           <AnimationBackground>
             <SessionHeader
-              selectedSessionMood={selectedSessionMood}
+              selectedMood={selectedSessionMood}
               onNewSession={handleNewSession}
-              moodEmojis={MOOD_EMOJIS}
             />
 
             {showWelcomeTip && (
@@ -1010,37 +1002,32 @@ export default function DiscoverScreen() {
             )}
 
             <ThankYouOverlay
-              showThankYou={showThankYou}
-              thankYouStyle={thankYouStyle}
+              visible={showThankYou}
             />
 
             <TransitionOverlay
-              isTransitioning={isTransitioning}
-              transitionTextStyle={transitionTextStyle}
+              visible={isTransitioning}
             />
 
             {/* Main Player Area */}
             <Animated.View style={[fadeStyle, { flex: 1, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 24 }]}>
               {state === 'full_listening' && currentTrack ? (
                 <FullListeningMode
-                  currentTrack={currentTrack}
+                  track={currentTrack}
                   isPlaying={isPlaying}
                   onPlayPause={playPauseAudio}
                   position={position}
                   duration={duration}
-                  progressStyle={progressStyle}
+                  userRating={rating}
+                  userReview={review}
                   onSkip={skipTrack}
-                  rating={rating}
-                  review={review}
                 />
               ) : !showRating ? (
                 <PlaybackControls
                   isPlaying={isPlaying}
                   onPlayPause={playPauseAudio}
-                  pulseStyle={pulseStyle}
                   position={position}
                   duration={duration}
-                  progressStyle={progressStyle}
                   canSkip={canSkip}
                   onSkip={skipTrack}
                 />
@@ -1055,16 +1042,6 @@ export default function DiscoverScreen() {
                   isReviewFocused={isReviewFocused}
                   setIsReviewFocused={setIsReviewFocused}
                   reviewInputRef={reviewInputRef}
-                  ratingContainerStyle={ratingContainerStyle}
-                  starStyles={{
-                    star1Style,
-                    star2Style,
-                    star3Style,
-                    star4Style,
-                    star5Style,
-                  }}
-                  reviewInputStyle={reviewInputStyle}
-                  reviewInputContainerStyle={reviewInputContainerStyle}
                 />
               )}
             </Animated.View>

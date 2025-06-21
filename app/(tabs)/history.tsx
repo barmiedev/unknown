@@ -179,6 +179,12 @@ export default function HistoryScreen() {
 
   // Show track unveil view
   if (selectedTrack) {
+    // Ensure artwork_url is provided for ArtistUnveilView
+    const trackWithRequiredArtwork = {
+      ...selectedTrack,
+      artwork_url: selectedTrack.artwork_url || ''
+    };
+    
     return (
       <Screen backgroundColor={colors.background}>
         <Button
@@ -191,7 +197,7 @@ export default function HistoryScreen() {
         </Button>
         
         <ArtistUnveilView
-          track={selectedTrack}
+          track={trackWithRequiredArtwork}
           showPlaybackControls={false}
         />
       </Screen>
@@ -611,7 +617,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(69, 36, 81, 0.2)',
     paddingHorizontal: spacing.xs,
     paddingVertical: 2,
-    borderRadius: borderRadius.xs,
+    borderRadius: spacing.xs,
   },
   artistCardDate: {
     fontSize: 12,
