@@ -284,7 +284,7 @@ export default function ArtistUnveilView({
                   Your Rating
                 </Heading>
                 <StarRating rating={userRating} readonly style={styles.userRatingStars} />
-                {userReview && userReview.trim() && (
+                {userReview && userReview.trim() ? (
                   <View style={styles.artisticQuoteContainer}>
                     <Text style={styles.quoteSymbol}>"</Text>
                     <Text variant="body" color="secondary" style={styles.userReviewText}>
@@ -292,7 +292,7 @@ export default function ArtistUnveilView({
                     </Text>
                     <Text style={styles.quoteSymbol}>"</Text>
                   </View>
-                )}
+                ) : null}
               </View>
             </View>
           )}

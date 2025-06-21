@@ -764,6 +764,9 @@ export default function DiscoverScreen() {
       if (stars >= 4) {
         setTrackRevealed(true);
         setState('revealed');
+        setShowThankYou(false);
+        setIsTransitioning(false);
+        setShowWelcomeTip(false);
       } else {
         showThankYouMessage();
       }
