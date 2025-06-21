@@ -121,6 +121,8 @@ export default function DiscoverScreen() {
   const [showReviewInput, setShowReviewInput] = useState(false);
   const [isReviewFocused, setIsReviewFocused] = useState(false);
   const [totalTracksRated, setTotalTracksRated] = useState(0);
+  // Track if we're in broadened search mode (Surprise me or broadened search)
+  const [isBroadenedSearch, setIsBroadenedSearch] = useState(false);
 
   // Ref hooks - always called in the same order
   const reviewInputRef = useRef<TextInput>(null);
@@ -464,6 +466,10 @@ export default function DiscoverScreen() {
   const handleMoodSelection = async (mood: string | null) => {
     setSelectedSessionMood(mood);
     
+    // Set broadened search mode if "Surprise me" is selected
+    const shouldBroadenSearch = mood === null;
+    setIsBroadenedSearch(shouldBroadenSearch);
+    
     // Animate mood selection fade out
     moodSelectionOpacity.value = withTiming(0, { duration: 200 });
     moodSelectionScale.value = withTiming(0.95, { duration: 200 });
@@ -475,7 +481,7 @@ export default function DiscoverScreen() {
     // Wait for animation to complete, then load track
     setTimeout(async () => {
       // For "Surprise me" (mood === null), always broaden search to avoid "no tracks" scenario
-      await loadNextTrack(false, mood, mood === null);
+      await loadNextTrack(false, mood, shouldBroadenSearch);
     }, 200);
   };
 
@@ -518,13 +524,16 @@ export default function DiscoverScreen() {
         query = query.not('id', 'in', `(${excludeIds.join(',')})`);
       }
 
+      // Use broadened search if we're in that mode OR if explicitly requested
+      const shouldUseBroadenedSearch = isBroadenedSearch || broadenSearch;
+
       // Apply session mood filter if selected (not "Surprise me") and not broadening search
-      if (sessionMood && !broadenSearch) {
+      if (sessionMood && !shouldUseBroadenedSearch) {
         query = query.eq('mood', sessionMood);
       }
 
       // Apply user preferences if available and no specific session mood and not broadening search
-      if (userPreferences && !sessionMood && !broadenSearch) {
+      if (userPreferences && !sessionMood && !shouldUseBroadenedSearch) {
         if (userPreferences.preferred_genres && userPreferences.preferred_genres.length > 0) {
           query = query.in('genre', userPreferences.preferred_genres);
         }
@@ -545,7 +554,7 @@ export default function DiscoverScreen() {
 
       if (!tracks || tracks.length === 0) {
         // If no tracks match current criteria and we haven't broadened search yet
-        if (!broadenSearch) {
+        if (!shouldUseBroadenedSearch) {
           // Check if there are any tracks available at all (broadened search)
           const { data: allTracks, error: allTracksError } = await supabase
             .from('tracks')
@@ -614,7 +623,8 @@ export default function DiscoverScreen() {
   };
 
   const loadNextTrackInBackground = async () => {
-    await loadNextTrack(true, selectedSessionMood);
+    // Maintain the current broadened search state when loading next track
+    await loadNextTrack(true, selectedSessionMood, isBroadenedSearch);
   };
 
   const fadeAudioAndTransition = async (callback: () => void) => {
@@ -732,7 +742,8 @@ export default function DiscoverScreen() {
     if (!canSkip) return;
     
     fadeAudioAndTransition(() => {
-      loadNextTrack(false, selectedSessionMood);
+      // Maintain the current broadened search state when skipping
+      loadNextTrack(false, selectedSessionMood, isBroadenedSearch);
     });
   };
 
@@ -820,13 +831,18 @@ export default function DiscoverScreen() {
   };
 
   const handleDiscoverNext = () => {
-    fadeAudioAndTransition(() => loadNextTrack(false, selectedSessionMood));
+    fadeAudioAndTransition(() => {
+      // Maintain the current broadened search state when discovering next
+      loadNextTrack(false, selectedSessionMood, isBroadenedSearch);
+    });
   };
 
   const handleNewSession = () => {
     setState('mood_selection');
     setSelectedSessionMood(null);
     setCurrentTrack(null);
+    // Reset broadened search state when starting new session
+    setIsBroadenedSearch(false);
     if (sound) {
       sound.unloadAsync();
       setSound(null);
@@ -843,6 +859,8 @@ export default function DiscoverScreen() {
   const handleBroadenSearch = () => {
     setState('loading');
     setIsLoading(true);
+    // Set broadened search mode when user explicitly chooses to broaden
+    setIsBroadenedSearch(true);
     loadNextTrack(false, selectedSessionMood, true);
   };
 
@@ -850,6 +868,8 @@ export default function DiscoverScreen() {
     setState('mood_selection');
     setSelectedSessionMood(null);
     setCurrentTrack(null);
+    // Reset broadened search state when choosing different mood
+    setIsBroadenedSearch(false);
     if (sound) {
       sound.unloadAsync();
       setSound(null);
@@ -998,7 +1018,7 @@ export default function DiscoverScreen() {
           <Screen backgroundColor={colors.background} withoutBottomSafeArea>
             <ErrorState
               error={error}
-              onRetry={() => loadNextTrack(false, selectedSessionMood)}
+              onRetry={() => loadNextTrack(false, selectedSessionMood, isBroadenedSearch)}
               onNewSession={handleNewSession}
             />
           </Screen>
