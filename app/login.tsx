@@ -46,9 +46,32 @@ export default function LoginScreen() {
       await signIn(email, password);
       // Navigation will be handled by the auth state change in _layout
     } catch (error: any) {
-      Alert.alert('Login Failed', error.message);
+      // Check if it's an invalid credentials error
+      if (error.message?.includes('Invalid login credentials') || 
+          error.message?.includes('invalid_credentials')) {
+        setErrors({ password: 'Invalid email or password' });
+      } else {
+        // For other errors, still show an alert
+        Alert.alert('Login Failed', error.message);
+      }
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleEmailChange = (text: string) => {
+    setEmail(text);
+    // Clear email error when user starts typing
+    if (errors.email) {
+      setErrors(prev => ({ ...prev, email: undefined }));
+    }
+  };
+
+  const handlePasswordChange = (text: string) => {
+    setPassword(text);
+    // Clear password error when user starts typing
+    if (errors.password) {
+      setErrors(prev => ({ ...prev, password: undefined }));
     }
   };
 
@@ -78,7 +101,7 @@ export default function LoginScreen() {
           <TextInput
             placeholder="Email address"
             value={email}
-            onChangeText={setEmail}
+            onChangeText={handleEmailChange}
             keyboardType="email-address"
             error={errors.email}
             icon={<Mail size={20} color={colors.text.secondary} strokeWidth={2} />}
@@ -88,7 +111,7 @@ export default function LoginScreen() {
           <PasswordInput
             placeholder="Password"
             value={password}
-            onChangeText={setPassword}
+            onChangeText={handlePasswordChange}
             error={errors.password}
           />
 
