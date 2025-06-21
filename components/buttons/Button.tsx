@@ -6,7 +6,7 @@ import { Text } from '@/components/typography/Text';
 
 interface ButtonProps {
   children: React.ReactNode;
-  variant?: 'primary' | 'secondary' | 'outline' | 'ghost';
+  variant?: 'primary' | 'secondary' | 'outline' | 'ghost' | 'success' | 'outlineError';
   size?: 'small' | 'medium' | 'large';
   disabled?: boolean;
   loading?: boolean;
@@ -19,12 +19,13 @@ interface ButtonProps {
 const variantStyles = {
   primary: {
     backgroundColor: colors.primary,
-    borderWidth: 0,
+    borderWidth: 1,
+    borderColor: 'transparent',
   },
   secondary: {
     backgroundColor: colors.surface,
     borderWidth: 1,
-    borderColor: colors.text.secondary,
+    borderColor: 'transparent',
   },
   outline: {
     backgroundColor: 'transparent',
@@ -33,8 +34,19 @@ const variantStyles = {
   },
   ghost: {
     backgroundColor: 'transparent',
-    borderWidth: 0,
+    borderWidth: 1,
+    borderColor: 'transparent',
   },
+  success: {
+    backgroundColor: colors.status.success,
+    borderWidth: 1,
+    borderColor: 'transparent',
+  },
+  outlineError: {
+    backgroundColor: 'transparent',
+    borderWidth: 1,
+    borderColor: colors.status.error,
+  }
 };
 
 const sizeStyles = {
@@ -69,7 +81,8 @@ export function Button({
   const isDisabled = disabled || loading;
   
   const textColor = variant === 'primary' ? 'primary' : 
-                   variant === 'outline' ? 'accent' : 'primary';
+                   variant === 'outline' ? 'accent' : 
+                   variant === 'outlineError' ? 'statusError' : 'primary';
 
   return (
     <TouchableOpacity

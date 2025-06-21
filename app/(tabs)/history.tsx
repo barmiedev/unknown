@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { View, TouchableOpacity, RefreshControl, StyleSheet, ScrollView } from 'react-native';
+import { View, TouchableOpacity, RefreshControl, StyleSheet, ScrollView, Image } from 'react-native';
 import { Users, Music } from 'lucide-react-native';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/contexts/AuthContext';
@@ -12,6 +12,7 @@ import { colors } from '@/utils/colors';
 import { spacing, borderRadius } from '@/utils/spacing';
 import { formatDate } from '@/utils/formatting';
 import ArtistUnveilView from '@/components/ArtistUnveilView';
+import ArtistDetailView from '@/components/ArtistDetailView';
 import { HistoryTrack, SubscribedArtist, TabType, TrackDisplay } from '@/types';
 import { FloatingBackButton, TabHeader } from '@/components/navigation';
 import { TrackListItem, ArtistListItem, FilterBar, type SortOption } from '@/components/lists';
@@ -27,6 +28,7 @@ export default function HistoryScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [selectedTrack, setSelectedTrack] = useState<HistoryTrack | null>(null);
   const [selectedArtist, setSelectedArtist] = useState<SubscribedArtist | null>(null);
+  const [isFollowingArtist, setIsFollowingArtist] = useState(true);
 
   // Filter states for tracks
   const [selectedGenre, setSelectedGenre] = useState<string | null>(null);
@@ -37,12 +39,14 @@ export default function HistoryScreen() {
 
   // Filter states for artists (no mood filter)
   const [selectedArtistGenre, setSelectedArtistGenre] = useState<string | null>(null);
-  const [selectedArtistSort, setSelectedArtistSort] = useState<SortOption>('date_desc');
+  const [selectedArtistSort, setSelectedArtistSort] = useState<SortOption>('name_asc');
   const [availableArtistGenres, setAvailableArtistGenres] = useState<string[]>([]);
 
   // Scroll position restoration
   const scrollViewRef = useRef<ScrollView>(null);
+  const scrollPositionRef = useRef(0);
   const [scrollPosition, setScrollPosition] = useState(0);
+  const shouldRestoreScrollRef = useRef(false);
 
   const tabs = [
     {
@@ -69,6 +73,20 @@ export default function HistoryScreen() {
       loadHistory();
     }
   }, [user]);
+
+  // Restore scroll position when component re-renders after returning from detail view
+  useEffect(() => {
+    if (shouldRestoreScrollRef.current && scrollPositionRef.current > 0) {
+      const timer = setTimeout(() => {
+        if (scrollViewRef.current) {
+          scrollViewRef.current.scrollTo({ y: scrollPositionRef.current, animated: true });
+        }
+        shouldRestoreScrollRef.current = false;
+      }, 300);
+      
+      return () => clearTimeout(timer);
+    }
+  }, [selectedTrack, selectedArtist]);
 
   // Filter and sort tracks when filters change
   useEffect(() => {
@@ -243,40 +261,72 @@ export default function HistoryScreen() {
     loadHistory();
   }, [user]);
 
+  const handleScroll = (event: any) => {
+    const offsetY = event.nativeEvent.contentOffset.y;
+    scrollPositionRef.current = offsetY;
+    setScrollPosition(offsetY);
+  };
+
   const handleTrackPress = (track: HistoryTrack) => {
-    // Save current scroll position
-    if (scrollViewRef.current) {
-      scrollViewRef.current.scrollTo({ y: 0, animated: false });
-      setTimeout(() => {
-        if (scrollViewRef.current) {
-          // @ts-ignore - accessing private method for scroll position
-          const scrollResponder = scrollViewRef.current.getScrollResponder();
-          if (scrollResponder && scrollResponder.getScrollableNode) {
-            const scrollNode = scrollResponder.getScrollableNode();
-            if (scrollNode && scrollNode.scrollTop !== undefined) {
-              setScrollPosition(scrollNode.scrollTop);
-            }
-          }
-        }
-      }, 100);
-    }
     setSelectedTrack(track);
   };
 
   const handleArtistPress = (artist: SubscribedArtist) => {
     setSelectedArtist(artist);
+    setIsFollowingArtist(true);
   };
 
   const handleBackToHistory = () => {
     setSelectedTrack(null);
     setSelectedArtist(null);
-    
-    // Restore scroll position after a short delay
-    setTimeout(() => {
-      if (scrollViewRef.current && scrollPosition > 0) {
-        scrollViewRef.current.scrollTo({ y: scrollPosition, animated: false });
-      }
-    }, 100);
+    shouldRestoreScrollRef.current = true;
+  };
+
+  const handleUnfollow = async (artistId: string) => {
+    if (!user?.id) return;
+
+    try {
+      // Remove the artist subscription from the database
+      const { error } = await supabase
+        .from('user_artist_subscriptions')
+        .delete()
+        .eq('profile_id', user.id)
+        .eq('artist_id', artistId);
+
+      if (error) throw error;
+
+      // Update local state
+      setArtists(prev => prev.filter(artist => artist.id !== artistId));
+      // Don't go back to history, just update the artist state
+      setSelectedArtist(prev => prev ? { ...prev, isFollowing: false } : null);
+      setIsFollowingArtist(false);
+    } catch (error) {
+      console.error('Error unfollowing artist:', error);
+    }
+  };
+
+  const handleFollow = async (artistId: string) => {
+    if (!user?.id) return;
+
+    try {
+      // Add the artist subscription to the database
+      const { error } = await supabase
+        .from('user_artist_subscriptions')
+        .insert({
+          profile_id: user.id,
+          artist_id: artistId,
+          subscribed_at: new Date().toISOString()
+        });
+
+      if (error) throw error;
+
+      // Update local state - add the artist back to the list
+      // For now, we'll just update the selected artist state
+      setSelectedArtist(prev => prev ? { ...prev, isFollowing: true } : null);
+      setIsFollowingArtist(true);
+    } catch (error) {
+      console.error('Error following artist:', error);
+    }
   };
 
   // Show track unveil view
@@ -304,77 +354,13 @@ export default function HistoryScreen() {
   // Show artist detail view
   if (selectedArtist) {
     return (
-      <Screen backgroundColor={colors.background} withoutBottomSafeArea paddingHorizontal={0}>
-        <FloatingBackButton onPress={handleBackToHistory} />
-
-        <ScrollView showsVerticalScrollIndicator={false}>
-          <View style={{ paddingHorizontal: spacing.lg }}>
-            {/* Artist Header */}
-            <View style={styles.artistHeader}>
-              <View style={styles.artistAvatarContainer}>
-                {selectedArtist.avatar_url ? (
-                  <View style={styles.artistAvatar} />
-                ) : (
-                  <View style={styles.artistAvatarPlaceholder}>
-                    <Users size={40} color={colors.text.secondary} strokeWidth={1.5} />
-                  </View>
-                )}
-              </View>
-              
-              <Heading variant="h3" color="primary" align="center" style={styles.artistName}>
-                {selectedArtist.name}
-              </Heading>
-              
-              {selectedArtist.location && (
-                <Text variant="body" color="secondary" align="center" style={styles.artistLocation}>
-                  {selectedArtist.location}
-                </Text>
-              )}
-
-              {selectedArtist.genres && selectedArtist.genres.length > 0 && (
-                <View style={styles.genresContainer}>
-                  {selectedArtist.genres.map((genre) => (
-                    <Text key={genre} style={styles.genreTag}>
-                      {genre}
-                    </Text>
-                  ))}
-                </View>
-              )}
-            </View>
-
-            {/* Discovery Info */}
-            {selectedArtist.discovered_track_title && (
-              <View style={styles.discoveryInfo}>
-                <Heading variant="h4" color="primary" style={styles.discoveryTitle}>
-                  How you discovered this artist
-                </Heading>
-                <Text variant="body" color="secondary" style={styles.discoveryText}>
-                  You discovered {selectedArtist.name || 'Unknown Artist'} by listening to "{selectedArtist.discovered_track_title || 'Unknown Track'}"
-                </Text>
-              </View>
-            )}
-
-            {/* Artist Bio */}
-            {selectedArtist.bio && (
-              <View style={styles.bioSection}>
-                <Heading variant="h4" color="primary" style={styles.bioTitle}>
-                  About the Artist
-                </Heading>
-                <Text variant="body" color="primary" style={styles.bioText}>
-                  {selectedArtist.bio}
-                </Text>
-              </View>
-            )}
-
-            {/* Following Since */}
-            <View style={styles.followingSince}>
-              <Text variant="caption" color="secondary" align="center">
-                Following since {formatDate(selectedArtist.subscribed_at)}
-              </Text>
-            </View>
-          </View>
-        </ScrollView>
-      </Screen>
+      <ArtistDetailView
+        artist={selectedArtist}
+        onBack={handleBackToHistory}
+        onUnfollow={handleUnfollow}
+        onFollow={handleFollow}
+        isFollowing={isFollowingArtist}
+      />
     );
   }
 
@@ -389,25 +375,63 @@ export default function HistoryScreen() {
   }
 
   return (
-    <Screen scrollable paddingHorizontal={24} withoutBottomSafeArea>
-      <TabHeader
-        title="Your Discoveries"
-        subtitle={activeTab === 'tracks' ? `${tracks.length} tracks you've loved` : `${artists.length} artists you're following`}
-      />
+    <Screen paddingHorizontal={24} withoutBottomSafeArea>
+      {/* Fixed Header Section */}
+      <View style={styles.fixedHeader}>
+        <TabHeader
+          title="Your Discoveries"
+          subtitle={activeTab === 'tracks' ? `${tracks.length} tracks you've loved` : `${artists.length} artists you're following`}
+        />
 
-      {/* Tab Navigation */}
-      <TabBar
-        activeTab={activeTab}
-        onTabPress={(tab) => setActiveTab(tab as TabType)}
-        tabs={tabs}
-        style={styles.tabBar}
-      />
+        {/* Tab Navigation */}
+        <TabBar
+          activeTab={activeTab}
+          onTabPress={(tab) => setActiveTab(tab as TabType)}
+          tabs={tabs}
+          style={styles.tabBar}
+        />
 
-      {/* Content */}
+        {/* Fixed Filter Bar */}
+        {activeTab === 'tracks' && tracks.length > 0 && (
+          <FilterBar
+            selectedGenre={selectedGenre}
+            selectedMood={selectedMood}
+            selectedSort={selectedSort}
+            availableGenres={availableGenres}
+            availableMoods={availableMoods}
+            onGenreChange={setSelectedGenre}
+            onMoodChange={setSelectedMood}
+            onSortChange={setSelectedSort}
+            totalTracks={tracks.length}
+            filteredCount={filteredTracks.length}
+            isArtistTab={false}
+          />
+        )}
+
+        {activeTab === 'artists' && artists.length > 0 && (
+          <FilterBar
+            selectedGenre={selectedArtistGenre}
+            selectedMood={null} // Always null for artists
+            selectedSort={selectedArtistSort}
+            availableGenres={availableArtistGenres}
+            availableMoods={[]} // Empty array for artists
+            onGenreChange={setSelectedArtistGenre}
+            onMoodChange={() => {}} // No-op for artists
+            onSortChange={setSelectedArtistSort}
+            totalTracks={artists.length}
+            filteredCount={filteredArtists.length}
+            isArtistTab={true}
+          />
+        )}
+      </View>
+
+      {/* Scrollable Content */}
       <ScrollView 
         ref={scrollViewRef}
         style={styles.content}
         showsVerticalScrollIndicator={false}
+        onScroll={handleScroll}
+        scrollEventThrottle={16}
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
         }
@@ -424,34 +448,16 @@ export default function HistoryScreen() {
               </Text>
             </View>
           ) : (
-            <>
-              {/* Filter Bar */}
-              <FilterBar
-                selectedGenre={selectedGenre}
-                selectedMood={selectedMood}
-                selectedSort={selectedSort}
-                availableGenres={availableGenres}
-                availableMoods={availableMoods}
-                onGenreChange={setSelectedGenre}
-                onMoodChange={setSelectedMood}
-                onSortChange={setSelectedSort}
-                totalTracks={tracks.length}
-                filteredCount={filteredTracks.length}
-                isArtistTab={false}
-              />
-
-              {/* Tracks List */}
-              <View style={styles.tracksList}>
-                {filteredTracks.map((track, index) => (
-                  <TrackListItem
-                    key={track.id}
-                    track={track}
-                    onPress={() => handleTrackPress(track)}
-                    showSeparator={index < filteredTracks.length - 1}
-                  />
-                ))}
-              </View>
-            </>
+            <View style={styles.tracksList}>
+              {filteredTracks.map((track, index) => (
+                <TrackListItem
+                  key={track.id}
+                  track={track}
+                  onPress={() => handleTrackPress(track)}
+                  showSeparator={index < filteredTracks.length - 1}
+                />
+              ))}
+            </View>
           )
         ) : (
           artists.length === 0 ? (
@@ -465,34 +471,16 @@ export default function HistoryScreen() {
               </Text>
             </View>
           ) : (
-            <>
-              {/* Filter Bar for Artists - No mood filter */}
-              <FilterBar
-                selectedGenre={selectedArtistGenre}
-                selectedMood={null} // Always null for artists
-                selectedSort={selectedArtistSort}
-                availableGenres={availableArtistGenres}
-                availableMoods={[]} // Empty array for artists
-                onGenreChange={setSelectedArtistGenre}
-                onMoodChange={() => {}} // No-op for artists
-                onSortChange={setSelectedArtistSort}
-                totalTracks={artists.length}
-                filteredCount={filteredArtists.length}
-                isArtistTab={true}
-              />
-
-              {/* Artists List */}
-              <View style={styles.artistsList}>
-                {filteredArtists.map((artist, index) => (
-                  <ArtistListItem
-                    key={artist.id}
-                    artist={artist}
-                    onPress={() => handleArtistPress(artist)}
-                    showSeparator={index < filteredArtists.length - 1}
-                  />
-                ))}
-              </View>
-            </>
+            <View style={styles.artistsList}>
+              {filteredArtists.map((artist, index) => (
+                <ArtistListItem
+                  key={artist.id}
+                  artist={artist}
+                  onPress={() => handleArtistPress(artist)}
+                  showSeparator={index < filteredArtists.length - 1}
+                />
+              ))}
+            </View>
           )
         )}
       </ScrollView>
@@ -505,6 +493,11 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  fixedHeader: {
+    backgroundColor: colors.background,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.surface,
   },
   tabBar: {
     marginBottom: spacing.sm,
@@ -535,77 +528,5 @@ const styles = StyleSheet.create({
   },
   artistsList: {
     gap: 0,
-  },
-  // Artist detail styles
-  artistHeader: {
-    alignItems: 'center',
-    paddingVertical: spacing.lg,
-  },
-  artistAvatarContainer: {
-    width: 120,
-    height: 120,
-    borderRadius: 60,
-    overflow: 'hidden',
-    marginBottom: spacing.md,
-  },
-  artistAvatar: {
-    width: '100%',
-    height: '100%',
-  },
-  artistAvatarPlaceholder: {
-    width: '100%',
-    height: '100%',
-    backgroundColor: colors.surface,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  artistName: {
-    fontSize: 24,
-    marginBottom: spacing.sm,
-  },
-  artistLocation: {
-    fontSize: 16,
-    marginBottom: spacing.md,
-  },
-  genresContainer: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: spacing.sm,
-    justifyContent: 'center',
-  },
-  genreTag: {
-    color: colors.primary,
-    fontSize: 12,
-    backgroundColor: 'rgba(69, 36, 81, 0.2)',
-    paddingHorizontal: spacing.sm,
-    paddingVertical: spacing.xs,
-    borderRadius: borderRadius.sm,
-  },
-  discoveryInfo: {
-    marginBottom: spacing.xl,
-  },
-  discoveryTitle: {
-    fontSize: 18,
-    marginBottom: spacing.sm,
-    lineHeight: 24,
-  },
-  discoveryText: {
-    fontSize: 16,
-    lineHeight: 24,
-  },
-  bioSection: {
-    marginBottom: spacing.xl,
-  },
-  bioTitle: {
-    fontSize: 18,
-    marginBottom: spacing.sm,
-    lineHeight: 24,
-  },
-  bioText: {
-    fontSize: 16,
-    lineHeight: 24,
-  },
-  followingSince: {
-    paddingBottom: spacing.lg,
   },
 });

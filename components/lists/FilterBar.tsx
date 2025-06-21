@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, StyleSheet, Modal, TouchableOpacity, ScrollView } from 'react-native';
+import { View, StyleSheet, Modal, TouchableOpacity, ScrollView, Text as RNText } from 'react-native';
 import { X, ChevronDown, RotateCcw } from 'lucide-react-native';
 import { SelectionChip } from '@/components/selection/SelectionChip';
 import { Text } from '@/components/typography/Text';
@@ -60,7 +60,9 @@ export function FilterBar({
 
   const isGenreFiltered = selectedGenre !== null;
   const isMoodFiltered = selectedMood !== null;
-  const isSortFiltered = selectedSort !== 'date_desc';
+  const isSortFiltered = isArtistTab 
+    ? selectedSort !== 'name_asc'
+    : selectedSort !== 'date_desc';
   
   // For artists tab, don't consider mood in active filters
   const hasActiveFilters = isArtistTab 
@@ -76,7 +78,7 @@ export function FilterBar({
     if (!isArtistTab) {
       onMoodChange(null);
     }
-    onSortChange('date_desc');
+    onSortChange(isArtistTab ? 'name_asc' : 'date_desc');
   };
 
   const FilterButton = ({ 
@@ -101,15 +103,13 @@ export function FilterBar({
     >
       <View style={styles.filterButtonContent}>
         <View style={styles.textContainer}>
-          <Text 
-            variant="body" 
-            color="primary"
-            style={styles.filterButtonText}
+          <RNText 
+            style={[styles.filterButtonText, { color: colors.text.primary }]}
             numberOfLines={1}
             ellipsizeMode="tail"
           >
             {label}
-          </Text>
+          </RNText>
         </View>
         <ChevronDown 
           size={14} 
@@ -299,7 +299,7 @@ const styles = StyleSheet.create({
   },
   filterRow: {
     flexDirection: 'row',
-    gap: spacing.xs,
+    gap: spacing.sm,
   },
   filterButton: {
     flex: 1,
@@ -347,9 +347,8 @@ const styles = StyleSheet.create({
   },
   clearFiltersContainer: {
     backgroundColor: 'transparent',
-    borderRadius: borderRadius.md,
     padding: spacing.md,
-    marginTop: spacing.sm,
+    marginTop: spacing.md,
     alignItems: 'center',
     gap: spacing.sm,
   },
