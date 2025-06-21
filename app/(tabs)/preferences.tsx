@@ -1,10 +1,16 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, Alert, StyleSheet } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { Check, Save } from 'lucide-react-native';
+import { View, Alert, StyleSheet } from 'react-native';
+import { Save } from 'lucide-react-native';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/contexts/AuthContext';
-import { fonts } from '@/lib/fonts';
+import { Screen } from '@/components/layout/Screen';
+import { Heading } from '@/components/typography/Heading';
+import { Text } from '@/components/typography/Text';
+import { Button } from '@/components/buttons/Button';
+import { SelectionChip } from '@/components/selection/SelectionChip';
+import { TabBar } from '@/components/navigation/TabBar';
+import { colors } from '@/utils/colors';
+import { spacing } from '@/utils/spacing';
 
 const GENRES = [
   'Rock', 'Pop', 'Hip-Hop', 'Electronic', 'Jazz', 'Classical',
@@ -70,7 +76,7 @@ export default function PreferencesScreen() {
         });
       }
 
-      // Load streaming preferences - use maybeSingle() to handle no results gracefully
+      // Load streaming preferences
       const { data: streamingPrefs, error: streamingError } = await supabase
         .from('user_streaming_preferences')
         .select('preferred_platform')
@@ -98,7 +104,7 @@ export default function PreferencesScreen() {
         .from('user_preferences')
         .upsert({
           profile_id: user.id,
-          user_id: user.id, // Keep for backward compatibility
+          user_id: user.id,
           preferred_genres: selectedGenres,
           preferred_moods: selectedMoods,
           min_duration: selectedDuration.min,
@@ -154,323 +160,177 @@ export default function PreferencesScreen() {
 
   if (loading) {
     return (
-      <View style={styles.container}>
-        <SafeAreaView style={styles.safeArea}>
-          <View style={styles.loadingContainer}>
-            <Text style={styles.loadingText}>Loading preferences...</Text>
-          </View>
-        </SafeAreaView>
-      </View>
+      <Screen>
+        <View style={styles.loadingContainer}>
+          <Text variant="body" color="primary">Loading preferences...</Text>
+        </View>
+      </Screen>
     );
   }
 
   return (
-    <View style={styles.container}>
-      <SafeAreaView style={styles.safeArea}>
-        {/* Header */}
-        <View style={styles.header}>
-          <Text style={styles.title}>Preferences</Text>
-          <Text style={styles.subtitle}>
-            Customize your discovery experience
-          </Text>
+    <Screen scrollable paddingHorizontal={24}>
+      {/* Header */}
+      <View style={styles.header}>
+        <Heading variant="h2" color="primary">
+          Preferences
+        </Heading>
+        <Text variant="body" color="secondary" style={styles.subtitle}>
+          Customize your discovery experience
+        </Text>
+      </View>
+
+      {/* Streaming Platform Section */}
+      <View style={styles.section}>
+        <Heading variant="h4" color="primary" style={styles.sectionTitle}>
+          Preferred Streaming Platform
+        </Heading>
+        <Text variant="body" color="secondary" style={styles.sectionDescription}>
+          Choose your default platform for listening to discovered tracks
+        </Text>
+        
+        <View style={styles.platformOptions}>
+          {STREAMING_PLATFORMS.map((platform) => (
+            <SelectionChip
+              key={platform.id}
+              label={platform.name}
+              selected={preferredPlatform === platform.id}
+              onPress={() => setPreferredPlatform(platform.id)}
+              style={styles.platformChip}
+            />
+          ))}
         </View>
+      </View>
 
-        <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
-          {/* Streaming Platform Section */}
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>
-              Preferred Streaming Platform
-            </Text>
-            <Text style={styles.sectionDescription}>
-              Choose your default platform for listening to discovered tracks
-            </Text>
-            
-            <View style={styles.platformOptions}>
-              {STREAMING_PLATFORMS.map((platform) => (
-                <TouchableOpacity
-                  key={platform.id}
-                  onPress={() => setPreferredPlatform(platform.id)}
-                  style={[
-                    styles.platformButton,
-                    preferredPlatform === platform.id && styles.platformButtonSelected
-                  ]}
-                >
-                  <Text style={[
-                    styles.platformText,
-                    preferredPlatform === platform.id && styles.platformTextSelected
-                  ]}>
-                    {platform.name}
-                  </Text>
-                  {preferredPlatform === platform.id && (
-                    <Check size={16} color="#ded7e0" strokeWidth={2} />
-                  )}
-                </TouchableOpacity>
-              ))}
-            </View>
-          </View>
+      {/* Genres Section */}
+      <View style={styles.section}>
+        <Heading variant="h4" color="primary" style={styles.sectionTitle}>
+          Which genres do you prefer?
+        </Heading>
+        <Text variant="body" color="secondary" style={styles.sectionDescription}>
+          Choose your favorite genres for more personalized music
+        </Text>
+        
+        <View style={styles.optionsGrid}>
+          {GENRES.map((genre) => (
+            <SelectionChip
+              key={genre}
+              label={genre}
+              selected={selectedGenres.includes(genre)}
+              onPress={() => toggleGenre(genre)}
+              style={styles.optionChip}
+            />
+          ))}
+        </View>
+      </View>
 
-          {/* Genres Section */}
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>
-              Which genres do you prefer?
-            </Text>
-            <Text style={styles.sectionDescription}>
-              Choose your favorite genres for more personalized music
-            </Text>
-            
-            <View style={styles.optionsGrid}>
-              {GENRES.map((genre) => (
-                <TouchableOpacity
-                  key={genre}
-                  onPress={() => toggleGenre(genre)}
-                  style={[
-                    styles.optionButton,
-                    selectedGenres.includes(genre) && styles.optionButtonSelected
-                  ]}
-                >
-                  <Text style={[
-                    styles.optionText,
-                    selectedGenres.includes(genre) && styles.optionTextSelected
-                  ]}>
-                    {genre}
-                  </Text>
-                  {selectedGenres.includes(genre) && (
-                    <Check size={16} color="#ded7e0" strokeWidth={2} />
-                  )}
-                </TouchableOpacity>
-              ))}
-            </View>
-          </View>
+      {/* Moods Section */}
+      <View style={styles.section}>
+        <Heading variant="h4" color="primary" style={styles.sectionTitle}>
+          What moods do you enjoy?
+        </Heading>
+        <Text variant="body" color="secondary" style={styles.sectionDescription}>
+          Select moods that match your listening preferences
+        </Text>
+        
+        <View style={styles.optionsGrid}>
+          {MOODS.map((mood) => (
+            <SelectionChip
+              key={mood}
+              label={mood}
+              selected={selectedMoods.includes(mood)}
+              onPress={() => toggleMood(mood)}
+              style={styles.optionChip}
+            />
+          ))}
+        </View>
+      </View>
 
-          {/* Moods Section */}
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>
-              What moods do you enjoy?
-            </Text>
-            <Text style={styles.sectionDescription}>
-              Select moods that match your listening preferences
-            </Text>
-            
-            <View style={styles.optionsGrid}>
-              {MOODS.map((mood) => (
-                <TouchableOpacity
-                  key={mood}
-                  onPress={() => toggleMood(mood)}
-                  style={[
-                    styles.optionButton,
-                    selectedMoods.includes(mood) && styles.optionButtonSelected
-                  ]}
-                >
-                  <Text style={[
-                    styles.optionText,
-                    selectedMoods.includes(mood) && styles.optionTextSelected
-                  ]}>
-                    {mood}
-                  </Text>
-                  {selectedMoods.includes(mood) && (
-                    <Check size={16} color="#ded7e0" strokeWidth={2} />
-                  )}
-                </TouchableOpacity>
-              ))}
-            </View>
-          </View>
+      {/* Duration Section */}
+      <View style={styles.section}>
+        <Heading variant="h4" color="primary" style={styles.sectionTitle}>
+          Track Duration
+        </Heading>
+        <Text variant="body" color="secondary" style={styles.sectionDescription}>
+          Set your preferred track length range
+        </Text>
+        
+        <View style={styles.durationOptions}>
+          {DURATION_OPTIONS.map((duration) => (
+            <SelectionChip
+              key={duration.label}
+              label={duration.label}
+              selected={selectedDuration.min === duration.min && selectedDuration.max === duration.max}
+              onPress={() => selectDuration(duration)}
+              style={styles.durationChip}
+            />
+          ))}
+        </View>
+      </View>
 
-          {/* Duration Section */}
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>
-              Track Duration
-            </Text>
-            <Text style={styles.sectionDescription}>
-              Set your preferred track length range
-            </Text>
-            
-            <View style={styles.durationOptions}>
-              {DURATION_OPTIONS.map((duration) => (
-                <TouchableOpacity
-                  key={duration.label}
-                  onPress={() => selectDuration(duration)}
-                  style={[
-                    styles.durationButton,
-                    selectedDuration.min === duration.min && 
-                    selectedDuration.max === duration.max && 
-                    styles.durationButtonSelected
-                  ]}
-                >
-                  <Text style={[
-                    styles.durationText,
-                    selectedDuration.min === duration.min && 
-                    selectedDuration.max === duration.max && 
-                    styles.durationTextSelected
-                  ]}>
-                    {duration.label}
-                  </Text>
-                  {selectedDuration.min === duration.min && 
-                   selectedDuration.max === duration.max && (
-                    <Check size={16} color="#ded7e0" strokeWidth={2} />
-                  )}
-                </TouchableOpacity>
-              ))}
-            </View>
-          </View>
-
-          {/* Save Button */}
-          <TouchableOpacity
-            onPress={savePreferences}
-            disabled={saving}
-            style={[styles.saveButton, saving && styles.saveButtonDisabled]}
-          >
-            <Save size={20} color="#ded7e0" strokeWidth={2} />
-            <Text style={styles.saveButtonText}>
-              {saving ? 'Saving...' : 'Save Preferences'}
-            </Text>
-          </TouchableOpacity>
-        </ScrollView>
-      </SafeAreaView>
-    </View>
+      {/* Save Button */}
+      <Button
+        variant="primary"
+        size="large"
+        loading={saving}
+        onPress={savePreferences}
+        icon={<Save size={20} color={colors.text.primary} strokeWidth={2} />}
+        iconPosition="left"
+        style={styles.saveButton}
+      >
+        {saving ? 'Saving...' : 'Save Preferences'}
+      </Button>
+    </Screen>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#19161a',
-  },
-  safeArea: {
-    flex: 1,
-  },
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
   },
-  loadingText: {
-    color: '#ded7e0',
-    fontFamily: fonts.chillax.regular,
-    fontSize: 16,
-  },
   header: {
-    paddingHorizontal: 24,
-    paddingTop: 32,
-    paddingBottom: 24,
-  },
-  title: {
-    color: '#ded7e0',
-    fontSize: 28,
-    fontFamily: fonts.chillax.bold,
-    marginBottom: 8,
+    paddingTop: spacing.xl,
+    paddingBottom: spacing.lg,
   },
   subtitle: {
-    color: '#8b6699',
-    fontFamily: fonts.chillax.regular,
     fontSize: 16,
-  },
-  scrollView: {
-    flex: 1,
-    paddingHorizontal: 24,
+    marginTop: spacing.sm,
   },
   section: {
-    marginBottom: 32,
+    marginBottom: spacing.xl,
   },
   sectionTitle: {
-    color: '#ded7e0',
     fontSize: 20,
-    fontFamily: fonts.chillax.bold,
-    marginBottom: 8,
+    marginBottom: spacing.sm,
   },
   sectionDescription: {
-    color: '#8b6699',
-    fontFamily: fonts.chillax.regular,
     fontSize: 16,
-    marginBottom: 16,
     lineHeight: 24,
+    marginBottom: spacing.md,
   },
   platformOptions: {
-    gap: 12,
+    gap: spacing.sm,
   },
-  platformButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    backgroundColor: '#28232a',
-    paddingHorizontal: 20,
-    paddingVertical: 16,
-    borderRadius: 16,
-  },
-  platformButtonSelected: {
-    backgroundColor: '#452451',
-  },
-  platformText: {
-    fontFamily: fonts.chillax.medium,
-    color: '#8b6699',
-    fontSize: 16,
-  },
-  platformTextSelected: {
-    color: '#ded7e0',
+  platformChip: {
+    marginBottom: spacing.sm,
   },
   optionsGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 12,
+    gap: spacing.sm,
   },
-  optionButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#28232a',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderRadius: 16,
-    gap: 8,
-  },
-  optionButtonSelected: {
-    backgroundColor: '#452451',
-  },
-  optionText: {
-    fontFamily: fonts.chillax.medium,
-    color: '#8b6699',
-    fontSize: 16,
-  },
-  optionTextSelected: {
-    color: '#ded7e0',
+  optionChip: {
+    marginBottom: spacing.sm,
   },
   durationOptions: {
-    gap: 12,
+    gap: spacing.sm,
   },
-  durationButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    backgroundColor: '#28232a',
-    paddingHorizontal: 20,
-    paddingVertical: 16,
-    borderRadius: 16,
-  },
-  durationButtonSelected: {
-    backgroundColor: '#452451',
-  },
-  durationText: {
-    fontFamily: fonts.chillax.medium,
-    color: '#8b6699',
-    fontSize: 16,
-  },
-  durationTextSelected: {
-    color: '#ded7e0',
+  durationChip: {
+    marginBottom: spacing.sm,
   },
   saveButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#452451',
-    paddingVertical: 16,
-    borderRadius: 16,
-    marginBottom: 32,
-    gap: 8,
-  },
-  saveButtonDisabled: {
-    opacity: 0.6,
-  },
-  saveButtonText: {
-    color: '#ded7e0',
-    fontSize: 18,
-    fontFamily: fonts.chillax.bold,
+    marginBottom: spacing.xl,
   },
 });

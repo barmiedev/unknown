@@ -1,11 +1,19 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { View, Text, TextInput, TouchableOpacity, Alert, StyleSheet, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { View, Alert, StyleSheet, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { User, Check, CircleAlert as AlertCircle } from 'lucide-react-native';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/lib/supabase';
-import { fonts } from '@/lib/fonts';
+import { Screen } from '@/components/layout/Screen';
+import { Heading } from '@/components/typography/Heading';
+import { Text } from '@/components/typography/Text';
+import { TextInput } from '@/components/inputs/TextInput';
+import { Button } from '@/components/buttons/Button';
+import { ProgressBar } from '@/components/progress/ProgressBar';
+import { colors } from '@/utils/colors';
+import { spacing, borderRadius } from '@/utils/spacing';
+import { validateUsername } from '@/utils/validation';
+import { useDebounce } from '@/hooks/useDebounce';
 
 export default function ProfileCustomizationScreen() {
   const params = useLocalSearchParams();
@@ -16,21 +24,17 @@ export default function ProfileCustomizationScreen() {
   const [usernameError, setUsernameError] = useState<string | null>(null);
   const [usernameValid, setUsernameValid] = useState(false);
   const { completeOnboarding } = useAuth();
-  const debounceRef = useRef<NodeJS.Timeout | null>(null);
+  
+  const debouncedUsername = useDebounce(username, 800);
 
-  const validateUsername = (text: string) => {
-    // Basic validation rules
-    if (text.length < 3) {
-      return 'Username must be at least 3 characters';
+  useEffect(() => {
+    if (debouncedUsername) {
+      checkUsernameAvailability(debouncedUsername);
+    } else {
+      setUsernameError(null);
+      setUsernameValid(false);
     }
-    if (text.length > 20) {
-      return 'Username must be less than 20 characters';
-    }
-    if (!/^[a-zA-Z0-9_]+$/.test(text)) {
-      return 'Username can only contain letters, numbers, and underscores';
-    }
-    return null;
-  };
+  }, [debouncedUsername]);
 
   const checkUsernameAvailability = async (username: string) => {
     if (!username.trim()) {
@@ -51,7 +55,6 @@ export default function ProfileCustomizationScreen() {
     setUsernameValid(false);
 
     try {
-      // Use the dedicated function that bypasses RLS
       const { data, error } = await supabase.rpc('check_username_availability', {
         username_to_check: username.trim()
       });
@@ -63,13 +66,10 @@ export default function ProfileCustomizationScreen() {
         return;
       }
 
-      // data is boolean: true if available, false if taken
       if (data === true) {
-        // Username is available
         setUsernameValid(true);
         setUsernameError(null);
       } else {
-        // Username is taken
         setUsernameError('Username is already taken');
         setUsernameValid(false);
       }
@@ -81,33 +81,6 @@ export default function ProfileCustomizationScreen() {
       setCheckingUsername(false);
     }
   };
-
-  const handleUsernameChange = (text: string) => {
-    setUsername(text);
-    
-    // Clear previous validation state
-    setUsernameError(null);
-    setUsernameValid(false);
-    
-    // Clear existing timeout
-    if (debounceRef.current) {
-      clearTimeout(debounceRef.current);
-    }
-    
-    // Set new timeout for debounced username check
-    debounceRef.current = setTimeout(() => {
-      checkUsernameAvailability(text);
-    }, 800);
-  };
-
-  // Cleanup timeout on unmount
-  useEffect(() => {
-    return () => {
-      if (debounceRef.current) {
-        clearTimeout(debounceRef.current);
-      }
-    };
-  }, []);
 
   const handleComplete = async () => {
     if (!username.trim()) {
@@ -122,7 +95,6 @@ export default function ProfileCustomizationScreen() {
 
     setLoading(true);
     try {
-      // Double-check username availability before proceeding
       const { data: isAvailable } = await supabase.rpc('check_username_availability', {
         username_to_check: username.trim()
       });
@@ -145,12 +117,10 @@ export default function ProfileCustomizationScreen() {
         preferred_moods: moods,
       });
 
-      // Navigation will be handled by the auth state change
       router.replace('/(tabs)');
     } catch (error: any) {
       console.error('Onboarding error:', error);
       
-      // Check if it's a username conflict error
       if (error.message && (
         error.message.includes('duplicate key value violates unique constraint') ||
         error.message.includes('profiles_username_key')
@@ -166,283 +136,204 @@ export default function ProfileCustomizationScreen() {
     }
   };
 
+  const getUsernameIcon = () => {
+    if (checkingUsername) {
+      return <Text style={styles.loadingText}>...</Text>;
+    }
+    if (usernameValid) {
+      return <Check size={20} color={colors.status.success} strokeWidth={2} />;
+    }
+    if (usernameError) {
+      return <AlertCircle size={20} color={colors.status.error} strokeWidth={2} />;
+    }
+    return null;
+  };
+
+  const getUsernameInputStyle = () => {
+    if (usernameError) return styles.inputError;
+    if (usernameValid) return styles.inputSuccess;
+    return {};
+  };
+
   return (
-    <View style={styles.container}>
-      <SafeAreaView style={styles.safeArea}>
-        <KeyboardAvoidingView 
-          style={styles.keyboardAvoidingView}
-          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-          keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
+    <KeyboardAvoidingView 
+      style={styles.container} 
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
+    >
+      <Screen paddingHorizontal={24}>
+        {/* Header */}
+        <View style={styles.header}>
+          <Heading variant="h2" color="primary">
+            Create your profile
+          </Heading>
+          <Text 
+            variant="body" 
+            color="secondary" 
+            style={styles.subtitle}
+          >
+            How would you like to be known in the underground?
+          </Text>
+        </View>
+
+        {/* Progress Indicator */}
+        <ProgressBar current={3} total={3} />
+
+        {/* Scrollable Form Content */}
+        <ScrollView 
+          style={styles.scrollView}
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
         >
-          {/* Header */}
-          <View style={styles.header}>
-            <Text style={styles.title}>Create your profile</Text>
-            <Text style={styles.subtitle}>
-              How would you like to be known in the underground?
+          {/* Username Input */}
+          <View style={styles.inputContainer}>
+            <Text variant="body" color="primary" style={styles.inputLabel}>
+              Username *
+            </Text>
+            <TextInput
+              placeholder="Choose a unique username"
+              value={username}
+              onChangeText={setUsername}
+              error={usernameError || undefined}
+              maxLength={20}
+              style={getUsernameInputStyle()}
+              icon={
+                <View style={styles.iconContainer}>
+                  <User size={20} color={colors.text.secondary} strokeWidth={2} />
+                  {getUsernameIcon()}
+                </View>
+              }
+            />
+            {usernameValid && !checkingUsername && (
+              <Text variant="caption" style={styles.successText}>
+                Username is available!
+              </Text>
+            )}
+            {!usernameError && !usernameValid && (
+              <Text variant="caption" color="secondary" style={styles.hintText}>
+                This will be your unique identifier in the community
+              </Text>
+            )}
+          </View>
+
+          {/* Display Name Input */}
+          <View style={styles.inputContainer}>
+            <Text variant="body" color="primary" style={styles.inputLabel}>
+              Display Name (Optional)
+            </Text>
+            <TextInput
+              placeholder="How others will see you"
+              value={displayName}
+              onChangeText={setDisplayName}
+              maxLength={30}
+              icon={<User size={20} color={colors.text.secondary} strokeWidth={2} />}
+            />
+            <Text variant="caption" color="secondary" style={styles.hintText}>
+              Leave blank to use your username
             </Text>
           </View>
 
-          {/* Progress Indicator */}
-          <View style={styles.progressContainer}>
-            <View style={styles.progressBar}>
-              <View style={[styles.progressFill, { width: '100%' }]} />
-            </View>
-            <Text style={styles.progressText}>3 of 3</Text>
+          {/* Summary */}
+          <View style={styles.summaryContainer}>
+            <Text variant="body" color="primary" style={styles.summaryTitle}>
+              You're almost ready!
+            </Text>
+            <Text variant="body" color="secondary" style={styles.summaryText}>
+              Your personalized music discovery experience is about to begin.
+            </Text>
           </View>
+        </ScrollView>
 
-          {/* Scrollable Form Content */}
-          <ScrollView 
-            style={styles.scrollView}
-            contentContainerStyle={styles.scrollContent}
-            showsVerticalScrollIndicator={false}
-            keyboardShouldPersistTaps="handled"
+        {/* Fixed Complete Button */}
+        <View style={styles.footer}>
+          <Button
+            variant="primary"
+            size="large"
+            disabled={!username.trim() || !usernameValid || loading || checkingUsername}
+            loading={loading}
+            onPress={handleComplete}
+            icon={<Check size={20} color={colors.text.primary} strokeWidth={2} />}
+            iconPosition="right"
           >
-            {/* Username Input */}
-            <View style={styles.inputContainer}>
-              <Text style={styles.inputLabel}>Username *</Text>
-              <View style={[
-                styles.inputWrapper,
-                usernameError && styles.inputWrapperError,
-                usernameValid && styles.inputWrapperValid
-              ]}>
-                <User size={20} color="#8b6699" strokeWidth={2} />
-                <TextInput
-                  style={styles.input}
-                  placeholder="Choose a unique username"
-                  placeholderTextColor="#8b6699"
-                  value={username}
-                  onChangeText={handleUsernameChange}
-                  autoCapitalize="none"
-                  autoCorrect={false}
-                  maxLength={20}
-                />
-                {checkingUsername && (
-                  <View style={styles.loadingIndicator}>
-                    <Text style={styles.loadingText}>...</Text>
-                  </View>
-                )}
-                {usernameValid && !checkingUsername && (
-                  <Check size={20} color="#24512b" strokeWidth={2} />
-                )}
-                {usernameError && !checkingUsername && (
-                  <AlertCircle size={20} color="#51242d" strokeWidth={2} />
-                )}
-              </View>
-              {usernameError ? (
-                <Text style={styles.inputError}>{usernameError}</Text>
-              ) : usernameValid ? (
-                <Text style={styles.inputSuccess}>Username is available!</Text>
-              ) : (
-                <Text style={styles.inputHint}>
-                  This will be your unique identifier in the community
-                </Text>
-              )}
-            </View>
-
-            {/* Display Name Input */}
-            <View style={styles.inputContainer}>
-              <Text style={styles.inputLabel}>Display Name (Optional)</Text>
-              <View style={styles.inputWrapper}>
-                <User size={20} color="#8b6699" strokeWidth={2} />
-                <TextInput
-                  style={styles.input}
-                  placeholder="How others will see you"
-                  placeholderTextColor="#8b6699"
-                  value={displayName}
-                  onChangeText={setDisplayName}
-                  autoCorrect={false}
-                  maxLength={30}
-                />
-              </View>
-              <Text style={styles.inputHint}>
-                Leave blank to use your username
-              </Text>
-            </View>
-
-            {/* Summary */}
-            <View style={styles.summaryContainer}>
-              <Text style={styles.summaryTitle}>You're almost ready!</Text>
-              <Text style={styles.summaryText}>
-                Your personalized music discovery experience is about to begin.
-              </Text>
-            </View>
-          </ScrollView>
-
-          {/* Fixed Complete Button */}
-          <View style={styles.footer}>
-            <TouchableOpacity
-              style={[
-                styles.completeButton,
-                (!username.trim() || !usernameValid || loading || checkingUsername) && styles.completeButtonDisabled
-              ]}
-              onPress={handleComplete}
-              disabled={!username.trim() || !usernameValid || loading || checkingUsername}
-            >
-              <Text style={styles.completeButtonText}>
-                {loading ? 'Setting up...' : 'Complete Setup'}
-              </Text>
-              <Check size={20} color="#ded7e0" strokeWidth={2} />
-            </TouchableOpacity>
-          </View>
-        </KeyboardAvoidingView>
-      </SafeAreaView>
-    </View>
+            {loading ? 'Setting up...' : 'Complete Setup'}
+          </Button>
+        </View>
+      </Screen>
+    </KeyboardAvoidingView>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#19161a',
-  },
-  safeArea: {
-    flex: 1,
-  },
-  keyboardAvoidingView: {
-    flex: 1,
+    backgroundColor: colors.background,
   },
   header: {
-    paddingHorizontal: 24,
-    paddingTop: 32,
-    paddingBottom: 24,
-  },
-  title: {
-    fontSize: 28,
-    fontFamily: fonts.chillax.bold,
-    color: '#ded7e0',
-    marginBottom: 12,
+    paddingTop: spacing.xl,
+    paddingBottom: spacing.lg,
   },
   subtitle: {
     fontSize: 16,
-    fontFamily: fonts.chillax.regular,
-    color: '#8b6699',
     lineHeight: 24,
-  },
-  progressContainer: {
-    paddingHorizontal: 24,
-    marginBottom: 32,
-  },
-  progressBar: {
-    height: 4,
-    backgroundColor: '#28232a',
-    borderRadius: 2,
-    marginBottom: 8,
-  },
-  progressFill: {
-    height: '100%',
-    backgroundColor: '#452451',
-    borderRadius: 2,
-  },
-  progressText: {
-    fontSize: 14,
-    fontFamily: fonts.chillax.medium,
-    color: '#8b6699',
+    marginTop: spacing.sm,
   },
   scrollView: {
     flex: 1,
   },
   scrollContent: {
-    paddingHorizontal: 24,
-    paddingBottom: 20,
+    paddingBottom: spacing.md,
   },
   inputContainer: {
-    marginBottom: 24,
+    marginBottom: spacing.lg,
   },
   inputLabel: {
     fontSize: 16,
-    fontFamily: fonts.chillax.medium,
-    color: '#ded7e0',
-    marginBottom: 8,
+    marginBottom: spacing.sm,
   },
-  inputWrapper: {
+  iconContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#28232a',
-    borderRadius: 16,
-    paddingHorizontal: 16,
-    paddingVertical: 16,
-    marginBottom: 8,
-    borderWidth: 2,
-    borderColor: 'transparent',
-  },
-  inputWrapperError: {
-    borderColor: '#51242d',
-  },
-  inputWrapperValid: {
-    borderColor: '#24512b',
-  },
-  input: {
-    flex: 1,
-    fontSize: 16,
-    fontFamily: fonts.chillax.regular,
-    color: '#ded7e0',
-    marginLeft: 12,
-  },
-  loadingIndicator: {
-    paddingHorizontal: 8,
-  },
-  loadingText: {
-    color: '#8b6699',
-    fontFamily: fonts.chillax.bold,
-    fontSize: 16,
-  },
-  inputHint: {
-    fontSize: 14,
-    fontFamily: fonts.chillax.regular,
-    color: '#8b6699',
+    gap: spacing.sm,
   },
   inputError: {
-    fontSize: 14,
-    fontFamily: fonts.chillax.medium,
-    color: '#51242d',
+    borderColor: colors.status.error,
   },
   inputSuccess: {
-    fontSize: 14,
-    fontFamily: fonts.chillax.medium,
-    color: '#24512b',
+    borderColor: colors.status.success,
+  },
+  loadingText: {
+    color: colors.text.secondary,
+    fontSize: 16,
+  },
+  successText: {
+    color: colors.status.success,
+    marginTop: spacing.xs,
+    marginLeft: spacing.sm,
+  },
+  hintText: {
+    marginTop: spacing.xs,
+    marginLeft: spacing.sm,
   },
   summaryContainer: {
-    backgroundColor: '#28232a',
-    borderRadius: 16,
-    padding: 20,
-    marginTop: 16,
+    backgroundColor: colors.surface,
+    borderRadius: borderRadius.lg,
+    padding: spacing.lg,
+    marginTop: spacing.md,
   },
   summaryTitle: {
     fontSize: 18,
-    fontFamily: fonts.chillax.bold,
-    color: '#ded7e0',
-    marginBottom: 8,
+    marginBottom: spacing.sm,
   },
   summaryText: {
     fontSize: 16,
-    fontFamily: fonts.chillax.regular,
-    color: '#8b6699',
     lineHeight: 24,
   },
   footer: {
-    paddingHorizontal: 24,
-    paddingTop: 16,
-    paddingBottom: 32,
-    backgroundColor: '#19161a',
+    paddingTop: spacing.md,
+    paddingBottom: spacing.xl,
+    backgroundColor: colors.background,
     borderTopWidth: 1,
-    borderTopColor: '#28232a',
-  },
-  completeButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#452451',
-    paddingVertical: 16,
-    borderRadius: 16,
-    gap: 8,
-  },
-  completeButtonDisabled: {
-    backgroundColor: '#28232a',
-    opacity: 0.6,
-  },
-  completeButtonText: {
-    fontSize: 18,
-    fontFamily: fonts.chillax.bold,
-    color: '#ded7e0',
+    borderTopColor: colors.surface,
   },
 });

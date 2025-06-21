@@ -1,11 +1,18 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, Image, RefreshControl } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { View, Image, TouchableOpacity, RefreshControl, StyleSheet } from 'react-native';
 import { ExternalLink, Music, Users } from 'lucide-react-native';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/contexts/AuthContext';
 import { useFocusEffect } from '@react-navigation/native';
-import { fonts } from '@/lib/fonts';
+import { Screen } from '@/components/layout/Screen';
+import { Heading } from '@/components/typography/Heading';
+import { Text } from '@/components/typography/Text';
+import { Button } from '@/components/buttons/Button';
+import { TabBar } from '@/components/navigation/TabBar';
+import { StarRating } from '@/components/rating/StarRating';
+import { colors } from '@/utils/colors';
+import { spacing, borderRadius } from '@/utils/spacing';
+import { formatDate } from '@/utils/formatting';
 import ArtistUnveilView from '@/components/ArtistUnveilView';
 
 interface HistoryTrack {
@@ -42,6 +49,19 @@ export default function HistoryScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [selectedTrack, setSelectedTrack] = useState<HistoryTrack | null>(null);
   const [selectedArtist, setSelectedArtist] = useState<SubscribedArtist | null>(null);
+
+  const tabs = [
+    {
+      key: 'tracks',
+      label: 'Tracks',
+      icon: <Music size={16} color={activeTab === 'tracks' ? colors.text.primary : colors.text.secondary} strokeWidth={2} />
+    },
+    {
+      key: 'artists',
+      label: 'Artists',
+      icon: <Users size={16} color={activeTab === 'artists' ? colors.text.primary : colors.text.secondary} strokeWidth={2} />
+    }
+  ];
 
   // Reload history when screen comes into focus
   useFocusEffect(
@@ -144,26 +164,6 @@ export default function HistoryScreen() {
     loadHistory();
   }, [user]);
 
-  const renderStars = (rating: number) => {
-    return Array.from({ length: 5 }, (_, i) => (
-      <Text key={i} style={{ color: i < rating ? '#452451' : '#8b6699', fontSize: 14 }}>
-        ★
-      </Text>
-    ));
-  };
-
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    const now = new Date();
-    const diffTime = Math.abs(now.getTime() - date.getTime());
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-
-    if (diffDays === 1) return 'Today';
-    if (diffDays === 2) return 'Yesterday';
-    if (diffDays <= 7) return `${diffDays - 1} days ago`;
-    return date.toLocaleDateString();
-  };
-
   const handleTrackPress = (track: HistoryTrack) => {
     setSelectedTrack(track);
   };
@@ -180,524 +180,517 @@ export default function HistoryScreen() {
   // Show track unveil view
   if (selectedTrack) {
     return (
-      <View style={{ backgroundColor: '#19161a', flex: 1 }}>
-        <SafeAreaView style={{ flex: 1 }}>
-          {/* Back Button */}
-          <View style={{ paddingHorizontal: 24, paddingTop: 16, paddingBottom: 8 }}>
-            <TouchableOpacity
-              onPress={handleBackToHistory}
-              style={{
-                backgroundColor: '#28232a',
-                paddingHorizontal: 16,
-                paddingVertical: 8,
-                borderRadius: 12,
-                alignSelf: 'flex-start',
-              }}
-            >
-              <Text style={{ color: '#8b6699', fontFamily: fonts.chillax.medium, fontSize: 14 }}>
-                ← Back to History
-              </Text>
-            </TouchableOpacity>
-          </View>
-          
-          <ArtistUnveilView
-            track={selectedTrack}
-            showPlaybackControls={false}
-          />
-        </SafeAreaView>
-      </View>
+      <Screen backgroundColor={colors.background}>
+        <Button
+          variant="secondary"
+          size="small"
+          onPress={handleBackToHistory}
+          style={styles.backButton}
+        >
+          ← Back to History
+        </Button>
+        
+        <ArtistUnveilView
+          track={selectedTrack}
+          showPlaybackControls={false}
+        />
+      </Screen>
     );
   }
 
   // Show artist detail view
   if (selectedArtist) {
     return (
-      <View style={{ backgroundColor: '#19161a', flex: 1 }}>
-        <SafeAreaView style={{ flex: 1 }}>
-          {/* Back Button */}
-          <View style={{ paddingHorizontal: 24, paddingTop: 16, paddingBottom: 8 }}>
-            <TouchableOpacity
-              onPress={handleBackToHistory}
-              style={{
-                backgroundColor: '#28232a',
-                paddingHorizontal: 16,
-                paddingVertical: 8,
-                borderRadius: 12,
-                alignSelf: 'flex-start',
-              }}
-            >
-              <Text style={{ color: '#8b6699', fontFamily: fonts.chillax.medium, fontSize: 14 }}>
-                ← Back to History
-              </Text>
-            </TouchableOpacity>
+      <Screen scrollable backgroundColor={colors.background}>
+        <Button
+          variant="secondary"
+          size="small"
+          onPress={handleBackToHistory}
+          style={styles.backButton}
+        >
+          ← Back to History
+        </Button>
+
+        {/* Artist Header */}
+        <View style={styles.artistHeader}>
+          <View style={styles.artistAvatarContainer}>
+            {selectedArtist.avatar_url ? (
+              <Image
+                source={{ uri: selectedArtist.avatar_url }}
+                style={styles.artistAvatar}
+                resizeMode="cover"
+              />
+            ) : (
+              <View style={styles.artistAvatarPlaceholder}>
+                <Users size={40} color={colors.text.secondary} strokeWidth={1.5} />
+              </View>
+            )}
           </View>
+          
+          <Heading variant="h3" color="primary" align="center" style={styles.artistName}>
+            {selectedArtist.name}
+          </Heading>
+          
+          {selectedArtist.location && (
+            <Text variant="body" color="secondary" align="center" style={styles.artistLocation}>
+              {selectedArtist.location}
+            </Text>
+          )}
 
-          <ScrollView style={{ flex: 1, paddingHorizontal: 24 }} showsVerticalScrollIndicator={false}>
-            {/* Artist Header */}
-            <View style={{ alignItems: 'center', paddingVertical: 32 }}>
-              <View style={{ 
-                width: 120, 
-                height: 120, 
-                borderRadius: 60, 
-                backgroundColor: '#28232a', 
-                overflow: 'hidden',
-                marginBottom: 16
-              }}>
-                {selectedArtist.avatar_url ? (
-                  <Image
-                    source={{ uri: selectedArtist.avatar_url }}
-                    style={{ width: '100%', height: '100%' }}
-                    resizeMode="cover"
-                  />
-                ) : (
-                  <View style={{ 
-                    width: '100%', 
-                    height: '100%', 
-                    backgroundColor: '#28232a', 
-                    alignItems: 'center', 
-                    justifyContent: 'center' 
-                  }}>
-                    <Users size={40} color="#8b6699" strokeWidth={1.5} />
-                  </View>
-                )}
-              </View>
-              
-              <Text style={{ 
-                color: '#ded7e0', 
-                fontSize: 24, 
-                fontFamily: fonts.chillax.bold, 
-                textAlign: 'center',
-                marginBottom: 8
-              }}>
-                {selectedArtist.name}
-              </Text>
-              
-              {selectedArtist.location && (
-                <Text style={{ 
-                  color: '#8b6699', 
-                  fontSize: 16, 
-                  fontFamily: fonts.chillax.regular,
-                  textAlign: 'center',
-                  marginBottom: 16
-                }}>
-                  {selectedArtist.location}
+          {selectedArtist.genres && selectedArtist.genres.length > 0 && (
+            <View style={styles.genresContainer}>
+              {selectedArtist.genres.map((genre) => (
+                <Text key={genre} style={styles.genreTag}>
+                  {genre}
                 </Text>
-              )}
-
-              {selectedArtist.genres && selectedArtist.genres.length > 0 && (
-                <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, justifyContent: 'center' }}>
-                  {selectedArtist.genres.map((genre) => (
-                    <Text key={genre} style={{
-                      color: '#452451',
-                      fontSize: 12,
-                      fontFamily: fonts.chillax.medium,
-                      backgroundColor: 'rgba(69, 36, 81, 0.2)',
-                      paddingHorizontal: 8,
-                      paddingVertical: 4,
-                      borderRadius: 8,
-                    }}>
-                      {genre}
-                    </Text>
-                  ))}
-                </View>
-              )}
+              ))}
             </View>
+          )}
+        </View>
 
-            {/* Discovery Info */}
-            {selectedArtist.discovered_track_title && (
-              <View style={{
-                backgroundColor: '#28232a',
-                borderRadius: 16,
-                padding: 16,
-                marginBottom: 24,
-              }}>
-                <Text style={{
-                  color: '#ded7e0',
-                  fontSize: 16,
-                  fontFamily: fonts.chillax.bold,
-                  marginBottom: 8,
-                }}>
-                  How you discovered this artist
-                </Text>
-                <Text style={{
-                  color: '#8b6699',
-                  fontSize: 14,
-                  fontFamily: fonts.chillax.regular,
-                  lineHeight: 20,
-                }}>
-                  You discovered {selectedArtist.name} by listening to "{selectedArtist.discovered_track_title}"
-                </Text>
-              </View>
-            )}
+        {/* Discovery Info */}
+        {selectedArtist.discovered_track_title && (
+          <View style={styles.discoveryInfo}>
+            <Heading variant="h4" color="primary" style={styles.discoveryTitle}>
+              How you discovered this artist
+            </Heading>
+            <Text variant="body" color="secondary" style={styles.discoveryText}>
+              You discovered {selectedArtist.name} by listening to "{selectedArtist.discovered_track_title}"
+            </Text>
+          </View>
+        )}
 
-            {/* Artist Bio */}
-            {selectedArtist.bio && (
-              <View style={{ marginBottom: 24 }}>
-                <Text style={{
-                  color: '#ded7e0',
-                  fontSize: 18,
-                  fontFamily: fonts.chillax.bold,
-                  marginBottom: 12,
-                }}>
-                  About the Artist
-                </Text>
-                <Text style={{
-                  color: '#ded7e0',
-                  fontSize: 16,
-                  fontFamily: fonts.chillax.regular,
-                  lineHeight: 24,
-                }}>
-                  {selectedArtist.bio}
-                </Text>
-              </View>
-            )}
+        {/* Artist Bio */}
+        {selectedArtist.bio && (
+          <View style={styles.bioSection}>
+            <Heading variant="h4" color="primary" style={styles.bioTitle}>
+              About the Artist
+            </Heading>
+            <Text variant="body" color="primary" style={styles.bioText}>
+              {selectedArtist.bio}
+            </Text>
+          </View>
+        )}
 
-            {/* Following Since */}
-            <View style={{
-              backgroundColor: '#28232a',
-              borderRadius: 16,
-              padding: 16,
-              marginBottom: 32,
-            }}>
-              <Text style={{
-                color: '#8b6699',
-                fontSize: 14,
-                fontFamily: fonts.chillax.regular,
-                textAlign: 'center',
-              }}>
-                Following since {formatDate(selectedArtist.subscribed_at)}
-              </Text>
-            </View>
-          </ScrollView>
-        </SafeAreaView>
-      </View>
+        {/* Following Since */}
+        <View style={styles.followingSince}>
+          <Text variant="caption" color="secondary" align="center">
+            Following since {formatDate(selectedArtist.subscribed_at)}
+          </Text>
+        </View>
+      </Screen>
     );
   }
 
   if (loading) {
     return (
-      <View style={{ backgroundColor: '#19161a', flex: 1 }}>
-        <SafeAreaView style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-          <Text style={{ color: '#ded7e0', fontFamily: fonts.chillax.regular }}>Loading your discoveries...</Text>
-        </SafeAreaView>
-      </View>
+      <Screen>
+        <View style={styles.loadingContainer}>
+          <Text variant="body" color="primary">Loading your discoveries...</Text>
+        </View>
+      </Screen>
     );
   }
 
   return (
-    <View style={{ backgroundColor: '#19161a', flex: 1 }}>
-      <SafeAreaView style={{ flex: 1 }}>
-        {/* Header */}
-        <View style={{ paddingHorizontal: 24, paddingTop: 32, paddingBottom: 24 }}>
-          <Text style={{ color: '#ded7e0', fontSize: 28, fontFamily: fonts.chillax.bold, marginBottom: 8 }}>
-            Your Discoveries
-          </Text>
-          <Text style={{ color: '#8b6699', fontFamily: fonts.chillax.regular, fontSize: 16 }}>
-            {activeTab === 'tracks' ? `${tracks.length} tracks you've loved` : `${artists.length} artists you're following`}
-          </Text>
-        </View>
+    <Screen scrollable paddingHorizontal={24}>
+      {/* Header */}
+      <View style={styles.header}>
+        <Heading variant="h2" color="primary">
+          Your Discoveries
+        </Heading>
+        <Text variant="body" color="secondary" style={styles.subtitle}>
+          {activeTab === 'tracks' ? `${tracks.length} tracks you've loved` : `${artists.length} artists you're following`}
+        </Text>
+      </View>
 
-        {/* Tab Navigation */}
-        <View style={{ paddingHorizontal: 24, marginBottom: 24 }}>
-          <View style={{ 
-            flexDirection: 'row', 
-            backgroundColor: '#28232a', 
-            borderRadius: 16, 
-            padding: 4 
-          }}>
-            <TouchableOpacity
-              style={{
-                flex: 1,
-                paddingVertical: 12,
-                paddingHorizontal: 16,
-                borderRadius: 12,
-                backgroundColor: activeTab === 'tracks' ? '#452451' : 'transparent',
-                flexDirection: 'row',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: 8,
-              }}
-              onPress={() => setActiveTab('tracks')}
-            >
-              <Music size={16} color={activeTab === 'tracks' ? '#ded7e0' : '#8b6699'} strokeWidth={2} />
-              <Text style={{
-                color: activeTab === 'tracks' ? '#ded7e0' : '#8b6699',
-                fontFamily: fonts.chillax.medium,
-                fontSize: 14,
-              }}>
-                Tracks
+      {/* Tab Navigation */}
+      <TabBar
+        activeTab={activeTab}
+        onTabPress={(tab) => setActiveTab(tab as TabType)}
+        tabs={tabs}
+        style={styles.tabBar}
+      />
+
+      {/* Content */}
+      <View style={styles.content}>
+        {activeTab === 'tracks' ? (
+          tracks.length === 0 ? (
+            <View style={styles.emptyState}>
+              <Text style={styles.emptyEmoji}>🎵</Text>
+              <Heading variant="h4" color="primary" align="center" style={styles.emptyTitle}>
+                No discoveries yet
+              </Heading>
+              <Text variant="body" color="secondary" align="center" style={styles.emptyDescription}>
+                Start exploring to build your collection of favorite underground tracks
               </Text>
-            </TouchableOpacity>
-            
-            <TouchableOpacity
-              style={{
-                flex: 1,
-                paddingVertical: 12,
-                paddingHorizontal: 16,
-                borderRadius: 12,
-                backgroundColor: activeTab === 'artists' ? '#452451' : 'transparent',
-                flexDirection: 'row',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: 8,
-              }}
-              onPress={() => setActiveTab('artists')}
-            >
-              <Users size={16} color={activeTab === 'artists' ? '#ded7e0' : '#8b6699'} strokeWidth={2} />
-              <Text style={{
-                color: activeTab === 'artists' ? '#ded7e0' : '#8b6699',
-                fontFamily: fonts.chillax.medium,
-                fontSize: 14,
-              }}>
-                Artists
-              </Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-
-        {/* Content */}
-        <ScrollView 
-          style={{ flex: 1, paddingHorizontal: 24 }} 
-          showsVerticalScrollIndicator={false}
-          refreshControl={
-            <RefreshControl
-              refreshing={refreshing}
-              onRefresh={onRefresh}
-              tintColor="#8b6699"
-              colors={["#8b6699"]}
-              progressBackgroundColor="#28232a"
-            />
-          }
-        >
-          {activeTab === 'tracks' ? (
-            tracks.length === 0 ? (
-              <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', paddingVertical: 80 }}>
-                <Text style={{ fontSize: 48, marginBottom: 16 }}>🎵</Text>
-                <Text style={{ color: '#ded7e0', fontSize: 20, fontFamily: fonts.chillax.bold, textAlign: 'center', marginBottom: 8 }}>
-                  No discoveries yet
-                </Text>
-                <Text style={{ color: '#8b6699', fontFamily: fonts.chillax.regular, textAlign: 'center', fontSize: 16, lineHeight: 24 }}>
-                  Start exploring to build your collection of favorite underground tracks
-                </Text>
-              </View>
-            ) : (
-              <View style={{ gap: 16, paddingBottom: 24 }}>
-                {tracks.map((track) => (
-                  <TouchableOpacity
-                    key={track.id}
-                    onPress={() => handleTrackPress(track)}
-                    style={{
-                      backgroundColor: '#28232a',
-                      borderRadius: 16,
-                      padding: 16,
-                    }}
-                  >
-                    <View style={{ flexDirection: 'row', gap: 16 }}>
-                      {/* Artwork */}
-                      <View style={{ 
-                        width: 64, 
-                        height: 64, 
-                        borderRadius: 12, 
-                        backgroundColor: '#19161a', 
-                        overflow: 'hidden' 
-                      }}>
-                        {track.artwork_url ? (
-                          <Image
-                            source={{ uri: track.artwork_url }}
-                            style={{ width: '100%', height: '100%' }}
-                            resizeMode="cover"
-                          />
-                        ) : (
-                          <View style={{ 
-                            width: '100%', 
-                            height: '100%', 
-                            backgroundColor: '#19161a', 
-                            alignItems: 'center', 
-                            justifyContent: 'center' 
-                          }}>
-                            <Text style={{ fontSize: 20 }}>🎵</Text>
-                          </View>
-                        )}
-                      </View>
-
-                      {/* Track Info */}
-                      <View style={{ flex: 1 }}>
-                        <Text style={{ 
-                          color: '#ded7e0', 
-                          fontFamily: fonts.chillax.bold, 
-                          fontSize: 18, 
-                          marginBottom: 4 
-                        }}>
-                          {track.title}
-                        </Text>
-                        <Text style={{ 
-                          color: '#8b6699', 
-                          fontFamily: fonts.chillax.regular, 
-                          fontSize: 16, 
-                          marginBottom: 8 
-                        }}>
-                          {track.artist}
-                        </Text>
-                        
-                        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-                          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
-                            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                              <Text style={{ 
-                                color: '#452451', 
-                                fontSize: 12, 
-                                fontFamily: fonts.chillax.medium,
-                                backgroundColor: 'rgba(69, 36, 81, 0.2)',
-                                paddingHorizontal: 8,
-                                paddingVertical: 4,
-                                borderRadius: 8,
-                              }}>
-                                {track.genre}
-                              </Text>
-                              <Text style={{ 
-                                color: '#8b6699', 
-                                fontSize: 12, 
-                                fontFamily: fonts.chillax.medium,
-                                backgroundColor: 'rgba(139, 102, 153, 0.2)',
-                                paddingHorizontal: 8,
-                                paddingVertical: 4,
-                                borderRadius: 8,
-                              }}>
-                                {track.mood}
-                              </Text>
-                            </View>
-                            <View style={{ flexDirection: 'row' }}>
-                              {renderStars(track.rating)}
-                            </View>
-                          </View>
-
-                          <ExternalLink size={16} color="#8b6699" strokeWidth={2} />
-                        </View>
-
-                        <Text style={{ 
-                          color: '#8b6699', 
-                          fontSize: 12, 
-                          fontFamily: fonts.chillax.regular,
-                          marginTop: 8,
-                          opacity: 0.7 
-                        }}>
-                          {formatDate(track.created_at)}
-                        </Text>
-                      </View>
-                    </View>
-                  </TouchableOpacity>
-                ))}
-              </View>
-            )
+            </View>
           ) : (
-            artists.length === 0 ? (
-              <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', paddingVertical: 80 }}>
-                <Text style={{ fontSize: 48, marginBottom: 16 }}>👥</Text>
-                <Text style={{ color: '#ded7e0', fontSize: 20, fontFamily: fonts.chillax.bold, textAlign: 'center', marginBottom: 8 }}>
-                  No artists followed yet
-                </Text>
-                <Text style={{ color: '#8b6699', fontFamily: fonts.chillax.regular, textAlign: 'center', fontSize: 16, lineHeight: 24 }}>
-                  Discover and rate tracks to start following underground artists
-                </Text>
-              </View>
-            ) : (
-              <View style={{ gap: 16, paddingBottom: 24 }}>
-                {artists.map((artist) => (
-                  <TouchableOpacity
-                    key={artist.id}
-                    onPress={() => handleArtistPress(artist)}
-                    style={{
-                      backgroundColor: '#28232a',
-                      borderRadius: 16,
-                      padding: 16,
-                    }}
-                  >
-                    <View style={{ flexDirection: 'row', gap: 16 }}>
-                      {/* Artist Avatar */}
-                      <View style={{ 
-                        width: 64, 
-                        height: 64, 
-                        borderRadius: 32, 
-                        backgroundColor: '#19161a', 
-                        overflow: 'hidden' 
-                      }}>
-                        {artist.avatar_url ? (
-                          <Image
-                            source={{ uri: artist.avatar_url }}
-                            style={{ width: '100%', height: '100%' }}
-                            resizeMode="cover"
-                          />
-                        ) : (
-                          <View style={{ 
-                            width: '100%', 
-                            height: '100%', 
-                            backgroundColor: '#19161a', 
-                            alignItems: 'center', 
-                            justifyContent: 'center' 
-                          }}>
-                            <Users size={24} color="#8b6699" strokeWidth={1.5} />
-                          </View>
-                        )}
-                      </View>
-
-                      {/* Artist Info */}
-                      <View style={{ flex: 1 }}>
-                        <Text style={{ 
-                          color: '#ded7e0', 
-                          fontFamily: fonts.chillax.bold, 
-                          fontSize: 18, 
-                          marginBottom: 4 
-                        }}>
-                          {artist.name}
-                        </Text>
-                        
-                        {artist.location && (
-                          <Text style={{ 
-                            color: '#8b6699', 
-                            fontFamily: fonts.chillax.regular, 
-                            fontSize: 14, 
-                            marginBottom: 8 
-                          }}>
-                            {artist.location}
-                          </Text>
-                        )}
-                        
-                        {artist.genres && artist.genres.length > 0 && (
-                          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginBottom: 8 }}>
-                            {artist.genres.slice(0, 3).map((genre) => (
-                              <Text key={genre} style={{ 
-                                color: '#452451', 
-                                fontSize: 11, 
-                                fontFamily: fonts.chillax.medium,
-                                backgroundColor: 'rgba(69, 36, 81, 0.2)',
-                                paddingHorizontal: 6,
-                                paddingVertical: 2,
-                                borderRadius: 6,
-                              }}>
-                                {genre}
-                              </Text>
-                            ))}
-                          </View>
-                        )}
-
-                        <Text style={{ 
-                          color: '#8b6699', 
-                          fontSize: 12, 
-                          fontFamily: fonts.chillax.regular,
-                          opacity: 0.7 
-                        }}>
-                          Following since {formatDate(artist.subscribed_at)}
-                        </Text>
-                      </View>
-
-                      <ExternalLink size={16} color="#8b6699" strokeWidth={2} />
+            <View style={styles.tracksList}>
+              {tracks.map((track) => (
+                <TouchableOpacity
+                  key={track.id}
+                  onPress={() => handleTrackPress(track)}
+                  style={styles.trackCard}
+                  activeOpacity={0.8}
+                >
+                  <View style={styles.trackContent}>
+                    {/* Artwork */}
+                    <View style={styles.trackArtworkContainer}>
+                      {track.artwork_url ? (
+                        <Image
+                          source={{ uri: track.artwork_url }}
+                          style={styles.trackArtwork}
+                          resizeMode="cover"
+                        />
+                      ) : (
+                        <View style={styles.trackArtworkPlaceholder}>
+                          <Music size={20} color={colors.text.secondary} strokeWidth={1.5} />
+                        </View>
+                      )}
                     </View>
-                  </TouchableOpacity>
-                ))}
-              </View>
-            )
-          )}
-        </ScrollView>
-      </SafeAreaView>
-    </View>
+
+                    {/* Track Info */}
+                    <View style={styles.trackInfo}>
+                      <Heading variant="h4" color="primary" style={styles.trackTitle}>
+                        {track.title}
+                      </Heading>
+                      <Text variant="body" color="secondary" style={styles.trackArtist}>
+                        {track.artist}
+                      </Text>
+                      
+                      <View style={styles.trackDetails}>
+                        <View style={styles.trackTags}>
+                          <Text style={styles.trackTag}>{track.genre}</Text>
+                          <Text style={styles.trackTag}>{track.mood}</Text>
+                        </View>
+                        <StarRating rating={track.rating} readonly size="small" />
+                      </View>
+
+                      <Text variant="caption" color="secondary" style={styles.trackDate}>
+                        {formatDate(track.created_at)}
+                      </Text>
+                    </View>
+
+                    <ExternalLink size={16} color={colors.text.secondary} strokeWidth={2} />
+                  </View>
+                </TouchableOpacity>
+              ))}
+            </View>
+          )
+        ) : (
+          artists.length === 0 ? (
+            <View style={styles.emptyState}>
+              <Text style={styles.emptyEmoji}>👥</Text>
+              <Heading variant="h4" color="primary" align="center" style={styles.emptyTitle}>
+                No artists followed yet
+              </Heading>
+              <Text variant="body" color="secondary" align="center" style={styles.emptyDescription}>
+                Discover and rate tracks to start following underground artists
+              </Text>
+            </View>
+          ) : (
+            <View style={styles.artistsList}>
+              {artists.map((artist) => (
+                <TouchableOpacity
+                  key={artist.id}
+                  onPress={() => handleArtistPress(artist)}
+                  style={styles.artistCard}
+                  activeOpacity={0.8}
+                >
+                  <View style={styles.artistContent}>
+                    {/* Artist Avatar */}
+                    <View style={styles.artistCardAvatarContainer}>
+                      {artist.avatar_url ? (
+                        <Image
+                          source={{ uri: artist.avatar_url }}
+                          style={styles.artistCardAvatar}
+                          resizeMode="cover"
+                        />
+                      ) : (
+                        <View style={styles.artistCardAvatarPlaceholder}>
+                          <Users size={24} color={colors.text.secondary} strokeWidth={1.5} />
+                        </View>
+                      )}
+                    </View>
+
+                    {/* Artist Info */}
+                    <View style={styles.artistInfo}>
+                      <Heading variant="h4" color="primary" style={styles.artistCardName}>
+                        {artist.name}
+                      </Heading>
+                      
+                      {artist.location && (
+                        <Text variant="caption" color="secondary" style={styles.artistCardLocation}>
+                          {artist.location}
+                        </Text>
+                      )}
+                      
+                      {artist.genres && artist.genres.length > 0 && (
+                        <View style={styles.artistCardGenres}>
+                          {artist.genres.slice(0, 3).map((genre) => (
+                            <Text key={genre} style={styles.artistCardGenreTag}>
+                              {genre}
+                            </Text>
+                          ))}
+                        </View>
+                      )}
+
+                      <Text variant="caption" color="secondary" style={styles.artistCardDate}>
+                        Following since {formatDate(artist.subscribed_at)}
+                      </Text>
+                    </View>
+
+                    <ExternalLink size={16} color={colors.text.secondary} strokeWidth={2} />
+                  </View>
+                </TouchableOpacity>
+              ))}
+            </View>
+          )
+        )}
+      </View>
+    </Screen>
   );
 }
+
+const styles = StyleSheet.create({
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  backButton: {
+    alignSelf: 'flex-start',
+    marginBottom: spacing.md,
+  },
+  header: {
+    paddingTop: spacing.xl,
+    paddingBottom: spacing.lg,
+  },
+  subtitle: {
+    fontSize: 16,
+    marginTop: spacing.sm,
+  },
+  tabBar: {
+    marginBottom: spacing.lg,
+  },
+  content: {
+    flex: 1,
+  },
+  emptyState: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: spacing.xxl,
+  },
+  emptyEmoji: {
+    fontSize: 48,
+    marginBottom: spacing.md,
+  },
+  emptyTitle: {
+    fontSize: 20,
+    marginBottom: spacing.sm,
+  },
+  emptyDescription: {
+    fontSize: 16,
+    lineHeight: 24,
+  },
+  tracksList: {
+    gap: spacing.md,
+    paddingBottom: spacing.lg,
+  },
+  trackCard: {
+    backgroundColor: colors.surface,
+    borderRadius: borderRadius.lg,
+    padding: spacing.md,
+  },
+  trackContent: {
+    flexDirection: 'row',
+    gap: spacing.md,
+  },
+  trackArtworkContainer: {
+    width: 64,
+    height: 64,
+    borderRadius: borderRadius.md,
+    overflow: 'hidden',
+  },
+  trackArtwork: {
+    width: '100%',
+    height: '100%',
+  },
+  trackArtworkPlaceholder: {
+    width: '100%',
+    height: '100%',
+    backgroundColor: colors.background,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  trackInfo: {
+    flex: 1,
+  },
+  trackTitle: {
+    fontSize: 18,
+    marginBottom: spacing.xs,
+  },
+  trackArtist: {
+    fontSize: 16,
+    marginBottom: spacing.sm,
+  },
+  trackDetails: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: spacing.sm,
+  },
+  trackTags: {
+    flexDirection: 'row',
+    gap: spacing.sm,
+  },
+  trackTag: {
+    color: colors.primary,
+    fontSize: 12,
+    backgroundColor: 'rgba(69, 36, 81, 0.2)',
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.xs,
+    borderRadius: borderRadius.sm,
+  },
+  trackDate: {
+    fontSize: 12,
+    opacity: 0.7,
+  },
+  artistsList: {
+    gap: spacing.md,
+    paddingBottom: spacing.lg,
+  },
+  artistCard: {
+    backgroundColor: colors.surface,
+    borderRadius: borderRadius.lg,
+    padding: spacing.md,
+  },
+  artistContent: {
+    flexDirection: 'row',
+    gap: spacing.md,
+  },
+  artistCardAvatarContainer: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    overflow: 'hidden',
+  },
+  artistCardAvatar: {
+    width: '100%',
+    height: '100%',
+  },
+  artistCardAvatarPlaceholder: {
+    width: '100%',
+    height: '100%',
+    backgroundColor: colors.background,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  artistInfo: {
+    flex: 1,
+  },
+  artistCardName: {
+    fontSize: 18,
+    marginBottom: spacing.xs,
+  },
+  artistCardLocation: {
+    fontSize: 14,
+    marginBottom: spacing.sm,
+  },
+  artistCardGenres: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing.xs,
+    marginBottom: spacing.sm,
+  },
+  artistCardGenreTag: {
+    color: colors.primary,
+    fontSize: 11,
+    backgroundColor: 'rgba(69, 36, 81, 0.2)',
+    paddingHorizontal: spacing.xs,
+    paddingVertical: 2,
+    borderRadius: borderRadius.xs,
+  },
+  artistCardDate: {
+    fontSize: 12,
+    opacity: 0.7,
+  },
+  // Artist detail styles
+  artistHeader: {
+    alignItems: 'center',
+    paddingVertical: spacing.xl,
+  },
+  artistAvatarContainer: {
+    width: 120,
+    height: 120,
+    borderRadius: 60,
+    overflow: 'hidden',
+    marginBottom: spacing.md,
+  },
+  artistAvatar: {
+    width: '100%',
+    height: '100%',
+  },
+  artistAvatarPlaceholder: {
+    width: '100%',
+    height: '100%',
+    backgroundColor: colors.surface,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  artistName: {
+    fontSize: 24,
+    marginBottom: spacing.sm,
+  },
+  artistLocation: {
+    fontSize: 16,
+    marginBottom: spacing.md,
+  },
+  genresContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing.sm,
+    justifyContent: 'center',
+  },
+  genreTag: {
+    color: colors.primary,
+    fontSize: 12,
+    backgroundColor: 'rgba(69, 36, 81, 0.2)',
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.xs,
+    borderRadius: borderRadius.sm,
+  },
+  discoveryInfo: {
+    backgroundColor: colors.surface,
+    borderRadius: borderRadius.lg,
+    padding: spacing.md,
+    marginBottom: spacing.lg,
+  },
+  discoveryTitle: {
+    fontSize: 16,
+    marginBottom: spacing.sm,
+  },
+  discoveryText: {
+    fontSize: 14,
+    lineHeight: 20,
+  },
+  bioSection: {
+    marginBottom: spacing.lg,
+  },
+  bioTitle: {
+    fontSize: 18,
+    marginBottom: spacing.sm,
+  },
+  bioText: {
+    fontSize: 16,
+    lineHeight: 24,
+  },
+  followingSince: {
+    backgroundColor: colors.surface,
+    borderRadius: borderRadius.lg,
+    padding: spacing.md,
+    marginBottom: spacing.xl,
+  },
+});

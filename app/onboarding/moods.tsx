@@ -1,9 +1,15 @@
 import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, StyleSheet } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { View, StyleSheet } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
-import { ArrowRight, Check } from 'lucide-react-native';
-import { fonts } from '@/lib/fonts';
+import { ArrowRight } from 'lucide-react-native';
+import { Screen } from '@/components/layout/Screen';
+import { Heading } from '@/components/typography/Heading';
+import { Text } from '@/components/typography/Text';
+import { Button } from '@/components/buttons/Button';
+import { ProgressBar } from '@/components/progress/ProgressBar';
+import { SelectionChip } from '@/components/selection/SelectionChip';
+import { colors } from '@/utils/colors';
+import { spacing } from '@/utils/spacing';
 
 const MOODS = [
   'Energetic', 'Chill', 'Melancholic', 'Uplifting', 'Aggressive',
@@ -35,181 +41,91 @@ export default function MoodPreferencesScreen() {
   };
 
   return (
-    <View style={styles.container}>
-      <SafeAreaView style={styles.safeArea}>
-        {/* Header */}
-        <View style={styles.header}>
-          <Text style={styles.title}>What moods move you?</Text>
-          <Text style={styles.subtitle}>
-            Select the vibes that resonate with your soul
-          </Text>
-        </View>
+    <Screen scrollable paddingHorizontal={24}>
+      {/* Header */}
+      <View style={styles.header}>
+        <Heading variant="h2" color="primary">
+          What moods move you?
+        </Heading>
+        <Text 
+          variant="body" 
+          color="secondary" 
+          style={styles.subtitle}
+        >
+          Select the vibes that resonate with your soul
+        </Text>
+      </View>
 
-        {/* Progress Indicator */}
-        <View style={styles.progressContainer}>
-          <View style={styles.progressBar}>
-            <View style={[styles.progressFill, { width: '66%' }]} />
-          </View>
-          <Text style={styles.progressText}>2 of 3</Text>
-        </View>
+      {/* Progress Indicator */}
+      <ProgressBar current={2} total={3} />
 
-        {/* Mood Selection */}
-        <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
-          <View style={styles.moodGrid}>
-            {MOODS.map((mood) => (
-              <TouchableOpacity
-                key={mood}
-                onPress={() => toggleMood(mood)}
-                style={[
-                  styles.moodButton,
-                  selectedMoods.includes(mood) && styles.moodButtonSelected
-                ]}
-              >
-                <Text style={[
-                  styles.moodText,
-                  selectedMoods.includes(mood) && styles.moodTextSelected
-                ]}>
-                  {mood}
-                </Text>
-                {selectedMoods.includes(mood) && (
-                  <Check size={16} color="#ded7e0" strokeWidth={2} />
-                )}
-              </TouchableOpacity>
-            ))}
-          </View>
-        </ScrollView>
+      {/* Mood Selection */}
+      <View style={styles.moodGrid}>
+        {MOODS.map((mood) => (
+          <SelectionChip
+            key={mood}
+            label={mood}
+            selected={selectedMoods.includes(mood)}
+            onPress={() => toggleMood(mood)}
+            style={styles.moodChip}
+          />
+        ))}
+      </View>
 
-        {/* Continue Button */}
-        <View style={styles.footer}>
-          <TouchableOpacity
-            style={[
-              styles.continueButton,
-              selectedMoods.length === 0 && styles.continueButtonDisabled
-            ]}
-            onPress={handleContinue}
-            disabled={selectedMoods.length === 0}
-          >
-            <Text style={styles.continueButtonText}>
-              Continue ({selectedMoods.length} selected)
-            </Text>
-            <ArrowRight size={20} color="#ded7e0" strokeWidth={2} />
-          </TouchableOpacity>
+      {/* Continue Button */}
+      <View style={styles.footer}>
+        <Button
+          variant="primary"
+          size="large"
+          disabled={selectedMoods.length === 0}
+          onPress={handleContinue}
+          icon={<ArrowRight size={20} color={colors.text.primary} strokeWidth={2} />}
+          iconPosition="right"
+          style={styles.continueButton}
+        >
+          Continue ({selectedMoods.length} selected)
+        </Button>
 
-          <TouchableOpacity
-            style={styles.skipButton}
-            onPress={() => router.push('/onboarding/profile')}
-          >
-            <Text style={styles.skipButtonText}>Skip for now</Text>
-          </TouchableOpacity>
-        </View>
-      </SafeAreaView>
-    </View>
+        <Button
+          variant="ghost"
+          size="medium"
+          onPress={() => router.push('/onboarding/profile')}
+          style={styles.skipButton}
+        >
+          <Text variant="body" color="secondary">Skip for now</Text>
+        </Button>
+      </View>
+    </Screen>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#19161a',
-  },
-  safeArea: {
-    flex: 1,
-    paddingHorizontal: 24,
-  },
   header: {
-    paddingTop: 32,
-    paddingBottom: 24,
-  },
-  title: {
-    fontSize: 28,
-    fontFamily: fonts.chillax.bold,
-    color: '#ded7e0',
-    marginBottom: 12,
+    paddingTop: spacing.xl,
+    paddingBottom: spacing.lg,
   },
   subtitle: {
-    fontSize: 16,
-    fontFamily: fonts.chillax.regular,
-    color: '#8b6699',
     lineHeight: 24,
-  },
-  progressContainer: {
-    marginBottom: 32,
-  },
-  progressBar: {
-    height: 4,
-    backgroundColor: '#28232a',
-    borderRadius: 2,
-    marginBottom: 8,
-  },
-  progressFill: {
-    height: '100%',
-    backgroundColor: '#452451',
-    borderRadius: 2,
-  },
-  progressText: {
-    fontSize: 14,
-    fontFamily: fonts.chillax.medium,
-    color: '#8b6699',
-  },
-  scrollView: {
-    flex: 1,
+    marginTop: spacing.sm,
   },
   moodGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 12,
-    paddingBottom: 24,
+    gap: spacing.sm,
+    paddingBottom: spacing.lg,
   },
-  moodButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#28232a',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderRadius: 16,
-    gap: 8,
-  },
-  moodButtonSelected: {
-    backgroundColor: '#452451',
-  },
-  moodText: {
-    fontSize: 16,
-    fontFamily: fonts.chillax.medium,
-    color: '#8b6699',
-  },
-  moodTextSelected: {
-    color: '#ded7e0',
+  moodChip: {
+    marginBottom: spacing.sm,
   },
   footer: {
-    paddingTop: 24,
-    paddingBottom: 32,
+    paddingTop: spacing.lg,
+    paddingBottom: spacing.xl,
   },
   continueButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#452451',
-    paddingVertical: 16,
-    borderRadius: 16,
-    marginBottom: 16,
-    gap: 8,
-  },
-  continueButtonDisabled: {
-    backgroundColor: '#28232a',
-    opacity: 0.6,
-  },
-  continueButtonText: {
-    fontSize: 18,
-    fontFamily: fonts.chillax.bold,
-    color: '#ded7e0',
+    marginBottom: spacing.md,
   },
   skipButton: {
-    alignItems: 'center',
-    paddingVertical: 12,
-  },
-  skipButtonText: {
-    fontSize: 16,
-    fontFamily: fonts.chillax.medium,
-    color: '#8b6699',
+    alignSelf: 'center',
+    paddingVertical: spacing.sm,
   },
 });

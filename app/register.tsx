@@ -1,35 +1,65 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, Alert, StyleSheet, KeyboardAvoidingView, Platform } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { View, Alert, StyleSheet, KeyboardAvoidingView, Platform } from 'react-native';
 import { router } from 'expo-router';
-import { ArrowLeft, Mail, Lock, Eye, EyeOff } from 'lucide-react-native';
+import { Mail } from 'lucide-react-native';
 import { useAuth } from '@/contexts/AuthContext';
-import { fonts } from '@/lib/fonts';
+import { Screen } from '@/components/layout/Screen';
+import { Header } from '@/components/layout/Header';
+import { Text } from '@/components/typography/Text';
+import { TextInput } from '@/components/inputs/TextInput';
+import { PasswordInput } from '@/components/inputs/PasswordInput';
+import { Button } from '@/components/buttons/Button';
+import { SocialButton } from '@/components/buttons/SocialButton';
+import { colors } from '@/utils/colors';
+import { spacing } from '@/utils/spacing';
+import { validateEmail, validatePassword } from '@/utils/validation';
 
 export default function RegisterScreen() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  const [showPassword, setShowPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [errors, setErrors] = useState<{ 
+    email?: string; 
+    password?: string; 
+    confirmPassword?: string; 
+  }>({});
   const { signUp } = useAuth();
 
+  const validateForm = () => {
+    const newErrors: { 
+      email?: string; 
+      password?: string; 
+      confirmPassword?: string; 
+    } = {};
+    
+    if (!email) {
+      newErrors.email = 'Email is required';
+    } else if (!validateEmail(email)) {
+      newErrors.email = 'Please enter a valid email';
+    }
+    
+    if (!password) {
+      newErrors.password = 'Password is required';
+    } else {
+      const passwordError = validatePassword(password);
+      if (passwordError) {
+        newErrors.password = passwordError;
+      }
+    }
+    
+    if (!confirmPassword) {
+      newErrors.confirmPassword = 'Please confirm your password';
+    } else if (password !== confirmPassword) {
+      newErrors.confirmPassword = 'Passwords do not match';
+    }
+    
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
   const handleRegister = async () => {
-    if (!email || !password || !confirmPassword) {
-      Alert.alert('Error', 'Please fill in all fields');
-      return;
-    }
-
-    if (password !== confirmPassword) {
-      Alert.alert('Error', 'Passwords do not match');
-      return;
-    }
-
-    if (password.length < 6) {
-      Alert.alert('Error', 'Password must be at least 6 characters');
-      return;
-    }
+    if (!validateForm()) return;
 
     setLoading(true);
     try {
@@ -48,130 +78,89 @@ export default function RegisterScreen() {
       style={styles.container} 
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
-      <SafeAreaView style={styles.safeArea}>
-        {/* Header */}
-        <View style={styles.header}>
-          <TouchableOpacity
-            style={styles.backButton}
-            onPress={() => router.back()}
-          >
-            <ArrowLeft size={24} color="#ded7e0" strokeWidth={2} />
-          </TouchableOpacity>
-          <Text style={styles.title}>Create Account</Text>
-          <View style={styles.placeholder} />
-        </View>
+      <Screen paddingHorizontal={24}>
+        <Header
+          title="Create Account"
+          showBackButton={true}
+          onBackPress={() => router.back()}
+        />
 
-        {/* Form */}
         <View style={styles.form}>
-          <Text style={styles.subtitle}>
+          <Text 
+            variant="body" 
+            color="secondary" 
+            align="center"
+            style={styles.subtitle}
+          >
             Join the underground music community
           </Text>
 
           {/* Email Input */}
-          <View style={styles.inputContainer}>
-            <View style={styles.inputWrapper}>
-              <Mail size={20} color="#8b6699" strokeWidth={2} />
-              <TextInput
-                style={styles.input}
-                placeholder="Email address"
-                placeholderTextColor="#8b6699"
-                value={email}
-                onChangeText={setEmail}
-                keyboardType="email-address"
-                autoCapitalize="none"
-                autoCorrect={false}
-              />
-            </View>
-          </View>
+          <TextInput
+            placeholder="Email address"
+            value={email}
+            onChangeText={setEmail}
+            keyboardType="email-address"
+            error={errors.email}
+            icon={<Mail size={20} color={colors.text.secondary} strokeWidth={2} />}
+          />
 
           {/* Password Input */}
-          <View style={styles.inputContainer}>
-            <View style={styles.inputWrapper}>
-              <Lock size={20} color="#8b6699" strokeWidth={2} />
-              <TextInput
-                style={styles.input}
-                placeholder="Password"
-                placeholderTextColor="#8b6699"
-                value={password}
-                onChangeText={setPassword}
-                secureTextEntry={!showPassword}
-                autoCapitalize="none"
-              />
-              <TouchableOpacity
-                onPress={() => setShowPassword(!showPassword)}
-                style={styles.eyeButton}
-              >
-                {showPassword ? (
-                  <EyeOff size={20} color="#8b6699" strokeWidth={2} />
-                ) : (
-                  <Eye size={20} color="#8b6699" strokeWidth={2} />
-                )}
-              </TouchableOpacity>
-            </View>
-          </View>
+          <PasswordInput
+            placeholder="Password"
+            value={password}
+            onChangeText={setPassword}
+            error={errors.password}
+          />
 
           {/* Confirm Password Input */}
-          <View style={styles.inputContainer}>
-            <View style={styles.inputWrapper}>
-              <Lock size={20} color="#8b6699" strokeWidth={2} />
-              <TextInput
-                style={styles.input}
-                placeholder="Confirm password"
-                placeholderTextColor="#8b6699"
-                value={confirmPassword}
-                onChangeText={setConfirmPassword}
-                secureTextEntry={!showConfirmPassword}
-                autoCapitalize="none"
-              />
-              <TouchableOpacity
-                onPress={() => setShowConfirmPassword(!showConfirmPassword)}
-                style={styles.eyeButton}
-              >
-                {showConfirmPassword ? (
-                  <EyeOff size={20} color="#8b6699" strokeWidth={2} />
-                ) : (
-                  <Eye size={20} color="#8b6699" strokeWidth={2} />
-                )}
-              </TouchableOpacity>
-            </View>
-          </View>
+          <PasswordInput
+            placeholder="Confirm password"
+            value={confirmPassword}
+            onChangeText={setConfirmPassword}
+            error={errors.confirmPassword}
+          />
 
           {/* Register Button */}
-          <TouchableOpacity
-            style={[styles.registerButton, loading && styles.buttonDisabled]}
+          <Button
+            variant="primary"
+            size="large"
+            loading={loading}
             onPress={handleRegister}
-            disabled={loading}
+            style={styles.registerButton}
           >
-            <Text style={styles.registerButtonText}>
-              {loading ? 'Creating Account...' : 'Create Account'}
-            </Text>
-          </TouchableOpacity>
+            {loading ? 'Creating Account...' : 'Create Account'}
+          </Button>
 
           {/* Divider */}
           <View style={styles.divider}>
             <View style={styles.dividerLine} />
-            <Text style={styles.dividerText}>or</Text>
+            <Text variant="caption" color="secondary" style={styles.dividerText}>
+              or
+            </Text>
             <View style={styles.dividerLine} />
           </View>
 
           {/* Social Login Buttons */}
-          <TouchableOpacity style={styles.socialButton}>
-            <Text style={styles.socialButtonText}>Continue with Apple</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity style={styles.socialButton}>
-            <Text style={styles.socialButtonText}>Continue with Google</Text>
-          </TouchableOpacity>
+          <SocialButton platform="apple" onPress={() => {}} />
+          <SocialButton platform="google" onPress={() => {}} />
 
           {/* Login Link */}
           <View style={styles.loginLink}>
-            <Text style={styles.loginLinkText}>Already have an account? </Text>
-            <TouchableOpacity onPress={() => router.replace('/login')}>
-              <Text style={styles.loginLinkButton}>Sign In</Text>
-            </TouchableOpacity>
+            <Text variant="caption" color="secondary">
+              Already have an account?{' '}
+            </Text>
+            <Button
+              variant="ghost"
+              size="small"
+              onPress={() => router.replace('/login')}
+              style={styles.linkButton}
+            >
+              <Text variant="link" color="accent">Sign In</Text>
+            </Button>
           </View>
         </View>
-      </SafeAreaView>
+      </Screen>
     </KeyboardAvoidingView>
   );
 }
@@ -179,125 +168,40 @@ export default function RegisterScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#19161a',
-  },
-  safeArea: {
-    flex: 1,
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 24,
-    paddingTop: 16,
-    paddingBottom: 32,
-  },
-  backButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: '#28232a',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  title: {
-    fontSize: 20,
-    fontFamily: fonts.chillax.bold,
-    color: '#ded7e0',
-  },
-  placeholder: {
-    width: 40,
+    backgroundColor: colors.background,
   },
   form: {
     flex: 1,
-    paddingHorizontal: 24,
   },
   subtitle: {
     fontSize: 16,
-    fontFamily: fonts.chillax.regular,
-    color: '#8b6699',
-    textAlign: 'center',
-    marginBottom: 32,
-  },
-  inputContainer: {
-    marginBottom: 16,
-  },
-  inputWrapper: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#28232a',
-    borderRadius: 16,
-    paddingHorizontal: 16,
-    paddingVertical: 16,
-  },
-  input: {
-    flex: 1,
-    fontSize: 16,
-    fontFamily: fonts.chillax.regular,
-    color: '#ded7e0',
-    marginLeft: 12,
-  },
-  eyeButton: {
-    padding: 4,
+    marginBottom: spacing.xl,
   },
   registerButton: {
-    backgroundColor: '#452451',
-    paddingVertical: 16,
-    borderRadius: 16,
-    alignItems: 'center',
-    marginTop: 8,
-    marginBottom: 24,
-  },
-  registerButtonText: {
-    fontSize: 18,
-    fontFamily: fonts.chillax.bold,
-    color: '#ded7e0',
-  },
-  buttonDisabled: {
-    opacity: 0.6,
+    marginTop: spacing.sm,
+    marginBottom: spacing.lg,
   },
   divider: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 24,
+    marginBottom: spacing.lg,
   },
   dividerLine: {
     flex: 1,
     height: 1,
-    backgroundColor: '#28232a',
+    backgroundColor: colors.surface,
   },
   dividerText: {
-    fontSize: 14,
-    fontFamily: fonts.chillax.regular,
-    color: '#8b6699',
-    marginHorizontal: 16,
-  },
-  socialButton: {
-    backgroundColor: '#28232a',
-    paddingVertical: 16,
-    borderRadius: 16,
-    alignItems: 'center',
-    marginBottom: 12,
-  },
-  socialButtonText: {
-    fontSize: 16,
-    fontFamily: fonts.chillax.medium,
-    color: '#ded7e0',
+    marginHorizontal: spacing.md,
   },
   loginLink: {
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
-    marginTop: 24,
+    marginTop: spacing.lg,
   },
-  loginLinkText: {
-    fontSize: 14,
-    fontFamily: fonts.chillax.regular,
-    color: '#8b6699',
-  },
-  loginLinkButton: {
-    fontSize: 14,
-    fontFamily: fonts.chillax.bold,
-    color: '#452451',
+  linkButton: {
+    paddingHorizontal: 0,
+    paddingVertical: 0,
   },
 });

@@ -1,9 +1,15 @@
 import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, StyleSheet } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { View, StyleSheet } from 'react-native';
 import { router } from 'expo-router';
-import { ArrowRight, Check } from 'lucide-react-native';
-import { fonts } from '@/lib/fonts';
+import { ArrowRight } from 'lucide-react-native';
+import { Screen } from '@/components/layout/Screen';
+import { Heading } from '@/components/typography/Heading';
+import { Text } from '@/components/typography/Text';
+import { Button } from '@/components/buttons/Button';
+import { ProgressBar } from '@/components/progress/ProgressBar';
+import { SelectionChip } from '@/components/selection/SelectionChip';
+import { colors } from '@/utils/colors';
+import { spacing } from '@/utils/spacing';
 
 const GENRES = [
   'Rock', 'Pop', 'Hip-Hop', 'Electronic', 'Jazz', 'Classical',
@@ -31,181 +37,91 @@ export default function GenrePreferencesScreen() {
   };
 
   return (
-    <View style={styles.container}>
-      <SafeAreaView style={styles.safeArea}>
-        {/* Header */}
-        <View style={styles.header}>
-          <Text style={styles.title}>What genres do you love?</Text>
-          <Text style={styles.subtitle}>
-            Choose your favorites to get personalized recommendations
-          </Text>
-        </View>
+    <Screen scrollable paddingHorizontal={24}>
+      {/* Header */}
+      <View style={styles.header}>
+        <Heading variant="h2" color="primary">
+          What genres do you love?
+        </Heading>
+        <Text 
+          variant="body" 
+          color="secondary" 
+          style={styles.subtitle}
+        >
+          Choose your favorites to get personalized recommendations
+        </Text>
+      </View>
 
-        {/* Progress Indicator */}
-        <View style={styles.progressContainer}>
-          <View style={styles.progressBar}>
-            <View style={[styles.progressFill, { width: '33%' }]} />
-          </View>
-          <Text style={styles.progressText}>1 of 3</Text>
-        </View>
+      {/* Progress Indicator */}
+      <ProgressBar current={1} total={3} />
 
-        {/* Genre Selection */}
-        <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
-          <View style={styles.genreGrid}>
-            {GENRES.map((genre) => (
-              <TouchableOpacity
-                key={genre}
-                onPress={() => toggleGenre(genre)}
-                style={[
-                  styles.genreButton,
-                  selectedGenres.includes(genre) && styles.genreButtonSelected
-                ]}
-              >
-                <Text style={[
-                  styles.genreText,
-                  selectedGenres.includes(genre) && styles.genreTextSelected
-                ]}>
-                  {genre}
-                </Text>
-                {selectedGenres.includes(genre) && (
-                  <Check size={16} color="#ded7e0" strokeWidth={2} />
-                )}
-              </TouchableOpacity>
-            ))}
-          </View>
-        </ScrollView>
+      {/* Genre Selection */}
+      <View style={styles.genreGrid}>
+        {GENRES.map((genre) => (
+          <SelectionChip
+            key={genre}
+            label={genre}
+            selected={selectedGenres.includes(genre)}
+            onPress={() => toggleGenre(genre)}
+            style={styles.genreChip}
+          />
+        ))}
+      </View>
 
-        {/* Continue Button */}
-        <View style={styles.footer}>
-          <TouchableOpacity
-            style={[
-              styles.continueButton,
-              selectedGenres.length === 0 && styles.continueButtonDisabled
-            ]}
-            onPress={handleContinue}
-            disabled={selectedGenres.length === 0}
-          >
-            <Text style={styles.continueButtonText}>
-              Continue ({selectedGenres.length} selected)
-            </Text>
-            <ArrowRight size={20} color="#ded7e0" strokeWidth={2} />
-          </TouchableOpacity>
+      {/* Continue Button */}
+      <View style={styles.footer}>
+        <Button
+          variant="primary"
+          size="large"
+          disabled={selectedGenres.length === 0}
+          onPress={handleContinue}
+          icon={<ArrowRight size={20} color={colors.text.primary} strokeWidth={2} />}
+          iconPosition="right"
+          style={styles.continueButton}
+        >
+          Continue ({selectedGenres.length} selected)
+        </Button>
 
-          <TouchableOpacity
-            style={styles.skipButton}
-            onPress={() => router.push('/onboarding/moods')}
-          >
-            <Text style={styles.skipButtonText}>Skip for now</Text>
-          </TouchableOpacity>
-        </View>
-      </SafeAreaView>
-    </View>
+        <Button
+          variant="ghost"
+          size="medium"
+          onPress={() => router.push('/onboarding/moods')}
+          style={styles.skipButton}
+        >
+          <Text variant="body" color="secondary">Skip for now</Text>
+        </Button>
+      </View>
+    </Screen>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#19161a',
-  },
-  safeArea: {
-    flex: 1,
-    paddingHorizontal: 24,
-  },
   header: {
-    paddingTop: 32,
-    paddingBottom: 24,
-  },
-  title: {
-    fontSize: 28,
-    fontFamily: fonts.chillax.bold,
-    color: '#ded7e0',
-    marginBottom: 12,
+    paddingTop: spacing.xl,
+    paddingBottom: spacing.lg,
   },
   subtitle: {
-    fontSize: 16,
-    fontFamily: fonts.chillax.regular,
-    color: '#8b6699',
     lineHeight: 24,
-  },
-  progressContainer: {
-    marginBottom: 32,
-  },
-  progressBar: {
-    height: 4,
-    backgroundColor: '#28232a',
-    borderRadius: 2,
-    marginBottom: 8,
-  },
-  progressFill: {
-    height: '100%',
-    backgroundColor: '#452451',
-    borderRadius: 2,
-  },
-  progressText: {
-    fontSize: 14,
-    fontFamily: fonts.chillax.medium,
-    color: '#8b6699',
-  },
-  scrollView: {
-    flex: 1,
+    marginTop: spacing.sm,
   },
   genreGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 12,
-    paddingBottom: 24,
+    gap: spacing.sm,
+    paddingBottom: spacing.lg,
   },
-  genreButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#28232a',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderRadius: 16,
-    gap: 8,
-  },
-  genreButtonSelected: {
-    backgroundColor: '#452451',
-  },
-  genreText: {
-    fontSize: 16,
-    fontFamily: fonts.chillax.medium,
-    color: '#8b6699',
-  },
-  genreTextSelected: {
-    color: '#ded7e0',
+  genreChip: {
+    marginBottom: spacing.sm,
   },
   footer: {
-    paddingTop: 24,
-    paddingBottom: 32,
+    paddingTop: spacing.lg,
+    paddingBottom: spacing.xl,
   },
   continueButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#452451',
-    paddingVertical: 16,
-    borderRadius: 16,
-    marginBottom: 16,
-    gap: 8,
-  },
-  continueButtonDisabled: {
-    backgroundColor: '#28232a',
-    opacity: 0.6,
-  },
-  continueButtonText: {
-    fontSize: 18,
-    fontFamily: fonts.chillax.bold,
-    color: '#ded7e0',
+    marginBottom: spacing.md,
   },
   skipButton: {
-    alignItems: 'center',
-    paddingVertical: 12,
-  },
-  skipButtonText: {
-    fontSize: 16,
-    fontFamily: fonts.chillax.medium,
-    color: '#8b6699',
+    alignSelf: 'center',
+    paddingVertical: spacing.sm,
   },
 });

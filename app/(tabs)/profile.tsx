@@ -1,10 +1,14 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, ScrollView, TouchableOpacity } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { View, StyleSheet } from 'react-native';
 import { Award, Flame, Star, TrendingUp, LogOut } from 'lucide-react-native';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/contexts/AuthContext';
-import { fonts } from '@/lib/fonts';
+import { Screen } from '@/components/layout/Screen';
+import { Heading } from '@/components/typography/Heading';
+import { Text } from '@/components/typography/Text';
+import { Button } from '@/components/buttons/Button';
+import { colors } from '@/utils/colors';
+import { spacing, borderRadius } from '@/utils/spacing';
 
 interface UserStats {
   totalTracks: number;
@@ -106,7 +110,6 @@ export default function ProfileScreen() {
         ? ratings.reduce((sum, r) => sum + r.rating, 0) / ratings.length 
         : 0;
       
-      // Calculate streak (simplified)
       const streakDays = 5; // Demo value
       const points = totalTracks * 10 + (userBadges?.length || 0) * 50;
       
@@ -122,7 +125,7 @@ export default function ProfileScreen() {
         streakDays,
         badges: unlockedBadgeIds,
         points,
-        reviewsWritten: 0, // Would need separate query
+        reviewsWritten: 0,
       });
       setBadges(updatedBadges);
 
@@ -143,175 +146,294 @@ export default function ProfileScreen() {
 
   if (loading) {
     return (
-      <View style={{ backgroundColor: '#19161a', flex: 1 }}>
-        <SafeAreaView style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-          <Text style={{ color: '#ded7e0', fontFamily: fonts.chillax.regular }}>Loading profile...</Text>
-        </SafeAreaView>
-      </View>
+      <Screen>
+        <View style={styles.loadingContainer}>
+          <Text variant="body" color="primary">Loading profile...</Text>
+        </View>
+      </Screen>
     );
   }
 
   return (
-    <View style={{ backgroundColor: '#19161a', flex: 1 }}>
-      <SafeAreaView style={{ flex: 1 }}>
-        {/* Header */}
-        <View style={{ paddingHorizontal: 24, paddingTop: 32, paddingBottom: 24 }}>
-          <Text style={{ color: '#ded7e0', fontSize: 24, fontFamily: fonts.chillax.bold, marginBottom: 8 }}>
-            {user?.profile?.display_name || user?.profile?.username || 'Profile'}
-          </Text>
-          <Text style={{ color: '#8b6699', fontFamily: fonts.chillax.regular }}>
-            Your music discovery journey
-          </Text>
+    <Screen scrollable paddingHorizontal={24}>
+      {/* Header */}
+      <View style={styles.header}>
+        <Heading variant="h3" color="primary">
+          {user?.profile?.display_name || user?.profile?.username || 'Profile'}
+        </Heading>
+        <Text variant="body" color="secondary">
+          Your music discovery journey
+        </Text>
+      </View>
+
+      {/* Stats Overview */}
+      <View style={styles.statsContainer}>
+        <View style={styles.statsHeader}>
+          <Heading variant="h4" color="primary">Discovery Stats</Heading>
+          <View style={styles.pointsBadge}>
+            <Text variant="caption" color="primary" style={styles.pointsText}>
+              {stats.points} pts
+            </Text>
+          </View>
         </View>
 
-        <ScrollView style={{ flex: 1, paddingHorizontal: 24 }} showsVerticalScrollIndicator={false}>
-          {/* Stats Overview */}
-          <View style={{ backgroundColor: '#28232a', borderRadius: 16, padding: 24, marginBottom: 24 }}>
-            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-              <Text style={{ color: '#ded7e0', fontSize: 20, fontFamily: fonts.chillax.bold }}>Discovery Stats</Text>
-              <View style={{ backgroundColor: '#452451', paddingHorizontal: 12, paddingVertical: 4, borderRadius: 12 }}>
-                <Text style={{ color: '#ded7e0', fontFamily: fonts.chillax.bold, fontSize: 14 }}>
-                  {stats.points} pts
-                </Text>
-              </View>
-            </View>
-
-            <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-              <View style={{ alignItems: 'center' }}>
-                <Text style={{ color: '#ded7e0', fontSize: 24, fontFamily: fonts.chillax.bold }}>
-                  {stats.totalTracks}
-                </Text>
-                <Text style={{ color: '#8b6699', fontFamily: fonts.chillax.regular, fontSize: 14 }}>Tracks</Text>
-              </View>
-              <View style={{ alignItems: 'center' }}>
-                <Text style={{ color: '#ded7e0', fontSize: 24, fontFamily: fonts.chillax.bold }}>
-                  {stats.averageRating.toFixed(1)}
-                </Text>
-                <Text style={{ color: '#8b6699', fontFamily: fonts.chillax.regular, fontSize: 14 }}>Avg Rating</Text>
-              </View>
-              <View style={{ alignItems: 'center' }}>
-                <Text style={{ color: '#ded7e0', fontSize: 24, fontFamily: fonts.chillax.bold }}>
-                  {stats.streakDays}
-                </Text>
-                <Text style={{ color: '#8b6699', fontFamily: fonts.chillax.regular, fontSize: 14 }}>Day Streak</Text>
-              </View>
-            </View>
-          </View>
-
-          {/* Achievements */}
-          <View style={{ marginBottom: 24 }}>
-            <Text style={{ color: '#ded7e0', fontSize: 20, fontFamily: fonts.chillax.bold, marginBottom: 16 }}>
-              Achievements
+        <View style={styles.statsGrid}>
+          <View style={styles.statItem}>
+            <Text variant="button" color="primary" style={styles.statValue}>
+              {stats.totalTracks}
             </Text>
-            
-            <View style={{ gap: 12 }}>
-              {badges.map((badge) => (
-                <View
-                  key={badge.id}
-                  style={[
-                    { backgroundColor: '#28232a', borderRadius: 16, padding: 16 },
-                    !badge.unlocked && { opacity: 0.5 }
-                  ]}
-                >
-                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 16 }}>
-                    <View style={[
-                      { width: 48, height: 48, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
-                      badge.unlocked ? { backgroundColor: 'rgba(69, 36, 81, 0.2)' } : { backgroundColor: '#28232a' }
-                    ]}>
-                      <Text style={{ fontSize: 18 }}>{badge.icon}</Text>
-                    </View>
-                    
-                    <View style={{ flex: 1 }}>
-                      <Text style={[
-                        { fontFamily: fonts.chillax.bold },
-                        badge.unlocked ? { color: '#ded7e0' } : { color: '#8b6699' }
-                      ]}>
-                        {badge.name}
-                      </Text>
-                      <Text style={[
-                        { fontFamily: fonts.chillax.regular, fontSize: 14 },
-                        badge.unlocked ? { color: '#8b6699' } : { color: '#8b6699' }
-                      ]}>
-                        {badge.description}
-                      </Text>
-                    </View>
-
-                    {badge.unlocked && (
-                      <Award size={20} color="#452451" strokeWidth={2} />
-                    )}
-                  </View>
-                </View>
-              ))}
-            </View>
+            <Text variant="caption" color="secondary">Tracks</Text>
           </View>
-
-          {/* Quick Stats */}
-          <View style={{ marginBottom: 32 }}>
-            <Text style={{ color: '#ded7e0', fontSize: 20, fontFamily: fonts.chillax.bold, marginBottom: 16 }}>
-              Quick Stats
+          <View style={styles.statItem}>
+            <Text variant="button" color="primary" style={styles.statValue}>
+              {stats.averageRating.toFixed(1)}
             </Text>
-            
-            <View style={{ flexDirection: 'row', justifyContent: 'space-between', gap: 12 }}>
-              <View style={{ flex: 1, backgroundColor: '#28232a', borderRadius: 16, padding: 16 }}>
-                <Flame size={24} color="#452451" strokeWidth={2} style={{ marginBottom: 8 }} />
-                <Text style={{ color: '#ded7e0', fontSize: 18, fontFamily: fonts.chillax.bold }}>
-                  {stats.streakDays}
-                </Text>
-                <Text style={{ color: '#8b6699', fontFamily: fonts.chillax.regular, fontSize: 14 }}>
-                  Current Streak
-                </Text>
-              </View>
-
-              <View style={{ flex: 1, backgroundColor: '#28232a', borderRadius: 16, padding: 16 }}>
-                <Star size={24} color="#452451" strokeWidth={2} style={{ marginBottom: 8 }} />
-                <Text style={{ color: '#ded7e0', fontSize: 18, fontFamily: fonts.chillax.bold }}>
-                  {stats.averageRating.toFixed(1)}
-                </Text>
-                <Text style={{ color: '#8b6699', fontFamily: fonts.chillax.regular, fontSize: 14 }}>
-                  Avg Rating
-                </Text>
-              </View>
-
-              <View style={{ flex: 1, backgroundColor: '#28232a', borderRadius: 16, padding: 16 }}>
-                <TrendingUp size={24} color="#452451" strokeWidth={2} style={{ marginBottom: 8 }} />
-                <Text style={{ color: '#ded7e0', fontSize: 18, fontFamily: fonts.chillax.bold }}>
-                  {stats.badges.length}
-                </Text>
-                <Text style={{ color: '#8b6699', fontFamily: fonts.chillax.regular, fontSize: 14 }}>
-                  Badges
-                </Text>
-              </View>
-            </View>
+            <Text variant="caption" color="secondary">Avg Rating</Text>
           </View>
-
-          {/* Settings */}
-          <View style={{ marginBottom: 32 }}>
-            <Text style={{ color: '#ded7e0', fontSize: 20, fontFamily: fonts.chillax.bold, marginBottom: 16 }}>
-              Settings
+          <View style={styles.statItem}>
+            <Text variant="button" color="primary" style={styles.statValue}>
+              {stats.streakDays}
             </Text>
-            
-            <TouchableOpacity style={{ backgroundColor: '#28232a', borderRadius: 16, padding: 16, marginBottom: 12 }}>
-              <Text style={{ color: '#ded7e0', fontFamily: fonts.chillax.medium }}>Account Settings</Text>
-            </TouchableOpacity>
-            
-            <TouchableOpacity style={{ backgroundColor: '#28232a', borderRadius: 16, padding: 16, marginBottom: 12 }}>
-              <Text style={{ color: '#ded7e0', fontFamily: fonts.chillax.medium }}>Privacy Settings</Text>
-            </TouchableOpacity>
-            
-            <TouchableOpacity style={{ backgroundColor: '#28232a', borderRadius: 16, padding: 16, marginBottom: 12 }}>
-              <Text style={{ color: '#ded7e0', fontFamily: fonts.chillax.medium }}>Notifications</Text>
-            </TouchableOpacity>
-            
-            <TouchableOpacity 
-              style={{ backgroundColor: '#51242d', borderRadius: 16, padding: 16, flexDirection: 'row', alignItems: 'center', gap: 12 }}
-              onPress={handleSignOut}
+            <Text variant="caption" color="secondary">Day Streak</Text>
+          </View>
+        </View>
+      </View>
+
+      {/* Achievements */}
+      <View style={styles.section}>
+        <Heading variant="h4" color="primary" style={styles.sectionTitle}>
+          Achievements
+        </Heading>
+        
+        <View style={styles.badgesContainer}>
+          {badges.map((badge) => (
+            <View
+              key={badge.id}
+              style={[
+                styles.badgeItem,
+                !badge.unlocked && styles.badgeItemLocked
+              ]}
             >
-              <LogOut size={20} color="#ded7e0" strokeWidth={2} />
-              <Text style={{ color: '#ded7e0', fontFamily: fonts.chillax.medium }}>Sign Out</Text>
-            </TouchableOpacity>
+              <View style={styles.badgeContent}>
+                <View style={[
+                  styles.badgeIcon,
+                  badge.unlocked ? styles.badgeIconUnlocked : styles.badgeIconLocked
+                ]}>
+                  <Text style={styles.badgeEmoji}>{badge.icon}</Text>
+                </View>
+                
+                <View style={styles.badgeInfo}>
+                  <Text 
+                    variant="body" 
+                    color={badge.unlocked ? 'primary' : 'secondary'}
+                    style={styles.badgeName}
+                  >
+                    {badge.name}
+                  </Text>
+                  <Text 
+                    variant="caption" 
+                    color="secondary"
+                    style={styles.badgeDescription}
+                  >
+                    {badge.description}
+                  </Text>
+                </View>
+
+                {badge.unlocked && (
+                  <Award size={20} color={colors.primary} strokeWidth={2} />
+                )}
+              </View>
+            </View>
+          ))}
+        </View>
+      </View>
+
+      {/* Quick Stats */}
+      <View style={styles.section}>
+        <Heading variant="h4" color="primary" style={styles.sectionTitle}>
+          Quick Stats
+        </Heading>
+        
+        <View style={styles.quickStatsGrid}>
+          <View style={styles.quickStatItem}>
+            <Flame size={24} color={colors.primary} strokeWidth={2} style={styles.quickStatIcon} />
+            <Text variant="body" color="primary" style={styles.quickStatValue}>
+              {stats.streakDays}
+            </Text>
+            <Text variant="caption" color="secondary" style={styles.quickStatLabel}>
+              Current Streak
+            </Text>
           </View>
-        </ScrollView>
-      </SafeAreaView>
-    </View>
+
+          <View style={styles.quickStatItem}>
+            <Star size={24} color={colors.primary} strokeWidth={2} style={styles.quickStatIcon} />
+            <Text variant="body" color="primary" style={styles.quickStatValue}>
+              {stats.averageRating.toFixed(1)}
+            </Text>
+            <Text variant="caption" color="secondary" style={styles.quickStatLabel}>
+              Avg Rating
+            </Text>
+          </View>
+
+          <View style={styles.quickStatItem}>
+            <TrendingUp size={24} color={colors.primary} strokeWidth={2} style={styles.quickStatIcon} />
+            <Text variant="body" color="primary" style={styles.quickStatValue}>
+              {stats.badges.length}
+            </Text>
+            <Text variant="caption" color="secondary" style={styles.quickStatLabel}>
+              Badges
+            </Text>
+          </View>
+        </View>
+      </View>
+
+      {/* Settings */}
+      <View style={styles.section}>
+        <Heading variant="h4" color="primary" style={styles.sectionTitle}>
+          Settings
+        </Heading>
+        
+        <Button variant="secondary" size="medium" onPress={() => {}} style={styles.settingButton}>
+          Account Settings
+        </Button>
+        
+        <Button variant="secondary" size="medium" onPress={() => {}} style={styles.settingButton}>
+          Privacy Settings
+        </Button>
+        
+        <Button variant="secondary" size="medium" onPress={() => {}} style={styles.settingButton}>
+          Notifications
+        </Button>
+        
+        <Button 
+          variant="outline" 
+          size="medium" 
+          onPress={handleSignOut}
+          icon={<LogOut size={20} color={colors.text.primary} strokeWidth={2} />}
+          iconPosition="left"
+          style={[styles.settingButton, styles.signOutButton]}
+        >
+          Sign Out
+        </Button>
+      </View>
+    </Screen>
   );
 }
+
+const styles = StyleSheet.create({
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  header: {
+    paddingTop: spacing.xl,
+    paddingBottom: spacing.lg,
+  },
+  statsContainer: {
+    backgroundColor: colors.surface,
+    borderRadius: borderRadius.lg,
+    padding: spacing.lg,
+    marginBottom: spacing.lg,
+  },
+  statsHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: spacing.md,
+  },
+  pointsBadge: {
+    backgroundColor: colors.primary,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.xs,
+    borderRadius: borderRadius.md,
+  },
+  pointsText: {
+    fontSize: 14,
+  },
+  statsGrid: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
+  statItem: {
+    alignItems: 'center',
+  },
+  statValue: {
+    fontSize: 24,
+  },
+  section: {
+    marginBottom: spacing.xl,
+  },
+  sectionTitle: {
+    fontSize: 20,
+    marginBottom: spacing.md,
+  },
+  badgesContainer: {
+    gap: spacing.sm,
+  },
+  badgeItem: {
+    backgroundColor: colors.surface,
+    borderRadius: borderRadius.lg,
+    padding: spacing.md,
+  },
+  badgeItemLocked: {
+    opacity: 0.5,
+  },
+  badgeContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+  },
+  badgeIcon: {
+    width: 48,
+    height: 48,
+    borderRadius: borderRadius.md,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  badgeIconUnlocked: {
+    backgroundColor: 'rgba(69, 36, 81, 0.2)',
+  },
+  badgeIconLocked: {
+    backgroundColor: colors.surface,
+  },
+  badgeEmoji: {
+    fontSize: 18,
+  },
+  badgeInfo: {
+    flex: 1,
+  },
+  badgeName: {
+    fontSize: 16,
+  },
+  badgeDescription: {
+    fontSize: 14,
+  },
+  quickStatsGrid: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    gap: spacing.sm,
+  },
+  quickStatItem: {
+    flex: 1,
+    backgroundColor: colors.surface,
+    borderRadius: borderRadius.lg,
+    padding: spacing.md,
+    alignItems: 'center',
+  },
+  quickStatIcon: {
+    marginBottom: spacing.sm,
+  },
+  quickStatValue: {
+    fontSize: 18,
+  },
+  quickStatLabel: {
+    fontSize: 14,
+  },
+  settingButton: {
+    marginBottom: spacing.sm,
+  },
+  signOutButton: {
+    borderColor: colors.status.error,
+  },
+});
