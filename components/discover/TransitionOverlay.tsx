@@ -2,6 +2,7 @@ import React from 'react';
 import { View, ActivityIndicator, StyleSheet } from 'react-native';
 import Animated, { useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
 import { Heading } from '@/components/typography/Heading';
+import { Text } from '@/components/typography/Text';
 import { colors } from '@/utils/colors';
 import { spacing } from '@/utils/spacing';
 
