@@ -35,12 +35,10 @@ export default function HistoryScreen() {
   const [availableGenres, setAvailableGenres] = useState<string[]>([]);
   const [availableMoods, setAvailableMoods] = useState<string[]>([]);
 
-  // Filter states for artists
+  // Filter states for artists (no mood filter)
   const [selectedArtistGenre, setSelectedArtistGenre] = useState<string | null>(null);
-  const [selectedArtistMood, setSelectedArtistMood] = useState<string | null>(null);
   const [selectedArtistSort, setSelectedArtistSort] = useState<SortOption>('date_desc');
   const [availableArtistGenres, setAvailableArtistGenres] = useState<string[]>([]);
-  const [availableArtistMoods, setAvailableArtistMoods] = useState<string[]>([]);
 
   // Scroll position restoration
   const scrollViewRef = useRef<ScrollView>(null);
@@ -120,12 +118,6 @@ export default function HistoryScreen() {
       );
     }
 
-    // Apply mood filter (artists don't have moods directly, so this might be empty for now)
-    if (selectedArtistMood) {
-      // For now, we'll skip mood filtering for artists
-      // In the future, this could filter based on the mood of their discovered tracks
-    }
-
     // Apply sorting
     filtered.sort((a, b) => {
       switch (selectedArtistSort) {
@@ -143,7 +135,7 @@ export default function HistoryScreen() {
     });
 
     setFilteredArtists(filtered);
-  }, [artists, selectedArtistGenre, selectedArtistMood, selectedArtistSort]);
+  }, [artists, selectedArtistGenre, selectedArtistSort]);
 
   const loadHistory = async () => {
     if (!user?.id) return;
@@ -237,7 +229,6 @@ export default function HistoryScreen() {
         formattedArtists.flatMap(artist => artist.genres || [])
       )].sort();
       setAvailableArtistGenres(artistGenres);
-      setAvailableArtistMoods([]); // Artists don't have moods directly
 
     } catch (error) {
       console.error('Error loading history:', error);
@@ -475,15 +466,15 @@ export default function HistoryScreen() {
             </View>
           ) : (
             <>
-              {/* Filter Bar for Artists */}
+              {/* Filter Bar for Artists - No mood filter */}
               <FilterBar
                 selectedGenre={selectedArtistGenre}
-                selectedMood={selectedArtistMood}
+                selectedMood={null} // Always null for artists
                 selectedSort={selectedArtistSort}
                 availableGenres={availableArtistGenres}
-                availableMoods={availableArtistMoods}
+                availableMoods={[]} // Empty array for artists
                 onGenreChange={setSelectedArtistGenre}
-                onMoodChange={setSelectedArtistMood}
+                onMoodChange={() => {}} // No-op for artists
                 onSortChange={setSelectedArtistSort}
                 totalTracks={artists.length}
                 filteredCount={filteredArtists.length}

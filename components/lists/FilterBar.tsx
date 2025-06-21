@@ -61,14 +61,21 @@ export function FilterBar({
   const isGenreFiltered = selectedGenre !== null;
   const isMoodFiltered = selectedMood !== null;
   const isSortFiltered = selectedSort !== 'date_desc';
-  const hasActiveFilters = isGenreFiltered || isMoodFiltered || isSortFiltered;
+  
+  // For artists tab, don't consider mood in active filters
+  const hasActiveFilters = isArtistTab 
+    ? isGenreFiltered || isSortFiltered
+    : isGenreFiltered || isMoodFiltered || isSortFiltered;
+    
   const showClearFilters = totalTracks > 0 && filteredCount === 0 && hasActiveFilters;
 
   const sortOptions = isArtistTab ? ARTIST_SORT_OPTIONS : TRACK_SORT_OPTIONS;
 
   const clearAllFilters = () => {
     onGenreChange(null);
-    onMoodChange(null);
+    if (!isArtistTab) {
+      onMoodChange(null);
+    }
     onSortChange('date_desc');
   };
 
@@ -165,13 +172,15 @@ export function FilterBar({
           isFiltered={isGenreFiltered}
         />
 
-        {/* Mood Filter */}
-        <FilterButton
-          label={selectedMood || 'Moods'}
-          onPress={() => setShowMoodModal(true)}
-          isActive={showMoodModal}
-          isFiltered={isMoodFiltered}
-        />
+        {/* Mood Filter - Only show for tracks tab */}
+        {!isArtistTab && (
+          <FilterButton
+            label={selectedMood || 'Moods'}
+            onPress={() => setShowMoodModal(true)}
+            isActive={showMoodModal}
+            isFiltered={isMoodFiltered}
+          />
+        )}
 
         {/* Sort Filter */}
         <FilterButton
@@ -230,34 +239,36 @@ export function FilterBar({
         ))}
       </FilterModal>
 
-      {/* Mood Modal */}
-      <FilterModal
-        visible={showMoodModal}
-        onClose={() => setShowMoodModal(false)}
-        title="Filter by Mood"
-      >
-        <SelectionChip
-          label="All Moods"
-          selected={selectedMood === null}
-          onPress={() => {
-            onMoodChange(null);
-            setShowMoodModal(false);
-          }}
-          style={styles.modalOptionChip}
-        />
-        {availableMoods.map((mood) => (
+      {/* Mood Modal - Only render for tracks tab */}
+      {!isArtistTab && (
+        <FilterModal
+          visible={showMoodModal}
+          onClose={() => setShowMoodModal(false)}
+          title="Filter by Mood"
+        >
           <SelectionChip
-            key={mood}
-            label={`${getMoodEmoji(mood)} ${mood}`}
-            selected={selectedMood === mood}
+            label="All Moods"
+            selected={selectedMood === null}
             onPress={() => {
-              onMoodChange(mood);
+              onMoodChange(null);
               setShowMoodModal(false);
             }}
             style={styles.modalOptionChip}
           />
-        ))}
-      </FilterModal>
+          {availableMoods.map((mood) => (
+            <SelectionChip
+              key={mood}
+              label={`${getMoodEmoji(mood)} ${mood}`}
+              selected={selectedMood === mood}
+              onPress={() => {
+                onMoodChange(mood);
+                setShowMoodModal(false);
+              }}
+              style={styles.modalOptionChip}
+            />
+          ))}
+        </FilterModal>
+      )}
 
       {/* Sort Modal */}
       <FilterModal
