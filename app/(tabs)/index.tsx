@@ -928,8 +928,7 @@ export default function DiscoverScreen() {
                 {/* Logo at top left */}
                 <View style={{ 
                   position: 'absolute', 
-                  top: spacing.md, 
-                  left: spacing.lg, 
+                  top: spacing.md,
                   zIndex: 10 
                 }}>
                   <Text variant="button" color="primary" style={{ fontSize: 20 }}>

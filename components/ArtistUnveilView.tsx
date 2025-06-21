@@ -370,7 +370,7 @@ export default function ArtistUnveilView({
                 {/* Follow Button */}
                 <Button
                   variant={isSubscribed ? "success" : "primary"}
-                  size="large"
+                  size="medium"
                   onPress={handleSubscribeToArtist}
                   icon={isSubscribed ? 
                     <HeartHandshake size={20} color={colors.text.primary} strokeWidth={2} /> :
@@ -453,7 +453,7 @@ export default function ArtistUnveilView({
                 {onContinueListening && (
                   <Button
                     variant="primary"
-                    size="large"
+                    size="medium"
                     onPress={onContinueListening}
                     icon={<Play size={20} color={colors.text.primary} strokeWidth={2} />}
                     iconPosition="left"
@@ -466,7 +466,7 @@ export default function ArtistUnveilView({
                 {onDiscoverNext && (
                   <Button
                     variant="secondary"
-                    size="large"
+                    size="medium"
                     onPress={onDiscoverNext}
                     icon={<SkipForward size={20} color={colors.text.primary} strokeWidth={2} />}
                     iconPosition="left"
@@ -612,7 +612,6 @@ const styles = StyleSheet.create({
     marginBottom: spacing.sm,
   },
   userRatingStars: {
-    marginBottom: spacing.sm,
   },
   artisticQuoteContainer: {
     flexDirection: 'row',

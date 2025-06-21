@@ -156,8 +156,7 @@ const styles = StyleSheet.create({
     marginBottom: spacing.xl,
   },
   ratingContainer: {
-    width: '100%',
-    paddingHorizontal: spacing.lg,
+    alignItems: 'center',
     marginBottom: spacing.lg,
   },
   starRating: {

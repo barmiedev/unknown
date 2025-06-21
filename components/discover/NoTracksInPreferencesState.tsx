@@ -89,6 +89,7 @@ const styles = StyleSheet.create({
     width: '100%',
     gap: spacing.md,
     marginBottom: spacing.lg,
+    alignItems: 'center',
   },
   button: {
     width: '100%',

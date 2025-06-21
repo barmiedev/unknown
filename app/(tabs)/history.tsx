@@ -49,26 +49,18 @@ export default function HistoryScreen() {
   const [scrollPosition, setScrollPosition] = useState(0);
   const shouldRestoreScrollRef = useRef(false);
 
-  // Animation values for smooth tab transitions
-  const contentOpacity = useSharedValue(1);
-
   const tabs = [
     {
       key: 'tracks',
       label: 'Tracks',
-      icon: <Music size={16} color={activeTab === 'tracks' ? colors.text.primary : colors.text.secondary} strokeWidth={2} />
+      icon: <Music size={16} color={(activeTab) === 'tracks' ? colors.text.primary : colors.text.secondary} strokeWidth={2} />
     },
     {
       key: 'artists',
       label: 'Artists',
-      icon: <Users size={16} color={activeTab === 'artists' ? colors.text.primary : colors.text.secondary} strokeWidth={2} />
+      icon: <Users size={16} color={(activeTab) === 'artists' ? colors.text.primary : colors.text.secondary} strokeWidth={2} />
     }
   ];
-
-  // Animated style for content transitions
-  const contentStyle = useAnimatedStyle(() => ({
-    opacity: contentOpacity.value,
-  }));
 
   // Reload history when screen comes into focus
   useFocusEffect(
@@ -278,12 +270,6 @@ export default function HistoryScreen() {
 
   const handleTabPress = (tabKey: string) => {
     if (tabKey === activeTab) return;
-    
-    // Smooth transition animation
-    contentOpacity.value = withTiming(0, { duration: 150 }, () => {
-      contentOpacity.value = withTiming(1, { duration: 150 });
-    });
-    
     setActiveTab(tabKey as TabType);
   };
 
@@ -453,7 +439,7 @@ export default function HistoryScreen() {
         </View>
 
         {/* Scrollable Content with smooth transitions */}
-        <Animated.View style={[contentStyle, { flex: 1 }]}>
+        <Animated.View style={{ flex: 1 }}>
           <ScrollView 
             ref={scrollViewRef}
             style={styles.content}
