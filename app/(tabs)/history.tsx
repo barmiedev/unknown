@@ -1,13 +1,12 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { View, Image, TouchableOpacity, RefreshControl, StyleSheet, ScrollView } from 'react-native';
-import { ExternalLink, Music, Users } from 'lucide-react-native';
+import { View, TouchableOpacity, RefreshControl, StyleSheet, ScrollView } from 'react-native';
+import { Users } from 'lucide-react-native';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/contexts/AuthContext';
 import { useFocusEffect } from '@react-navigation/native';
 import { Screen } from '@/components/layout/Screen';
 import { Heading } from '@/components/typography/Heading';
 import { Text } from '@/components/typography/Text';
-import { Button } from '@/components/buttons/Button';
 import { TabBar } from '@/components/navigation/TabBar';
 import { StarRating } from '@/components/rating/StarRating';
 import { colors } from '@/utils/colors';
@@ -31,7 +30,7 @@ export default function HistoryScreen() {
     {
       key: 'tracks',
       label: 'Tracks',
-      icon: <Music size={16} color={activeTab === 'tracks' ? colors.text.primary : colors.text.secondary} strokeWidth={2} />
+      icon: <Users size={16} color={activeTab === 'tracks' ? colors.text.primary : colors.text.secondary} strokeWidth={2} />
     },
     {
       key: 'artists',
@@ -57,11 +56,12 @@ export default function HistoryScreen() {
     if (!user?.id) return;
 
     try {
-      // Load tracks
+      // Load tracks with artist location
       const { data: trackData, error: trackError } = await supabase
         .from('user_ratings')
         .select(`
           rating,
+          review_text,
           created_at,
           tracks (
             id,
@@ -70,7 +70,10 @@ export default function HistoryScreen() {
             genre,
             mood,
             artwork_url,
-            spotify_url
+            spotify_url,
+            artists (
+              location
+            )
           )
         `)
         .eq('profile_id', user.id)
@@ -86,9 +89,11 @@ export default function HistoryScreen() {
         genre: item.tracks.genre,
         mood: item.tracks.mood,
         rating: item.rating,
+        review_text: item.review_text,
         artwork_url: item.tracks.artwork_url,
         spotify_url: item.tracks.spotify_url,
         created_at: item.created_at,
+        artist_location: item.tracks.artists?.location,
       }));
 
       setTracks(formattedTracks);
@@ -154,6 +159,46 @@ export default function HistoryScreen() {
     setSelectedArtist(null);
   };
 
+  const extractCityFromLocation = (location: string | undefined): string => {
+    if (!location) return '';
+    // Extract city name (first part before comma)
+    const city = location.split(',')[0].trim();
+    return city;
+  };
+
+  const renderTrackTags = (track: HistoryTrack) => {
+    const tags = [];
+    
+    // Add genre
+    if (track.genre) {
+      tags.push(track.genre);
+    }
+    
+    // Add city (bolded)
+    const city = extractCityFromLocation(track.artist_location);
+    if (city) {
+      tags.push({ text: city, bold: true });
+    }
+    
+    // Add mood
+    if (track.mood) {
+      tags.push(track.mood);
+    }
+
+    return (
+      <View style={styles.tagsContainer}>
+        {tags.map((tag, index) => (
+          <React.Fragment key={index}>
+            {index > 0 && <Text style={styles.tagSeparator}> ⋅ </Text>}
+            <Text style={[styles.tagText, tag.bold && styles.tagTextBold]}>
+              {typeof tag === 'string' ? tag : tag.text}
+            </Text>
+          </React.Fragment>
+        ))}
+      </View>
+    );
+  };
+
   // Show track unveil view
   if (selectedTrack) {
     // Convert HistoryTrack to TrackDisplay for ArtistUnveilView
@@ -188,11 +233,7 @@ export default function HistoryScreen() {
             <View style={styles.artistHeader}>
               <View style={styles.artistAvatarContainer}>
                 {selectedArtist.avatar_url ? (
-                  <Image
-                    source={{ uri: selectedArtist.avatar_url }}
-                    style={styles.artistAvatar}
-                    resizeMode="cover"
-                  />
+                  <View style={styles.artistAvatar} />
                 ) : (
                   <View style={styles.artistAvatarPlaceholder}>
                     <Users size={40} color={colors.text.secondary} strokeWidth={1.5} />
@@ -304,46 +345,35 @@ export default function HistoryScreen() {
                   style={styles.trackCard}
                   activeOpacity={0.8}
                 >
-                  <View style={styles.trackContent}>
-                    {/* Artwork */}
-                    <View style={styles.trackArtworkContainer}>
-                      {track.artwork_url ? (
-                        <Image
-                          source={{ uri: track.artwork_url }}
-                          style={styles.trackArtwork}
-                          resizeMode="cover"
-                        />
-                      ) : (
-                        <View style={styles.trackArtworkPlaceholder}>
-                          <Music size={20} color={colors.text.secondary} strokeWidth={1.5} />
-                        </View>
-                      )}
-                    </View>
-
-                    {/* Track Info */}
-                    <View style={styles.trackInfo}>
+                  <View style={styles.trackHeader}>
+                    <View style={styles.trackTitleContainer}>
                       <Heading variant="h4" color="primary" style={styles.trackTitle}>
                         {track.title}
                       </Heading>
                       <Text variant="body" color="secondary" style={styles.trackArtist}>
                         {track.artist}
                       </Text>
-                      
-                      <View style={styles.trackDetails}>
-                        <View style={styles.trackTags}>
-                          <Text style={styles.trackTag}>{track.genre}</Text>
-                          <Text style={styles.trackTag}>{track.mood}</Text>
-                        </View>
-                        <StarRating rating={track.rating} readonly size="small" />
-                      </View>
-
+                    </View>
+                    
+                    <View style={styles.ratingDateContainer}>
+                      <StarRating rating={track.rating} readonly size="small" />
                       <Text variant="caption" color="secondary" style={styles.trackDate}>
                         {formatDate(track.created_at)}
                       </Text>
                     </View>
-
-                    <ExternalLink size={16} color={colors.text.secondary} strokeWidth={2} />
                   </View>
+
+                  {/* Tags */}
+                  {renderTrackTags(track)}
+
+                  {/* Review */}
+                  {track.review_text && track.review_text.trim() && (
+                    <View style={styles.reviewContainer}>
+                      <Text variant="body" color="primary" style={styles.reviewText}>
+                        {track.review_text.trim()}
+                      </Text>
+                    </View>
+                  )}
                 </TouchableOpacity>
               ))}
             </View>
@@ -372,11 +402,7 @@ export default function HistoryScreen() {
                     {/* Artist Avatar */}
                     <View style={styles.artistCardAvatarContainer}>
                       {artist.avatar_url ? (
-                        <Image
-                          source={{ uri: artist.avatar_url }}
-                          style={styles.artistCardAvatar}
-                          resizeMode="cover"
-                        />
+                        <View style={styles.artistCardAvatar} />
                       ) : (
                         <View style={styles.artistCardAvatarPlaceholder}>
                           <Users size={24} color={colors.text.secondary} strokeWidth={1.5} />
@@ -410,8 +436,6 @@ export default function HistoryScreen() {
                         Following since {formatDate(artist.subscribed_at)}
                       </Text>
                     </View>
-
-                    <ExternalLink size={16} color={colors.text.secondary} strokeWidth={2} />
                   </View>
                 </TouchableOpacity>
               ))}
@@ -454,36 +478,20 @@ const styles = StyleSheet.create({
     lineHeight: 24,
   },
   tracksList: {
-    gap: spacing.md,
+    gap: spacing.lg,
   },
   trackCard: {
-    backgroundColor: colors.surface,
-    borderRadius: borderRadius.lg,
-    padding: spacing.md,
+    paddingVertical: spacing.md,
   },
-  trackContent: {
+  trackHeader: {
     flexDirection: 'row',
-    gap: spacing.md,
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    marginBottom: spacing.sm,
   },
-  trackArtworkContainer: {
-    width: 64,
-    height: 64,
-    borderRadius: borderRadius.md,
-    overflow: 'hidden',
-  },
-  trackArtwork: {
-    width: '100%',
-    height: '100%',
-  },
-  trackArtworkPlaceholder: {
-    width: '100%',
-    height: '100%',
-    backgroundColor: colors.background,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  trackInfo: {
+  trackTitleContainer: {
     flex: 1,
+    marginRight: spacing.md,
   },
   trackTitle: {
     fontSize: 18,
@@ -491,29 +499,43 @@ const styles = StyleSheet.create({
   },
   trackArtist: {
     fontSize: 16,
-    marginBottom: spacing.sm,
   },
-  trackDetails: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: spacing.sm,
-  },
-  trackTags: {
-    flexDirection: 'row',
-    gap: spacing.sm,
-  },
-  trackTag: {
-    color: colors.primary,
-    fontSize: 12,
-    backgroundColor: 'rgba(69, 36, 81, 0.2)',
-    paddingHorizontal: spacing.sm,
-    paddingVertical: spacing.xs,
-    borderRadius: borderRadius.sm,
+  ratingDateContainer: {
+    alignItems: 'flex-end',
+    gap: spacing.xs,
   },
   trackDate: {
     fontSize: 12,
     opacity: 0.7,
+  },
+  tagsContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    alignItems: 'center',
+    marginBottom: spacing.sm,
+  },
+  tagText: {
+    color: colors.text.secondary,
+    fontSize: 14,
+  },
+  tagTextBold: {
+    fontWeight: 'bold',
+    color: colors.text.primary,
+  },
+  tagSeparator: {
+    color: colors.text.secondary,
+    fontSize: 14,
+  },
+  reviewContainer: {
+    backgroundColor: colors.surface,
+    borderRadius: borderRadius.md,
+    padding: spacing.md,
+    marginTop: spacing.xs,
+  },
+  reviewText: {
+    fontSize: 14,
+    lineHeight: 20,
+    fontStyle: 'italic',
   },
   artistsList: {
     gap: spacing.md,
