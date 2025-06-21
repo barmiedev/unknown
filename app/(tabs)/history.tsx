@@ -4,6 +4,7 @@ import { Users, Music } from 'lucide-react-native';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/contexts/AuthContext';
 import { useFocusEffect } from '@react-navigation/native';
+import Animated, { FadeIn, FadeOut, SlideInRight, SlideOutLeft } from 'react-native-reanimated';
 import { Screen } from '@/components/layout/Screen';
 import { Heading } from '@/components/typography/Heading';
 import { Text } from '@/components/typography/Text';
@@ -342,149 +343,157 @@ export default function HistoryScreen() {
     };
     
     return (
-      <ArtistUnveilView
-        track={trackDisplay}
-        showPlaybackControls={false}
-        onContinueListening={handleBackToHistory}
-        withoutBottomSafeArea
-      />
+      <Animated.View entering={SlideInRight.duration(300)} exiting={SlideOutLeft.duration(300)} style={{ flex: 1 }}>
+        <ArtistUnveilView
+          track={trackDisplay}
+          showPlaybackControls={false}
+          onContinueListening={handleBackToHistory}
+          withoutBottomSafeArea
+        />
+      </Animated.View>
     );
   }
 
   // Show artist detail view
   if (selectedArtist) {
     return (
-      <ArtistDetailView
-        artist={selectedArtist}
-        onBack={handleBackToHistory}
-        onUnfollow={handleUnfollow}
-        onFollow={handleFollow}
-        isFollowing={isFollowingArtist}
-      />
+      <Animated.View entering={SlideInRight.duration(300)} exiting={SlideOutLeft.duration(300)} style={{ flex: 1 }}>
+        <ArtistDetailView
+          artist={selectedArtist}
+          onBack={handleBackToHistory}
+          onUnfollow={handleUnfollow}
+          onFollow={handleFollow}
+          isFollowing={isFollowingArtist}
+        />
+      </Animated.View>
     );
   }
 
   if (loading) {
     return (
-      <Screen withoutBottomSafeArea>
-        <View style={styles.loadingContainer}>
-          <Text variant="body" color="primary">Loading your discoveries...</Text>
-        </View>
-      </Screen>
+      <Animated.View entering={FadeIn.duration(300)} style={{ flex: 1 }}>
+        <Screen withoutBottomSafeArea>
+          <View style={styles.loadingContainer}>
+            <Text variant="body" color="primary">Loading your discoveries...</Text>
+          </View>
+        </Screen>
+      </Animated.View>
     );
   }
 
   return (
-    <Screen paddingHorizontal={24} withoutBottomSafeArea>
-      {/* Fixed Header Section */}
-      <View style={styles.fixedHeader}>
-        <TabHeader
-          title="Your Discoveries"
-          subtitle={activeTab === 'tracks' ? `${tracks.length} tracks you've loved` : `${artists.length} artists you're following`}
-        />
-
-        {/* Tab Navigation */}
-        <TabBar
-          activeTab={activeTab}
-          onTabPress={(tab) => setActiveTab(tab as TabType)}
-          tabs={tabs}
-          style={styles.tabBar}
-        />
-
-        {/* Fixed Filter Bar */}
-        {activeTab === 'tracks' && tracks.length > 0 && (
-          <FilterBar
-            selectedGenre={selectedGenre}
-            selectedMood={selectedMood}
-            selectedSort={selectedSort}
-            availableGenres={availableGenres}
-            availableMoods={availableMoods}
-            onGenreChange={setSelectedGenre}
-            onMoodChange={setSelectedMood}
-            onSortChange={setSelectedSort}
-            totalTracks={tracks.length}
-            filteredCount={filteredTracks.length}
-            isArtistTab={false}
+    <Animated.View entering={FadeIn.duration(300)} style={{ flex: 1 }}>
+      <Screen paddingHorizontal={24} withoutBottomSafeArea>
+        {/* Fixed Header Section */}
+        <View style={styles.fixedHeader}>
+          <TabHeader
+            title="Your Discoveries"
+            subtitle={activeTab === 'tracks' ? `${tracks.length} tracks you've loved` : `${artists.length} artists you're following`}
           />
-        )}
 
-        {activeTab === 'artists' && artists.length > 0 && (
-          <FilterBar
-            selectedGenre={selectedArtistGenre}
-            selectedMood={null} // Always null for artists
-            selectedSort={selectedArtistSort}
-            availableGenres={availableArtistGenres}
-            availableMoods={[]} // Empty array for artists
-            onGenreChange={setSelectedArtistGenre}
-            onMoodChange={() => {}} // No-op for artists
-            onSortChange={setSelectedArtistSort}
-            totalTracks={artists.length}
-            filteredCount={filteredArtists.length}
-            isArtistTab={true}
+          {/* Tab Navigation */}
+          <TabBar
+            activeTab={activeTab}
+            onTabPress={(tab) => setActiveTab(tab as TabType)}
+            tabs={tabs}
+            style={styles.tabBar}
           />
-        )}
-      </View>
 
-      {/* Scrollable Content */}
-      <ScrollView 
-        ref={scrollViewRef}
-        style={styles.content}
-        showsVerticalScrollIndicator={false}
-        onScroll={handleScroll}
-        scrollEventThrottle={16}
-        refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
-        }
-      >
-        {activeTab === 'tracks' ? (
-          tracks.length === 0 ? (
-            <View style={styles.emptyState}>
-              <Text style={styles.emptyEmoji}>🎵</Text>
-              <Heading variant="h4" color="primary" align="center" style={styles.emptyTitle}>
-                No discoveries yet
-              </Heading>
-              <Text variant="body" color="secondary" align="center" style={styles.emptyDescription}>
-                Start exploring to build your collection of favorite underground tracks
-              </Text>
-            </View>
+          {/* Fixed Filter Bar */}
+          {activeTab === 'tracks' && tracks.length > 0 && (
+            <FilterBar
+              selectedGenre={selectedGenre}
+              selectedMood={selectedMood}
+              selectedSort={selectedSort}
+              availableGenres={availableGenres}
+              availableMoods={availableMoods}
+              onGenreChange={setSelectedGenre}
+              onMoodChange={setSelectedMood}
+              onSortChange={setSelectedSort}
+              totalTracks={tracks.length}
+              filteredCount={filteredTracks.length}
+              isArtistTab={false}
+            />
+          )}
+
+          {activeTab === 'artists' && artists.length > 0 && (
+            <FilterBar
+              selectedGenre={selectedArtistGenre}
+              selectedMood={null} // Always null for artists
+              selectedSort={selectedArtistSort}
+              availableGenres={availableArtistGenres}
+              availableMoods={[]} // Empty array for artists
+              onGenreChange={setSelectedArtistGenre}
+              onMoodChange={() => {}} // No-op for artists
+              onSortChange={setSelectedArtistSort}
+              totalTracks={artists.length}
+              filteredCount={filteredArtists.length}
+              isArtistTab={true}
+            />
+          )}
+        </View>
+
+        {/* Scrollable Content */}
+        <ScrollView 
+          ref={scrollViewRef}
+          style={styles.content}
+          showsVerticalScrollIndicator={false}
+          onScroll={handleScroll}
+          scrollEventThrottle={16}
+          refreshControl={
+            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+          }
+        >
+          {activeTab === 'tracks' ? (
+            tracks.length === 0 ? (
+              <View style={styles.emptyState}>
+                <Text style={styles.emptyEmoji}>🎵</Text>
+                <Heading variant="h4" color="primary" align="center" style={styles.emptyTitle}>
+                  No discoveries yet
+                </Heading>
+                <Text variant="body" color="secondary" align="center" style={styles.emptyDescription}>
+                  Start exploring to build your collection of favorite underground tracks
+                </Text>
+              </View>
+            ) : (
+              <View style={styles.tracksList}>
+                {filteredTracks.map((track, index) => (
+                  <TrackListItem
+                    key={track.id}
+                    track={track}
+                    onPress={() => handleTrackPress(track)}
+                    showSeparator={index < filteredTracks.length - 1}
+                  />
+                ))}
+              </View>
+            )
           ) : (
-            <View style={styles.tracksList}>
-              {filteredTracks.map((track, index) => (
-                <TrackListItem
-                  key={track.id}
-                  track={track}
-                  onPress={() => handleTrackPress(track)}
-                  showSeparator={index < filteredTracks.length - 1}
-                />
-              ))}
-            </View>
-          )
-        ) : (
-          artists.length === 0 ? (
-            <View style={styles.emptyState}>
-              <Text style={styles.emptyEmoji}>👥</Text>
-              <Heading variant="h4" color="primary" align="center" style={styles.emptyTitle}>
-                No artists followed yet
-              </Heading>
-              <Text variant="body" color="secondary" align="center" style={styles.emptyDescription}>
-                Discover and rate tracks to start following underground artists
-              </Text>
-            </View>
-          ) : (
-            <View style={styles.artistsList}>
-              {filteredArtists.map((artist, index) => (
-                <ArtistListItem
-                  key={artist.id}
-                  artist={artist}
-                  onPress={() => handleArtistPress(artist)}
-                  showSeparator={index < filteredArtists.length - 1}
-                />
-              ))}
-            </View>
-          )
-        )}
-      </ScrollView>
-    </Screen>
+            artists.length === 0 ? (
+              <View style={styles.emptyState}>
+                <Text style={styles.emptyEmoji}>👥</Text>
+                <Heading variant="h4" color="primary" align="center" style={styles.emptyTitle}>
+                  No artists followed yet
+                </Heading>
+                <Text variant="body" color="secondary" align="center" style={styles.emptyDescription}>
+                  Discover and rate tracks to start following underground artists
+                </Text>
+              </View>
+            ) : (
+              <View style={styles.artistsList}>
+                {filteredArtists.map((artist, index) => (
+                  <ArtistListItem
+                    key={artist.id}
+                    artist={artist}
+                    onPress={() => handleArtistPress(artist)}
+                    showSeparator={index < filteredArtists.length - 1}
+                  />
+                ))}
+              </View>
+            )
+          )}
+        </ScrollView>
+      </Screen>
+    </Animated.View>
   );
 }
 

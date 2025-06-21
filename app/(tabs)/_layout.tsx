@@ -1,5 +1,6 @@
 import { Tabs } from 'expo-router';
 import { Home, History, Settings, User } from 'lucide-react-native';
+import Animated, { FadeIn, FadeOut } from 'react-native-reanimated';
 
 export default function TabLayout() {
   return (
@@ -23,6 +24,9 @@ export default function TabLayout() {
           fontSize: 12,
           fontFamily: 'Chillax-Regular',
         },
+        // Add smooth transitions between tabs
+        animation: 'fade',
+        animationDuration: 300,
       }}>
       <Tabs.Screen
         name="index"

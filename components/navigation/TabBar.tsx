@@ -1,5 +1,6 @@
 import React from 'react';
 import { View, TouchableOpacity, StyleSheet } from 'react-native';
+import Animated, { useAnimatedStyle, withTiming, useSharedValue, interpolate } from 'react-native-reanimated';
 import { colors } from '@/utils/colors';
 import { spacing, borderRadius } from '@/utils/spacing';
 import { Text } from '@/components/typography';
@@ -13,8 +14,31 @@ interface TabBarProps {
 }
 
 export function TabBar({ activeTab, onTabPress, tabs, style }: TabBarProps) {
+  const activeIndex = tabs.findIndex(tab => tab.key === activeTab);
+  const translateX = useSharedValue(activeIndex * (100 / tabs.length));
+
+  React.useEffect(() => {
+    const newIndex = tabs.findIndex(tab => tab.key === activeTab);
+    translateX.value = withTiming(newIndex * (100 / tabs.length), { duration: 300 });
+  }, [activeTab, tabs.length]);
+
+  const indicatorStyle = useAnimatedStyle(() => ({
+    transform: [
+      {
+        translateX: interpolate(
+          translateX.value,
+          [0, 100],
+          [0, 100],
+          'clamp'
+        )
+      }
+    ],
+    width: `${100 / tabs.length}%`,
+  }));
+
   return (
     <View style={[styles.container, style]}>
+      <Animated.View style={[styles.indicator, indicatorStyle]} />
       {tabs.map((tab) => (
         <TouchableOpacity
           key={tab.key}
@@ -47,14 +71,24 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surface,
     borderRadius: borderRadius.lg,
     padding: spacing.xs,
+    position: 'relative',
+  },
+  indicator: {
+    position: 'absolute',
+    top: spacing.xs,
+    bottom: spacing.xs,
+    backgroundColor: colors.primary,
+    borderRadius: borderRadius.md,
+    zIndex: 0,
   },
   tab: {
     flex: 1,
     paddingVertical: spacing.sm,
     borderRadius: borderRadius.md,
+    zIndex: 1,
   },
   activeTab: {
-    backgroundColor: colors.primary,
+    // Active styles handled by indicator
   },
   tabContent: {
     alignItems: 'center',
