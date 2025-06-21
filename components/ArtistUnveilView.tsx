@@ -15,7 +15,8 @@ import {
   Music,
   Play,
   SkipForward,
-  X
+  X,
+  ArrowLeft
 } from 'lucide-react-native';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/contexts/AuthContext';
@@ -267,6 +268,16 @@ export default function ArtistUnveilView({
   return (
     <View style={styles.container}>
       <SafeAreaView style={styles.safeArea}>
+        {/* Floating Back Button - Higher position */}
+        {onContinueListening && (
+          <TouchableOpacity
+            onPress={onContinueListening}
+            style={styles.floatingBackButton}
+          >
+            <ArrowLeft size={20} color="#ded7e0" strokeWidth={2} />
+          </TouchableOpacity>
+        )}
+
         <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
           {/* Track Artwork */}
           <View style={styles.artworkContainer}>
@@ -295,7 +306,7 @@ export default function ArtistUnveilView({
             </View>
           </View>
 
-          {/* User Rating Display - Left aligned with artistic quote styling */}
+          {/* User Rating Display - Left aligned with artistic quote styling and lighter background */}
           {userRating && (
             <View style={styles.section}>
               <View style={styles.userRatingContainer}>
@@ -463,7 +474,7 @@ export default function ArtistUnveilView({
                     onPress={onDiscoverNext}
                   >
                     <SkipForward size={20} color="#ded7e0" strokeWidth={2} />
-                    <Text style={styles.playbackButtonText}>Discover Next</Text>
+                    <Text style={styles.playbackButtonText}>Discover More</Text>
                   </TouchableOpacity>
                 )}
               </View>
@@ -525,6 +536,23 @@ const styles = StyleSheet.create({
   },
   safeArea: {
     flex: 1,
+  },
+  floatingBackButton: {
+    position: 'absolute',
+    top: 24,
+    left: 24,
+    zIndex: 10,
+    backgroundColor: 'rgba(40, 35, 42, 0.9)',
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 4,
   },
   scrollView: {
     flex: 1,
@@ -618,7 +646,11 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   userRatingContainer: {
+    backgroundColor: 'rgba(222, 215, 224, 0.1)',
+    borderRadius: 16,
+    padding: 16,
     alignItems: 'flex-start',
+    width: '100%',
   },
   userRatingTitle: {
     fontSize: 16,
@@ -637,19 +669,19 @@ const styles = StyleSheet.create({
     maxWidth: '100%',
   },
   quoteSymbol: {
-    fontSize: 24,
+    fontSize: 28,
     fontFamily: fonts.chillax.bold,
     color: '#452451',
-    lineHeight: 20,
+    lineHeight: 24,
   },
   userReviewText: {
-    fontSize: 16,
+    fontSize: 18,
     fontFamily: fonts.chillax.regular,
     color: '#8b6699',
     fontStyle: 'italic',
     flex: 1,
     marginHorizontal: 8,
-    lineHeight: 24,
+    lineHeight: 26,
   },
   streamingLinksContainer: {
     gap: 16,
