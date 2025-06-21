@@ -69,15 +69,17 @@ export function FilterBar({
       activeOpacity={0.8}
     >
       <View style={styles.filterButtonContent}>
-        <Text 
-          variant="body" 
-          color="primary"
-          style={styles.filterButtonText}
-          numberOfLines={1}
-          ellipsizeMode="tail"
-        >
-          {label}
-        </Text>
+        <View style={styles.textContainer}>
+          <Text 
+            variant="body" 
+            color="primary"
+            style={styles.filterButtonText}
+            numberOfLines={1}
+            ellipsizeMode="tail"
+          >
+            {label}
+          </Text>
+        </View>
         <ChevronDown 
           size={14} 
           color={colors.text.primary} 
@@ -253,8 +255,7 @@ const styles = StyleSheet.create({
     borderRadius: borderRadius.md,
     borderWidth: 2,
     borderColor: 'transparent',
-    minHeight: 40,
-    maxHeight: 40,
+    height: 40, // Fixed height instead of min/max
   },
   filterButtonActive: {
     borderColor: colors.text.secondary,
@@ -265,18 +266,23 @@ const styles = StyleSheet.create({
   filterButtonContent: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    flex: 1,
     height: '100%',
+    width: '100%',
+  },
+  textContainer: {
+    flex: 1,
+    marginRight: spacing.xs,
+    overflow: 'hidden', // Ensure overflow is hidden
   },
   filterButtonText: {
     fontSize: 13,
-    flex: 1,
     textAlign: 'left',
+    width: '100%', // Ensure text takes full width of container
   },
   chevronIcon: {
-    marginLeft: spacing.xs,
     flexShrink: 0,
+    width: 14,
+    height: 14,
   },
   modalOverlay: {
     flex: 1,
