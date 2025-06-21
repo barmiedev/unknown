@@ -28,8 +28,16 @@ export class AuthService {
   }
 
   static async getCurrentUser(): Promise<AuthUser | null> {
-    const { data: { user } } = await supabase.auth.getUser();
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
     
+    // If there's an authentication error (like invalid refresh token), clear the session
+    if (authError) {
+      console.warn('Authentication error detected, clearing session:', authError.message);
+      // Clear the invalid session silently
+      await supabase.auth.signOut();
+      return null;
+    }
+
     if (!user) return null;
 
     // Get user profile
