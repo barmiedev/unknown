@@ -19,7 +19,7 @@ export function TabBar({ activeTab, onTabPress, tabs, style }: TabBarProps) {
 
   React.useEffect(() => {
     const newIndex = tabs.findIndex(tab => tab.key === activeTab);
-    translateX.value = withTiming(newIndex * (100 / tabs.length), { duration: 300 });
+    translateX.value = withTiming(newIndex * (100 / tabs.length), { duration: 200 });
   }, [activeTab, tabs.length]);
 
   const indicatorStyle = useAnimatedStyle(() => ({
@@ -42,10 +42,7 @@ export function TabBar({ activeTab, onTabPress, tabs, style }: TabBarProps) {
       {tabs.map((tab) => (
         <TouchableOpacity
           key={tab.key}
-          style={[
-            styles.tab,
-            activeTab === tab.key && styles.activeTab,
-          ]}
+          style={styles.tab}
           onPress={() => onTabPress(tab.key)}
           activeOpacity={0.8}
         >
@@ -86,9 +83,6 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.sm,
     borderRadius: borderRadius.md,
     zIndex: 1,
-  },
-  activeTab: {
-    // Active styles handled by indicator
   },
   tabContent: {
     alignItems: 'center',

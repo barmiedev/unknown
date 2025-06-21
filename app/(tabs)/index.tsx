@@ -57,7 +57,7 @@ function AnimationBackground({ animationUrl, children }: AnimationBackgroundProp
         left: 0, 
         right: 0, 
         bottom: 0,
-        backgroundColor: 'transparent'
+        backgroundColor: colors.background
       }}>
         {/* Future animation will be rendered here based on animationUrl prop */}
       </View>
@@ -465,8 +465,8 @@ export default function DiscoverScreen() {
     setSelectedSessionMood(mood);
     
     // Animate mood selection fade out
-    moodSelectionOpacity.value = withTiming(0, { duration: 300 });
-    moodSelectionScale.value = withTiming(0.95, { duration: 300 });
+    moodSelectionOpacity.value = withTiming(0, { duration: 200 });
+    moodSelectionScale.value = withTiming(0.95, { duration: 200 });
     
     // Start loading track
     setState('loading');
@@ -476,7 +476,7 @@ export default function DiscoverScreen() {
     setTimeout(async () => {
       // For "Surprise me" (mood === null), always broaden search to avoid "no tracks" scenario
       await loadNextTrack(false, mood, mood === null);
-    }, 300);
+    }, 200);
   };
 
   const loadNextTrack = async (isBackgroundLoad = false, sessionMood: string | null = null, broadenSearch = false) => {
@@ -937,9 +937,9 @@ export default function DiscoverScreen() {
                   </Text>
                 </View>
 
-                {/* Header */}
-                <View style={{ alignItems: 'center', paddingTop: spacing.md, paddingBottom: spacing.xxl }}>
-                  <Heading variant="h3" color="primary" align="center" style={{ fontSize: 28, marginBottom: spacing.xl, marginTop: spacing.xl }}>
+                {/* Header with more space */}
+                <View style={{ alignItems: 'center', paddingTop: spacing.xxl, paddingBottom: spacing.xxl }}>
+                  <Heading variant="h3" color="primary" align="center" style={{ fontSize: 28, marginBottom: spacing.xl, marginTop: spacing.xxl }}>
                     How do you feel today?
                   </Heading>
                 </View>

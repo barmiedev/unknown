@@ -4,7 +4,7 @@ import { Users, Music } from 'lucide-react-native';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/contexts/AuthContext';
 import { useFocusEffect } from '@react-navigation/native';
-import Animated, { FadeIn, FadeOut, SlideInRight, SlideOutLeft } from 'react-native-reanimated';
+import Animated, { FadeIn, FadeOut, SlideInRight, SlideOutLeft, withTiming, useSharedValue, useAnimatedStyle } from 'react-native-reanimated';
 import { Screen } from '@/components/layout/Screen';
 import { Heading } from '@/components/typography/Heading';
 import { Text } from '@/components/typography/Text';
@@ -49,6 +49,9 @@ export default function HistoryScreen() {
   const [scrollPosition, setScrollPosition] = useState(0);
   const shouldRestoreScrollRef = useRef(false);
 
+  // Animation values for smooth tab transitions
+  const contentOpacity = useSharedValue(1);
+
   const tabs = [
     {
       key: 'tracks',
@@ -61,6 +64,11 @@ export default function HistoryScreen() {
       icon: <Users size={16} color={activeTab === 'artists' ? colors.text.primary : colors.text.secondary} strokeWidth={2} />
     }
   ];
+
+  // Animated style for content transitions
+  const contentStyle = useAnimatedStyle(() => ({
+    opacity: contentOpacity.value,
+  }));
 
   // Reload history when screen comes into focus
   useFocusEffect(
@@ -268,6 +276,17 @@ export default function HistoryScreen() {
     setScrollPosition(offsetY);
   };
 
+  const handleTabPress = (tabKey: string) => {
+    if (tabKey === activeTab) return;
+    
+    // Smooth transition animation
+    contentOpacity.value = withTiming(0, { duration: 150 }, () => {
+      contentOpacity.value = withTiming(1, { duration: 150 });
+    });
+    
+    setActiveTab(tabKey as TabType);
+  };
+
   const handleTrackPress = (track: HistoryTrack) => {
     setSelectedTrack(track);
   };
@@ -343,7 +362,7 @@ export default function HistoryScreen() {
     };
     
     return (
-      <Animated.View entering={SlideInRight.duration(300)} exiting={SlideOutLeft.duration(300)} style={{ flex: 1 }}>
+      <Animated.View entering={SlideInRight.duration(300)} exiting={SlideOutLeft.duration(300)} style={{ flex: 1, backgroundColor: colors.background }}>
         <ArtistUnveilView
           track={trackDisplay}
           showPlaybackControls={false}
@@ -357,7 +376,7 @@ export default function HistoryScreen() {
   // Show artist detail view
   if (selectedArtist) {
     return (
-      <Animated.View entering={SlideInRight.duration(300)} exiting={SlideOutLeft.duration(300)} style={{ flex: 1 }}>
+      <Animated.View entering={SlideInRight.duration(300)} exiting={SlideOutLeft.duration(300)} style={{ flex: 1, backgroundColor: colors.background }}>
         <ArtistDetailView
           artist={selectedArtist}
           onBack={handleBackToHistory}
@@ -371,7 +390,7 @@ export default function HistoryScreen() {
 
   if (loading) {
     return (
-      <Animated.View entering={FadeIn.duration(300)} style={{ flex: 1 }}>
+      <Animated.View entering={FadeIn.duration(300)} style={{ flex: 1, backgroundColor: colors.background }}>
         <Screen withoutBottomSafeArea>
           <View style={styles.loadingContainer}>
             <Text variant="body" color="primary">Loading your discoveries...</Text>
@@ -382,7 +401,7 @@ export default function HistoryScreen() {
   }
 
   return (
-    <Animated.View entering={FadeIn.duration(300)} style={{ flex: 1 }}>
+    <Animated.View entering={FadeIn.duration(300)} style={{ flex: 1, backgroundColor: colors.background }}>
       <Screen paddingHorizontal={24} withoutBottomSafeArea>
         {/* Fixed Header Section */}
         <View style={styles.fixedHeader}>
@@ -394,7 +413,7 @@ export default function HistoryScreen() {
           {/* Tab Navigation */}
           <TabBar
             activeTab={activeTab}
-            onTabPress={(tab) => setActiveTab(tab as TabType)}
+            onTabPress={handleTabPress}
             tabs={tabs}
             style={styles.tabBar}
           />
@@ -433,65 +452,67 @@ export default function HistoryScreen() {
           )}
         </View>
 
-        {/* Scrollable Content */}
-        <ScrollView 
-          ref={scrollViewRef}
-          style={styles.content}
-          showsVerticalScrollIndicator={false}
-          onScroll={handleScroll}
-          scrollEventThrottle={16}
-          refreshControl={
-            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
-          }
-        >
-          {activeTab === 'tracks' ? (
-            tracks.length === 0 ? (
-              <View style={styles.emptyState}>
-                <Text style={styles.emptyEmoji}>🎵</Text>
-                <Heading variant="h4" color="primary" align="center" style={styles.emptyTitle}>
-                  No discoveries yet
-                </Heading>
-                <Text variant="body" color="secondary" align="center" style={styles.emptyDescription}>
-                  Start exploring to build your collection of favorite underground tracks
-                </Text>
-              </View>
+        {/* Scrollable Content with smooth transitions */}
+        <Animated.View style={[contentStyle, { flex: 1 }]}>
+          <ScrollView 
+            ref={scrollViewRef}
+            style={styles.content}
+            showsVerticalScrollIndicator={false}
+            onScroll={handleScroll}
+            scrollEventThrottle={16}
+            refreshControl={
+              <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+            }
+          >
+            {activeTab === 'tracks' ? (
+              tracks.length === 0 ? (
+                <View style={styles.emptyState}>
+                  <Text style={styles.emptyEmoji}>🎵</Text>
+                  <Heading variant="h4" color="primary" align="center" style={styles.emptyTitle}>
+                    No discoveries yet
+                  </Heading>
+                  <Text variant="body" color="secondary" align="center" style={styles.emptyDescription}>
+                    Start exploring to build your collection of favorite underground tracks
+                  </Text>
+                </View>
+              ) : (
+                <View style={styles.tracksList}>
+                  {filteredTracks.map((track, index) => (
+                    <TrackListItem
+                      key={track.id}
+                      track={track}
+                      onPress={() => handleTrackPress(track)}
+                      showSeparator={index < filteredTracks.length - 1}
+                    />
+                  ))}
+                </View>
+              )
             ) : (
-              <View style={styles.tracksList}>
-                {filteredTracks.map((track, index) => (
-                  <TrackListItem
-                    key={track.id}
-                    track={track}
-                    onPress={() => handleTrackPress(track)}
-                    showSeparator={index < filteredTracks.length - 1}
-                  />
-                ))}
-              </View>
-            )
-          ) : (
-            artists.length === 0 ? (
-              <View style={styles.emptyState}>
-                <Text style={styles.emptyEmoji}>👥</Text>
-                <Heading variant="h4" color="primary" align="center" style={styles.emptyTitle}>
-                  No artists followed yet
-                </Heading>
-                <Text variant="body" color="secondary" align="center" style={styles.emptyDescription}>
-                  Discover and rate tracks to start following underground artists
-                </Text>
-              </View>
-            ) : (
-              <View style={styles.artistsList}>
-                {filteredArtists.map((artist, index) => (
-                  <ArtistListItem
-                    key={artist.id}
-                    artist={artist}
-                    onPress={() => handleArtistPress(artist)}
-                    showSeparator={index < filteredArtists.length - 1}
-                  />
-                ))}
-              </View>
-            )
-          )}
-        </ScrollView>
+              artists.length === 0 ? (
+                <View style={styles.emptyState}>
+                  <Text style={styles.emptyEmoji}>👥</Text>
+                  <Heading variant="h4" color="primary" align="center" style={styles.emptyTitle}>
+                    No artists followed yet
+                  </Heading>
+                  <Text variant="body" color="secondary" align="center" style={styles.emptyDescription}>
+                    Discover and rate tracks to start following underground artists
+                  </Text>
+                </View>
+              ) : (
+                <View style={styles.artistsList}>
+                  {filteredArtists.map((artist, index) => (
+                    <ArtistListItem
+                      key={artist.id}
+                      artist={artist}
+                      onPress={() => handleArtistPress(artist)}
+                      showSeparator={index < filteredArtists.length - 1}
+                    />
+                  ))}
+                </View>
+              )
+            )}
+          </ScrollView>
+        </Animated.View>
       </Screen>
     </Animated.View>
   );
