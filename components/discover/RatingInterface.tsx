@@ -1,10 +1,9 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { View, StyleSheet } from 'react-native';
 import Animated, { 
   useAnimatedStyle, 
   useSharedValue, 
   withTiming, 
-  withDelay,
   interpolate,
   Extrapolate,
 } from 'react-native-reanimated';
@@ -17,14 +16,28 @@ import { colors } from '@/utils/colors';
 import { spacing, borderRadius } from '@/utils/spacing';
 
 interface RatingInterfaceProps {
-  onRatingSubmit: (rating: number, review?: string) => void;
+  rating: number;
+  onStarPress: (stars: number) => void;
+  showReviewInput: boolean;
+  review: string;
+  onReviewChange: (text: string) => void;
+  onSubmitWithReview: () => void;
+  isReviewFocused?: boolean;
+  setIsReviewFocused?: (focused: boolean) => void;
+  reviewInputRef?: React.RefObject<any>;
 }
 
-export function RatingInterface({ onRatingSubmit }: RatingInterfaceProps) {
-  const [rating, setRating] = useState(0);
-  const [review, setReview] = useState('');
-  const [showReviewInput, setShowReviewInput] = useState(false);
-
+export function RatingInterface({ 
+  rating,
+  onStarPress,
+  showReviewInput,
+  review,
+  onReviewChange,
+  onSubmitWithReview,
+  isReviewFocused,
+  setIsReviewFocused,
+  reviewInputRef
+}: RatingInterfaceProps) {
   // Animation values
   const containerOpacity = useSharedValue(0);
   const containerScale = useSharedValue(0.8);
@@ -72,19 +85,6 @@ export function RatingInterface({ onRatingSubmit }: RatingInterfaceProps) {
     ),
   }));
 
-  const handleStarPress = (stars: number) => {
-    setRating(stars);
-    if (stars >= 4) {
-      setShowReviewInput(true);
-    } else {
-      onRatingSubmit(stars);
-    }
-  };
-
-  const handleSubmitWithReview = () => {
-    onRatingSubmit(rating, review.trim() || undefined);
-  };
-
   return (
     <Animated.View style={[containerStyle, styles.container]}>
       <Heading variant="h4" color="primary" align="center" style={styles.title}>
@@ -95,7 +95,7 @@ export function RatingInterface({ onRatingSubmit }: RatingInterfaceProps) {
       <View style={styles.ratingContainer}>
         <StarRating
           rating={rating}
-          onRatingChange={handleStarPress}
+          onRatingChange={onStarPress}
           size="large"
           style={styles.starRating}
         />
@@ -109,9 +109,12 @@ export function RatingInterface({ onRatingSubmit }: RatingInterfaceProps) {
               Share your thoughts (optional)
             </Text>
             <TextInput
+              ref={reviewInputRef}
               placeholder="What did you love about this track?"
               value={review}
-              onChangeText={setReview}
+              onChangeText={onReviewChange}
+              onFocus={() => setIsReviewFocused?.(true)}
+              onBlur={() => setIsReviewFocused?.(false)}
               multiline
               numberOfLines={3}
               style={styles.textInput}
@@ -120,7 +123,7 @@ export function RatingInterface({ onRatingSubmit }: RatingInterfaceProps) {
             <Button
               variant="primary"
               size="large"
-              onPress={handleSubmitWithReview}
+              onPress={onSubmitWithReview}
               style={styles.submitButton}
             >
               Submit Rating
