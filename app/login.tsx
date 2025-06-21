@@ -43,17 +43,27 @@ export default function LoginScreen() {
 
     setLoading(true);
     try {
-      await signIn(email, password);
-      // Navigation will be handled by the auth state change in _layout
-    } catch (error: any) {
-      // Check if it's an invalid credentials error
-      if (error.message?.includes('Invalid login credentials') || 
-          error.message?.includes('invalid_credentials')) {
-        setErrors({ password: 'Invalid email or password' });
-      } else {
-        // For other errors, still show an alert
-        Alert.alert('Login Failed', error.message);
+      const result = await signIn(email, password);
+      
+      if (!result.success) {
+        // Check if it's an invalid credentials error
+        if (result.error?.message?.includes('Invalid login credentials') || 
+            result.error?.message?.includes('invalid_credentials') ||
+            result.error?.code === 'invalid_credentials') {
+          // Highlight both fields for invalid credentials
+          setErrors({ 
+            email: 'Invalid email or password',
+            password: 'Invalid email or password'
+          });
+        } else {
+          // For other errors, show a generic alert
+          Alert.alert('Login Failed', result.error?.message || 'An unexpected error occurred');
+        }
       }
+      // Navigation will be handled by the auth state change in _layout on success
+    } catch (error: any) {
+      // Fallback error handling
+      Alert.alert('Login Failed', 'An unexpected error occurred');
     } finally {
       setLoading(false);
     }

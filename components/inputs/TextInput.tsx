@@ -71,7 +71,7 @@ export const TextInput = forwardRef<RNTextInput, TextInputProps>(({
         />
       </View>
       {error && (
-        <Text variant="caption" color="accent" style={styles.errorText}>
+        <Text variant="caption" color="statusError" style={styles.errorText}>
           {error}
         </Text>
       )}
