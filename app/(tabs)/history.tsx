@@ -359,6 +359,8 @@ export default function HistoryScreen() {
                 onGenreChange={setSelectedGenre}
                 onMoodChange={setSelectedMood}
                 onSortChange={setSelectedSort}
+                totalTracks={tracks.length}
+                filteredCount={filteredTracks.length}
               />
 
               {/* Tracks List */}

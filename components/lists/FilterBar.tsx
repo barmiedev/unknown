@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
 import { View, StyleSheet, Modal, TouchableOpacity, ScrollView } from 'react-native';
-import { X, ChevronDown } from 'lucide-react-native';
+import { X, ChevronDown, RotateCcw } from 'lucide-react-native';
 import { SelectionChip } from '@/components/selection/SelectionChip';
 import { Text } from '@/components/typography/Text';
 import { Heading } from '@/components/typography/Heading';
+import { Button } from '@/components/buttons/Button';
 import { colors } from '@/utils/colors';
 import { spacing, borderRadius } from '@/utils/spacing';
 import { getMoodEmoji, getGenreEmoji } from '@/utils/music';
@@ -19,6 +20,8 @@ interface FilterBarProps {
   onGenreChange: (genre: string | null) => void;
   onMoodChange: (mood: string | null) => void;
   onSortChange: (sort: SortOption) => void;
+  totalTracks: number;
+  filteredCount: number;
 }
 
 const SORT_OPTIONS: { value: SortOption; label: string }[] = [
@@ -39,6 +42,8 @@ export function FilterBar({
   onGenreChange,
   onMoodChange,
   onSortChange,
+  totalTracks,
+  filteredCount,
 }: FilterBarProps) {
   const [showGenreModal, setShowGenreModal] = useState(false);
   const [showMoodModal, setShowMoodModal] = useState(false);
@@ -47,6 +52,14 @@ export function FilterBar({
   const isGenreFiltered = selectedGenre !== null;
   const isMoodFiltered = selectedMood !== null;
   const isSortFiltered = selectedSort !== 'date_desc';
+  const hasActiveFilters = isGenreFiltered || isMoodFiltered || isSortFiltered;
+  const showClearFilters = totalTracks > 0 && filteredCount === 0 && hasActiveFilters;
+
+  const clearAllFilters = () => {
+    onGenreChange(null);
+    onMoodChange(null);
+    onSortChange('date_desc');
+  };
 
   const FilterButton = ({ 
     label, 
@@ -158,6 +171,25 @@ export function FilterBar({
         />
       </View>
 
+      {/* Clear Filters Prompt */}
+      {showClearFilters && (
+        <View style={styles.clearFiltersContainer}>
+          <Text variant="body" color="secondary" style={styles.clearFiltersText}>
+            No tracks match your current filters
+          </Text>
+          <Button
+            variant="secondary"
+            size="small"
+            onPress={clearAllFilters}
+            icon={<RotateCcw size={16} color={colors.text.primary} strokeWidth={2} />}
+            iconPosition="left"
+            style={styles.clearFiltersButton}
+          >
+            Clear Filters
+          </Button>
+        </View>
+      )}
+
       {/* Genre Modal */}
       <FilterModal
         visible={showGenreModal}
@@ -256,7 +288,7 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     borderColor: 'transparent',
     height: 40,
-    overflow: 'hidden', // Add overflow hidden to button
+    overflow: 'hidden',
   },
   filterButtonActive: {
     borderColor: colors.text.secondary,
@@ -269,23 +301,43 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     height: '100%',
     width: '100%',
-    overflow: 'hidden', // Add overflow hidden to content
+    overflow: 'hidden',
   },
   textContainer: {
     flex: 1,
     marginRight: spacing.xs,
     overflow: 'hidden',
-    minWidth: 0, // Critical: allows flex child to shrink below content size
+    minWidth: 0,
+    height: '100%',
+    justifyContent: 'center',
   },
   filterButtonText: {
     fontSize: 13,
     textAlign: 'left',
-    overflow: 'hidden', // Add overflow hidden to text style
+    overflow: 'hidden',
+    lineHeight: 16, // Fixed line height to prevent wrapping
+    height: 16, // Fixed height to match line height
   },
   chevronIcon: {
     flexShrink: 0,
     width: 14,
     height: 14,
+  },
+  clearFiltersContainer: {
+    backgroundColor: colors.surface,
+    borderRadius: borderRadius.md,
+    padding: spacing.md,
+    marginTop: spacing.sm,
+    alignItems: 'center',
+    gap: spacing.sm,
+  },
+  clearFiltersText: {
+    fontSize: 14,
+    textAlign: 'center',
+  },
+  clearFiltersButton: {
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
   },
   modalOverlay: {
     flex: 1,
