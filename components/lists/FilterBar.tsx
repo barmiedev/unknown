@@ -1,8 +1,11 @@
-import React from 'react';
-import { View, StyleSheet } from 'react-native';
+import React, { useState } from 'react';
+import { View, StyleSheet, Modal, TouchableOpacity, ScrollView } from 'react-native';
+import { X, ChevronDown } from 'lucide-react-native';
 import { SelectionChip } from '@/components/selection/SelectionChip';
+import { Text } from '@/components/typography/Text';
+import { Heading } from '@/components/typography/Heading';
 import { colors } from '@/utils/colors';
-import { spacing } from '@/utils/spacing';
+import { spacing, borderRadius } from '@/utils/spacing';
 
 export type SortOption = 'date_desc' | 'date_asc' | 'title_asc' | 'title_desc' | 'artist_asc' | 'artist_desc';
 
@@ -18,8 +21,8 @@ interface FilterBarProps {
 }
 
 const SORT_OPTIONS: { value: SortOption; label: string }[] = [
-  { value: 'date_desc', label: 'Newest First' },
-  { value: 'date_asc', label: 'Oldest First' },
+  { value: 'date_desc', label: 'Newest' },
+  { value: 'date_asc', label: 'Oldest' },
   { value: 'title_asc', label: 'Song A-Z' },
   { value: 'title_desc', label: 'Song Z-A' },
   { value: 'artist_asc', label: 'Artist A-Z' },
@@ -36,122 +39,194 @@ export function FilterBar({
   onMoodChange,
   onSortChange,
 }: FilterBarProps) {
-  const [showGenres, setShowGenres] = React.useState(false);
-  const [showMoods, setShowMoods] = React.useState(false);
-  const [showSort, setShowSort] = React.useState(false);
+  const [showGenreModal, setShowGenreModal] = useState(false);
+  const [showMoodModal, setShowMoodModal] = useState(false);
+  const [showSortModal, setShowSortModal] = useState(false);
+
+  const isGenreFiltered = selectedGenre !== null;
+  const isMoodFiltered = selectedMood !== null;
+  const isSortFiltered = selectedSort !== 'date_desc';
+
+  const FilterButton = ({ 
+    label, 
+    onPress, 
+    isActive, 
+    isFiltered 
+  }: { 
+    label: string; 
+    onPress: () => void; 
+    isActive: boolean; 
+    isFiltered: boolean; 
+  }) => (
+    <TouchableOpacity
+      style={[
+        styles.filterButton,
+        isActive && styles.filterButtonActive,
+        isFiltered && styles.filterButtonFiltered,
+      ]}
+      onPress={onPress}
+      activeOpacity={0.8}
+    >
+      <Text 
+        variant="body" 
+        color={isFiltered ? 'accent' : 'primary'} 
+        style={styles.filterButtonText}
+      >
+        {label}
+      </Text>
+      <ChevronDown 
+        size={16} 
+        color={isFiltered ? colors.primary : colors.text.primary} 
+        strokeWidth={2} 
+      />
+    </TouchableOpacity>
+  );
+
+  const FilterModal = ({ 
+    visible, 
+    onClose, 
+    title, 
+    children 
+  }: { 
+    visible: boolean; 
+    onClose: () => void; 
+    title: string; 
+    children: React.ReactNode; 
+  }) => (
+    <Modal
+      visible={visible}
+      transparent={true}
+      animationType="fade"
+      onRequestClose={onClose}
+    >
+      <View style={styles.modalOverlay}>
+        <View style={styles.modalContent}>
+          <View style={styles.modalHeader}>
+            <Heading variant="h4" color="primary">{title}</Heading>
+            <TouchableOpacity
+              onPress={onClose}
+              style={styles.modalCloseButton}
+            >
+              <X size={24} color={colors.text.secondary} strokeWidth={2} />
+            </TouchableOpacity>
+          </View>
+          
+          <ScrollView style={styles.modalScrollView} showsVerticalScrollIndicator={false}>
+            <View style={styles.modalOptions}>
+              {children}
+            </View>
+          </ScrollView>
+        </View>
+      </View>
+    </Modal>
+  );
 
   return (
     <View style={styles.container}>
       {/* Filter Row */}
       <View style={styles.filterRow}>
         {/* Genre Filter */}
-        <SelectionChip
+        <FilterButton
           label={selectedGenre || 'All Genres'}
-          selected={showGenres}
-          onPress={() => {
-            setShowGenres(!showGenres);
-            setShowMoods(false);
-            setShowSort(false);
-          }}
-          style={styles.filterChip}
+          onPress={() => setShowGenreModal(true)}
+          isActive={showGenreModal}
+          isFiltered={isGenreFiltered}
         />
 
         {/* Mood Filter */}
-        <SelectionChip
+        <FilterButton
           label={selectedMood || 'All Moods'}
-          selected={showMoods}
-          onPress={() => {
-            setShowMoods(!showMoods);
-            setShowGenres(false);
-            setShowSort(false);
-          }}
-          style={styles.filterChip}
+          onPress={() => setShowMoodModal(true)}
+          isActive={showMoodModal}
+          isFiltered={isMoodFiltered}
         />
 
         {/* Sort Filter */}
-        <SelectionChip
+        <FilterButton
           label={SORT_OPTIONS.find(opt => opt.value === selectedSort)?.label || 'Sort'}
-          selected={showSort}
-          onPress={() => {
-            setShowSort(!showSort);
-            setShowGenres(false);
-            setShowMoods(false);
-          }}
-          style={styles.filterChip}
+          onPress={() => setShowSortModal(true)}
+          isActive={showSortModal}
+          isFiltered={isSortFiltered}
         />
       </View>
 
-      {/* Genre Options */}
-      {showGenres && (
-        <View style={styles.optionsContainer}>
+      {/* Genre Modal */}
+      <FilterModal
+        visible={showGenreModal}
+        onClose={() => setShowGenreModal(false)}
+        title="Filter by Genre"
+      >
+        <SelectionChip
+          label="All Genres"
+          selected={selectedGenre === null}
+          onPress={() => {
+            onGenreChange(null);
+            setShowGenreModal(false);
+          }}
+          style={styles.modalOptionChip}
+        />
+        {availableGenres.map((genre) => (
           <SelectionChip
-            label="All Genres"
-            selected={selectedGenre === null}
+            key={genre}
+            label={genre}
+            selected={selectedGenre === genre}
             onPress={() => {
-              onGenreChange(null);
-              setShowGenres(false);
+              onGenreChange(genre);
+              setShowGenreModal(false);
             }}
-            style={styles.optionChip}
+            style={styles.modalOptionChip}
           />
-          {availableGenres.map((genre) => (
-            <SelectionChip
-              key={genre}
-              label={genre}
-              selected={selectedGenre === genre}
-              onPress={() => {
-                onGenreChange(genre);
-                setShowGenres(false);
-              }}
-              style={styles.optionChip}
-            />
-          ))}
-        </View>
-      )}
+        ))}
+      </FilterModal>
 
-      {/* Mood Options */}
-      {showMoods && (
-        <View style={styles.optionsContainer}>
+      {/* Mood Modal */}
+      <FilterModal
+        visible={showMoodModal}
+        onClose={() => setShowMoodModal(false)}
+        title="Filter by Mood"
+      >
+        <SelectionChip
+          label="All Moods"
+          selected={selectedMood === null}
+          onPress={() => {
+            onMoodChange(null);
+            setShowMoodModal(false);
+          }}
+          style={styles.modalOptionChip}
+        />
+        {availableMoods.map((mood) => (
           <SelectionChip
-            label="All Moods"
-            selected={selectedMood === null}
+            key={mood}
+            label={mood}
+            selected={selectedMood === mood}
             onPress={() => {
-              onMoodChange(null);
-              setShowMoods(false);
+              onMoodChange(mood);
+              setShowMoodModal(false);
             }}
-            style={styles.optionChip}
+            style={styles.modalOptionChip}
           />
-          {availableMoods.map((mood) => (
-            <SelectionChip
-              key={mood}
-              label={mood}
-              selected={selectedMood === mood}
-              onPress={() => {
-                onMoodChange(mood);
-                setShowMoods(false);
-              }}
-              style={styles.optionChip}
-            />
-          ))}
-        </View>
-      )}
+        ))}
+      </FilterModal>
 
-      {/* Sort Options */}
-      {showSort && (
-        <View style={styles.optionsContainer}>
-          {SORT_OPTIONS.map((option) => (
-            <SelectionChip
-              key={option.value}
-              label={option.label}
-              selected={selectedSort === option.value}
-              onPress={() => {
-                onSortChange(option.value);
-                setShowSort(false);
-              }}
-              style={styles.optionChip}
-            />
-          ))}
-        </View>
-      )}
+      {/* Sort Modal */}
+      <FilterModal
+        visible={showSortModal}
+        onClose={() => setShowSortModal(false)}
+        title="Sort by"
+      >
+        {SORT_OPTIONS.map((option) => (
+          <SelectionChip
+            key={option.value}
+            label={option.label}
+            selected={selectedSort === option.value}
+            onPress={() => {
+              onSortChange(option.value);
+              setShowSortModal(false);
+            }}
+            style={styles.modalOptionChip}
+          />
+        ))}
+      </FilterModal>
     </View>
   );
 }
@@ -163,20 +238,63 @@ const styles = StyleSheet.create({
   filterRow: {
     flexDirection: 'row',
     gap: spacing.sm,
-    marginBottom: spacing.sm,
   },
-  filterChip: {
+  filterButton: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: colors.surface,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    borderRadius: borderRadius.lg,
+    borderWidth: 2,
+    borderColor: 'transparent',
+  },
+  filterButtonActive: {
+    borderColor: colors.text.secondary,
+  },
+  filterButtonFiltered: {
+    borderColor: colors.primary,
+    backgroundColor: 'rgba(69, 36, 81, 0.1)',
+  },
+  filterButtonText: {
+    fontSize: 14,
     flex: 1,
   },
-  optionsContainer: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: spacing.sm,
-    backgroundColor: colors.surface,
-    borderRadius: 12,
-    padding: spacing.md,
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: spacing.lg,
   },
-  optionChip: {
+  modalContent: {
+    backgroundColor: colors.background,
+    borderRadius: 20,
+    width: '100%',
+    maxWidth: 400,
+    maxHeight: '80%',
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: spacing.lg,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.surface,
+  },
+  modalCloseButton: {
+    padding: spacing.xs,
+  },
+  modalScrollView: {
+    maxHeight: 400,
+  },
+  modalOptions: {
+    padding: spacing.lg,
+    gap: spacing.sm,
+  },
+  modalOptionChip: {
     marginBottom: 0,
   },
 });

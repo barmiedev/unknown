@@ -40,7 +40,7 @@ export function TrackListItem({ track, onPress, showSeparator = true }: TrackLis
       tags.push({ text: track.genre, bold: false });
     }
     
-    // Add city (bolded)
+    // Add city (medium weight)
     const city = extractCityFromLocation(track.artist_location);
     if (city) {
       tags.push({ text: city, bold: true });
@@ -112,13 +112,13 @@ export function TrackListItem({ track, onPress, showSeparator = true }: TrackLis
 
 const styles = StyleSheet.create({
   trackCard: {
-    paddingVertical: spacing.md,
+    paddingVertical: spacing.sm,
   },
   trackHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'flex-start',
-    marginBottom: spacing.sm,
+    marginBottom: spacing.xs,
   },
   trackTitleContainer: {
     flex: 1,
@@ -126,7 +126,7 @@ const styles = StyleSheet.create({
   },
   trackTitle: {
     fontSize: 18,
-    marginBottom: spacing.xs,
+    marginBottom: 2,
   },
   trackArtist: {
     fontSize: 16,
@@ -139,15 +139,15 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     flexWrap: 'wrap',
     alignItems: 'center',
-    marginBottom: spacing.sm,
+    marginBottom: spacing.xs,
   },
   tagText: {
     color: colors.text.secondary,
     fontSize: 14,
   },
   tagTextBold: {
-    fontFamily: fonts.chillax.bold,
-    color: colors.text.primary,
+    fontFamily: fonts.chillax.medium,
+    color: colors.text.secondary,
   },
   tagSeparator: {
     color: colors.text.secondary,
@@ -155,12 +155,13 @@ const styles = StyleSheet.create({
   },
   ratingContainer: {
     alignItems: 'flex-start',
-    marginBottom: spacing.sm,
+    marginBottom: spacing.xs,
   },
   reviewContainer: {
     backgroundColor: colors.surface,
     borderRadius: borderRadius.md,
     padding: spacing.md,
+    marginTop: spacing.xs,
   },
   reviewText: {
     fontSize: 14,
