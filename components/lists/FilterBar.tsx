@@ -255,7 +255,8 @@ const styles = StyleSheet.create({
     borderRadius: borderRadius.md,
     borderWidth: 2,
     borderColor: 'transparent',
-    height: 40, // Fixed height instead of min/max
+    height: 40,
+    overflow: 'hidden', // Add overflow hidden to button
   },
   filterButtonActive: {
     borderColor: colors.text.secondary,
@@ -268,16 +269,18 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     height: '100%',
     width: '100%',
+    overflow: 'hidden', // Add overflow hidden to content
   },
   textContainer: {
     flex: 1,
     marginRight: spacing.xs,
-    overflow: 'hidden', // Ensure overflow is hidden
+    overflow: 'hidden',
+    minWidth: 0, // Critical: allows flex child to shrink below content size
   },
   filterButtonText: {
     fontSize: 13,
     textAlign: 'left',
-    width: '100%', // Ensure text takes full width of container
+    overflow: 'hidden', // Add overflow hidden to text style
   },
   chevronIcon: {
     flexShrink: 0,
