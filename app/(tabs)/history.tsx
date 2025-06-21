@@ -8,23 +8,31 @@ import { Screen } from '@/components/layout/Screen';
 import { Heading } from '@/components/typography/Heading';
 import { Text } from '@/components/typography/Text';
 import { TabBar } from '@/components/navigation/TabBar';
-import { StarRating } from '@/components/rating/StarRating';
 import { colors } from '@/utils/colors';
 import { spacing, borderRadius } from '@/utils/spacing';
 import { formatDate } from '@/utils/formatting';
 import ArtistUnveilView from '@/components/ArtistUnveilView';
 import { HistoryTrack, SubscribedArtist, TabType, TrackDisplay } from '@/types';
 import { FloatingBackButton, TabHeader } from '@/components/navigation';
+import { TrackListItem, FilterBar, type SortOption } from '@/components/lists';
 
 export default function HistoryScreen() {
   const { user } = useAuth();
   const [activeTab, setActiveTab] = useState<TabType>('tracks');
   const [tracks, setTracks] = useState<HistoryTrack[]>([]);
+  const [filteredTracks, setFilteredTracks] = useState<HistoryTrack[]>([]);
   const [artists, setArtists] = useState<SubscribedArtist[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [selectedTrack, setSelectedTrack] = useState<HistoryTrack | null>(null);
   const [selectedArtist, setSelectedArtist] = useState<SubscribedArtist | null>(null);
+
+  // Filter states
+  const [selectedGenre, setSelectedGenre] = useState<string | null>(null);
+  const [selectedMood, setSelectedMood] = useState<string | null>(null);
+  const [selectedSort, setSelectedSort] = useState<SortOption>('date_desc');
+  const [availableGenres, setAvailableGenres] = useState<string[]>([]);
+  const [availableMoods, setAvailableMoods] = useState<string[]>([]);
 
   const tabs = [
     {
@@ -51,6 +59,43 @@ export default function HistoryScreen() {
       loadHistory();
     }
   }, [user]);
+
+  // Filter and sort tracks when filters change
+  useEffect(() => {
+    let filtered = [...tracks];
+
+    // Apply genre filter
+    if (selectedGenre) {
+      filtered = filtered.filter(track => track.genre === selectedGenre);
+    }
+
+    // Apply mood filter
+    if (selectedMood) {
+      filtered = filtered.filter(track => track.mood === selectedMood);
+    }
+
+    // Apply sorting
+    filtered.sort((a, b) => {
+      switch (selectedSort) {
+        case 'date_asc':
+          return new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
+        case 'date_desc':
+          return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+        case 'title_asc':
+          return a.title.localeCompare(b.title);
+        case 'title_desc':
+          return b.title.localeCompare(a.title);
+        case 'artist_asc':
+          return a.artist.localeCompare(b.artist);
+        case 'artist_desc':
+          return b.artist.localeCompare(a.artist);
+        default:
+          return 0;
+      }
+    });
+
+    setFilteredTracks(filtered);
+  }, [tracks, selectedGenre, selectedMood, selectedSort]);
 
   const loadHistory = async () => {
     if (!user?.id) return;
@@ -97,6 +142,12 @@ export default function HistoryScreen() {
       }));
 
       setTracks(formattedTracks);
+
+      // Extract unique genres and moods for filters
+      const genres = [...new Set(formattedTracks.map(track => track.genre))].sort();
+      const moods = [...new Set(formattedTracks.map(track => track.mood))].sort();
+      setAvailableGenres(genres);
+      setAvailableMoods(moods);
 
       // Load subscribed artists
       const { data: artistData, error: artistError } = await supabase
@@ -157,46 +208,6 @@ export default function HistoryScreen() {
   const handleBackToHistory = () => {
     setSelectedTrack(null);
     setSelectedArtist(null);
-  };
-
-  const extractCityFromLocation = (location: string | undefined): string => {
-    if (!location) return '';
-    // Extract city name (first part before comma)
-    const city = location.split(',')[0].trim();
-    return city;
-  };
-
-  const renderTrackTags = (track: HistoryTrack) => {
-    const tags = [];
-    
-    // Add genre
-    if (track.genre) {
-      tags.push(track.genre);
-    }
-    
-    // Add city (bolded)
-    const city = extractCityFromLocation(track.artist_location);
-    if (city) {
-      tags.push({ text: city, bold: true });
-    }
-    
-    // Add mood
-    if (track.mood) {
-      tags.push(track.mood);
-    }
-
-    return (
-      <View style={styles.tagsContainer}>
-        {tags.map((tag, index) => (
-          <React.Fragment key={index}>
-            {index > 0 && <Text style={styles.tagSeparator}> ⋅ </Text>}
-            <Text style={[styles.tagText, tag.bold && styles.tagTextBold]}>
-              {typeof tag === 'string' ? tag : tag.text}
-            </Text>
-          </React.Fragment>
-        ))}
-      </View>
-    );
   };
 
   // Show track unveil view
@@ -337,46 +348,31 @@ export default function HistoryScreen() {
               </Text>
             </View>
           ) : (
-            <View style={styles.tracksList}>
-              {tracks.map((track) => (
-                <TouchableOpacity
-                  key={track.id}
-                  onPress={() => handleTrackPress(track)}
-                  style={styles.trackCard}
-                  activeOpacity={0.8}
-                >
-                  <View style={styles.trackHeader}>
-                    <View style={styles.trackTitleContainer}>
-                      <Heading variant="h4" color="primary" style={styles.trackTitle}>
-                        {track.title}
-                      </Heading>
-                      <Text variant="body" color="secondary" style={styles.trackArtist}>
-                        {track.artist}
-                      </Text>
-                    </View>
-                    
-                    <View style={styles.ratingDateContainer}>
-                      <StarRating rating={track.rating} readonly size="small" />
-                      <Text variant="caption" color="secondary" style={styles.trackDate}>
-                        {formatDate(track.created_at)}
-                      </Text>
-                    </View>
-                  </View>
+            <>
+              {/* Filter Bar */}
+              <FilterBar
+                selectedGenre={selectedGenre}
+                selectedMood={selectedMood}
+                selectedSort={selectedSort}
+                availableGenres={availableGenres}
+                availableMoods={availableMoods}
+                onGenreChange={setSelectedGenre}
+                onMoodChange={setSelectedMood}
+                onSortChange={setSelectedSort}
+              />
 
-                  {/* Tags */}
-                  {renderTrackTags(track)}
-
-                  {/* Review */}
-                  {track.review_text && track.review_text.trim() && (
-                    <View style={styles.reviewContainer}>
-                      <Text variant="body" color="primary" style={styles.reviewText}>
-                        {track.review_text.trim()}
-                      </Text>
-                    </View>
-                  )}
-                </TouchableOpacity>
-              ))}
-            </View>
+              {/* Tracks List */}
+              <View style={styles.tracksList}>
+                {filteredTracks.map((track, index) => (
+                  <TrackListItem
+                    key={track.id}
+                    track={track}
+                    onPress={() => handleTrackPress(track)}
+                    showSeparator={index < filteredTracks.length - 1}
+                  />
+                ))}
+              </View>
+            </>
           )
         ) : (
           artists.length === 0 ? (
@@ -478,64 +474,7 @@ const styles = StyleSheet.create({
     lineHeight: 24,
   },
   tracksList: {
-    gap: spacing.lg,
-  },
-  trackCard: {
-    paddingVertical: spacing.md,
-  },
-  trackHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    marginBottom: spacing.sm,
-  },
-  trackTitleContainer: {
-    flex: 1,
-    marginRight: spacing.md,
-  },
-  trackTitle: {
-    fontSize: 18,
-    marginBottom: spacing.xs,
-  },
-  trackArtist: {
-    fontSize: 16,
-  },
-  ratingDateContainer: {
-    alignItems: 'flex-end',
-    gap: spacing.xs,
-  },
-  trackDate: {
-    fontSize: 12,
-    opacity: 0.7,
-  },
-  tagsContainer: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    alignItems: 'center',
-    marginBottom: spacing.sm,
-  },
-  tagText: {
-    color: colors.text.secondary,
-    fontSize: 14,
-  },
-  tagTextBold: {
-    fontWeight: 'bold',
-    color: colors.text.primary,
-  },
-  tagSeparator: {
-    color: colors.text.secondary,
-    fontSize: 14,
-  },
-  reviewContainer: {
-    backgroundColor: colors.surface,
-    borderRadius: borderRadius.md,
-    padding: spacing.md,
-    marginTop: spacing.xs,
-  },
-  reviewText: {
-    fontSize: 14,
-    lineHeight: 20,
-    fontStyle: 'italic',
+    gap: 0, // Remove gap since separators are handled in TrackListItem
   },
   artistsList: {
     gap: spacing.md,

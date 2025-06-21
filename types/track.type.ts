@@ -18,9 +18,11 @@ export interface HistoryTrack {
   genre: string;
   mood: string;
   rating: number;
+  review_text?: string;
   artwork_url?: string;
   spotify_url?: string;
   created_at: string;
+  artist_location?: string;
 }
 
 export interface TrackDisplay {
@@ -30,4 +32,4 @@ export interface TrackDisplay {
   genre: string;
   mood: string;
   artwork_url?: string;
-} 
+}
