@@ -247,14 +247,14 @@ export default function ArtistUnveilView({
           {/* Track Info */}
           <View style={styles.trackInfo}>
             <Heading variant="h2" color="primary" align="center" style={styles.trackTitle}>
-              {track.title || 'Unknown Track'}
+              {track.title && track.title.trim() ? track.title : 'Unknown Track'}
             </Heading>
             <Text variant="body" color="secondary" align="center" style={styles.artistName}>
-              {track.artist || 'Unknown Artist'}
+              {track.artist && track.artist.trim() ? track.artist : 'Unknown Artist'}
             </Text>
             <View style={styles.genreMoodContainer}>
-              <Text style={styles.genreTag}>{track.genre || 'Unknown Genre'}</Text>
-              <Text style={styles.moodTag}>{track.mood || 'Unknown Mood'}</Text>
+              <Text style={styles.genreTag}>{track.genre && track.genre.trim() ? track.genre : 'Unknown Genre'}</Text>
+              <Text style={styles.moodTag}>{track.mood && track.mood.trim() ? track.mood : 'Unknown Mood'}</Text>
             </View>
           </View>
 
@@ -266,11 +266,11 @@ export default function ArtistUnveilView({
                   Your Rating
                 </Heading>
                 <StarRating rating={userRating} readonly style={styles.userRatingStars} />
-                {userReview && (
+                {userReview && userReview.trim() && (
                   <View style={styles.artisticQuoteContainer}>
                     <Text style={styles.quoteSymbol}>"</Text>
                     <Text variant="body" color="secondary" style={styles.userReviewText}>
-                      {userReview}
+                      {userReview.trim()}
                     </Text>
                     <Text style={styles.quoteSymbol}>"</Text>
                   </View>
@@ -317,7 +317,7 @@ export default function ArtistUnveilView({
                           { color: getPlatformColor(getPreferredStreamingLink()!.platform) }
                         ]}
                       >
-                        {getPlatformName(getPreferredStreamingLink()!.platform)}
+                        {getPlatformName(getPreferredStreamingLink()!.platform) || 'Listen'}
                       </Text>
                     </Button>
                   )}
@@ -346,7 +346,7 @@ export default function ArtistUnveilView({
               {/* Connect with Artist Section */}
               <View style={styles.section}>
                 <Heading variant="h4" color="primary" style={styles.sectionTitle}>
-                  Connect with {artist.name || 'Artist'}
+                  Connect with {artist.name && artist.name.trim() ? artist.name : 'Artist'}
                 </Heading>
                 
                 {/* Follow Button */}
@@ -398,20 +398,20 @@ export default function ArtistUnveilView({
                   )}
                   
                   <View style={styles.artistDetails}>
-                    {artist.location && (
+                    {artist.location && artist.location.trim() && (
                       <View style={styles.artistDetailRow}>
                         <MapPin size={16} color={colors.text.secondary} strokeWidth={2} />
                         <Text variant="body" color="secondary" style={styles.artistDetailText}>
-                          {artist.location}
+                          {artist.location.trim()}
                         </Text>
                       </View>
                     )}
                     
-                    {artist.genres && artist.genres.length > 0 && (
+                    {artist.genres && artist.genres.length > 0 && artist.genres.some(genre => genre && genre.trim()) && (
                       <View style={styles.genresContainer}>
-                        {artist.genres.map((genre) => (
+                        {artist.genres.filter(genre => genre && genre.trim()).map((genre) => (
                           <Text key={genre} style={styles.artistGenreTag}>
-                            {genre || 'Unknown'}
+                            {genre.trim()}
                           </Text>
                         ))}
                       </View>
@@ -419,9 +419,9 @@ export default function ArtistUnveilView({
                   </View>
                 </View>
 
-                {artist.bio && (
+                {artist.bio && artist.bio.trim() && (
                   <Text variant="body" color="primary" style={styles.artistBio}>
-                    {artist.bio}
+                    {artist.bio.trim()}
                   </Text>
                 )}
               </View>
@@ -503,7 +503,7 @@ export default function ArtistUnveilView({
                       { color: getPlatformColor(link.platform) }
                     ]}
                   >
-                    {getPlatformName(link.platform)}
+                    {getPlatformName(link.platform) || link.platform}
                   </Text>
                   <ExternalLink size={16} color={getPlatformColor(link.platform)} strokeWidth={2} />
                 </Button>

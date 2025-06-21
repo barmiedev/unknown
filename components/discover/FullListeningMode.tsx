@@ -102,11 +102,11 @@ export function FullListeningMode({
           Your Rating
         </Text>
         <StarRating rating={userRating} readonly style={styles.starRating} />
-        {userReview && (
+        {userReview && userReview.trim() && (
           <View style={styles.reviewContainer}>
             <Text style={styles.quoteSymbol}>"</Text>
             <Text variant="body" color="secondary" style={styles.reviewText}>
-              {userReview}
+              {userReview.trim()}
             </Text>
             <Text style={styles.quoteSymbol}>"</Text>
           </View>
