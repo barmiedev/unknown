@@ -50,9 +50,9 @@ export default function LoginScreen() {
         if (result.error?.message?.includes('Invalid login credentials') || 
             result.error?.message?.includes('invalid_credentials') ||
             result.error?.code === 'invalid_credentials') {
-          // Highlight both fields for invalid credentials
+          // Highlight both fields but only show message under password
           setErrors({ 
-            email: 'Invalid email or password',
+            email: '', // Empty string to highlight field without showing message
             password: 'Invalid email or password'
           });
         } else {
