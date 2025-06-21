@@ -204,6 +204,8 @@ export default function ArtistUnveilView({
     return streamingLinks.filter(link => link.platform !== preferredPlatform);
   };
 
+  const otherStreamingLinks = getOtherStreamingLinks();
+
   if (loading) {
     return (
       <Screen>
@@ -308,7 +310,7 @@ export default function ArtistUnveilView({
                       variant="secondary"
                       size="medium"
                       onPress={() => handleOpenLink(getPreferredStreamingLink()!.url)}
-                      style={[styles.preferredStreamingButton, { flex: 1, marginRight: getOtherStreamingLinks().length > 0 ? 4 : 0 }]}
+                      style={[styles.preferredStreamingButton, { flex: 1, marginRight: otherStreamingLinks.length > 0 ? 4 : 0 }]}
                     >
                       <Text 
                         variant="body" 
@@ -323,7 +325,7 @@ export default function ArtistUnveilView({
                   )}
 
                   {/* Listen Elsewhere Button */}
-                  {getOtherStreamingLinks().length > 0 && (
+                  {otherStreamingLinks.length > 0 && (
                     <Button
                       variant="secondary"
                       size="medium"
@@ -483,7 +485,7 @@ export default function ArtistUnveilView({
             </View>
             
             <View style={styles.modalPlatformsList}>
-              {getOtherStreamingLinks().map((link) => (
+              {otherStreamingLinks.map((link) => (
                 <Button
                   key={link.platform}
                   variant="secondary"
