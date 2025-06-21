@@ -6,6 +6,7 @@ import { Text } from '@/components/typography/Text';
 import { Heading } from '@/components/typography/Heading';
 import { colors } from '@/utils/colors';
 import { spacing, borderRadius } from '@/utils/spacing';
+import { getMoodEmoji, getGenreEmoji } from '@/utils/music';
 
 export type SortOption = 'date_desc' | 'date_asc' | 'title_asc' | 'title_desc' | 'artist_asc' | 'artist_desc';
 
@@ -69,14 +70,16 @@ export function FilterBar({
     >
       <Text 
         variant="body" 
-        color={isFiltered ? 'accent' : 'primary'} 
-        style={styles.filterButtonText}
+        color="primary"
+        style={[styles.filterButtonText]}
+        numberOfLines={1}
+        ellipsizeMode="tail"
       >
         {label}
       </Text>
       <ChevronDown 
         size={16} 
-        color={isFiltered ? colors.primary : colors.text.primary} 
+        color={colors.text.primary} 
         strokeWidth={2} 
       />
     </TouchableOpacity>
@@ -127,7 +130,7 @@ export function FilterBar({
       <View style={styles.filterRow}>
         {/* Genre Filter */}
         <FilterButton
-          label={selectedGenre || 'All Genres'}
+          label={selectedGenre || 'Genres'}
           onPress={() => setShowGenreModal(true)}
           isActive={showGenreModal}
           isFiltered={isGenreFiltered}
@@ -135,7 +138,7 @@ export function FilterBar({
 
         {/* Mood Filter */}
         <FilterButton
-          label={selectedMood || 'All Moods'}
+          label={selectedMood || 'Moods'}
           onPress={() => setShowMoodModal(true)}
           isActive={showMoodModal}
           isFiltered={isMoodFiltered}
@@ -168,7 +171,7 @@ export function FilterBar({
         {availableGenres.map((genre) => (
           <SelectionChip
             key={genre}
-            label={genre}
+            label={`${getGenreEmoji(genre)} ${genre}`}
             selected={selectedGenre === genre}
             onPress={() => {
               onGenreChange(genre);
@@ -197,7 +200,7 @@ export function FilterBar({
         {availableMoods.map((mood) => (
           <SelectionChip
             key={mood}
-            label={mood}
+            label={`${getMoodEmoji(mood)} ${mood}`}
             selected={selectedMood === mood}
             onPress={() => {
               onMoodChange(mood);
@@ -233,7 +236,7 @@ export function FilterBar({
 
 const styles = StyleSheet.create({
   container: {
-    marginBottom: spacing.lg,
+    marginBottom: spacing.md,
   },
   filterRow: {
     flexDirection: 'row',
@@ -250,17 +253,18 @@ const styles = StyleSheet.create({
     borderRadius: borderRadius.lg,
     borderWidth: 2,
     borderColor: 'transparent',
+    minHeight: 44,
   },
   filterButtonActive: {
     borderColor: colors.text.secondary,
   },
   filterButtonFiltered: {
-    borderColor: colors.primary,
-    backgroundColor: 'rgba(69, 36, 81, 0.1)',
+    backgroundColor: colors.primary,
   },
   filterButtonText: {
     fontSize: 14,
     flex: 1,
+    marginRight: spacing.xs,
   },
   modalOverlay: {
     flex: 1,

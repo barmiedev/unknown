@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { View, TouchableOpacity, RefreshControl, StyleSheet, ScrollView } from 'react-native';
-import { Users } from 'lucide-react-native';
+import { Users, Music } from 'lucide-react-native';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/contexts/AuthContext';
 import { useFocusEffect } from '@react-navigation/native';
@@ -38,7 +38,7 @@ export default function HistoryScreen() {
     {
       key: 'tracks',
       label: 'Tracks',
-      icon: <Users size={16} color={activeTab === 'tracks' ? colors.text.primary : colors.text.secondary} strokeWidth={2} />
+      icon: <Music size={16} color={activeTab === 'tracks' ? colors.text.primary : colors.text.secondary} strokeWidth={2} />
     },
     {
       key: 'artists',
@@ -450,7 +450,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   tabBar: {
-    marginBottom: spacing.lg,
+    marginBottom: spacing.sm,
   },
   content: {
     flex: 1,
