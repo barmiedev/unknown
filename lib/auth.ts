@@ -1,20 +1,5 @@
 import { supabase } from './supabase';
-
-export interface Profile {
-  id: string;
-  email: string | null;
-  username: string | null;
-  display_name: string | null;
-  onboarding_complete: boolean;
-  created_at: string;
-  updated_at: string;
-}
-
-export interface AuthUser {
-  id: string;
-  email: string;
-  profile: Profile | null;
-}
+import { Profile, AuthUser } from '@/types';
 
 export class AuthService {
   static async signUp(email: string, password: string) {

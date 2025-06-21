@@ -1,8 +1,8 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { View, Text, TouchableOpacity, Alert, Image, ActivityIndicator, TextInput, Keyboard, TouchableWithoutFeedback, ScrollView, Platform } from 'react-native';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { View, Alert, TextInput, Keyboard, TouchableWithoutFeedback, Platform, KeyboardAvoidingView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Play, Pause, Star, SkipForward, Shuffle, Gift } from 'lucide-react-native';
 import { router } from 'expo-router';
+import { Shuffle } from 'lucide-react-native';
 import Animated, { 
   useAnimatedStyle, 
   useSharedValue, 
@@ -17,9 +17,12 @@ import Animated, {
 import { Audio, AVPlaybackStatus } from 'expo-av';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/contexts/AuthContext';
-import { fonts } from '@/lib/fonts';
+import { colors } from '@/utils/colors';
+import { spacing } from '@/utils/spacing';
+import { Button } from '@/components/buttons';
+import { Heading } from '@/components/typography';
 import ArtistUnveilView from '@/components/ArtistUnveilView';
-import { Track } from '@/types';
+import { Track, UserPreferences, DiscoverState, AnimationBackgroundProps } from '@/types';
 import {
   MoodSelector,
   LoadingState,
@@ -34,45 +37,10 @@ import {
   NoTracksInPreferencesState,
   NoTracksAtAllState,
 } from '@/components/discover';
-
-interface UserPreferences {
-  preferred_genres: string[];
-  preferred_moods: string[];
-  min_duration: number;
-  max_duration: number;
-}
-
-type DiscoverState = 'mood_selection' | 'loading' | 'playing' | 'rating' | 'revealed' | 'transitioning' | 'full_listening' | 'no_tracks_in_preferences' | 'no_tracks_at_all';
-
-const ALL_MOODS = [
-  'Energetic', 'Chill', 'Melancholic', 'Uplifting', 'Aggressive',
-  'Romantic', 'Mysterious', 'Nostalgic', 'Experimental', 'Peaceful',
-  'Dark', 'Dreamy', 'Intense', 'Playful', 'Contemplative', 'Euphoric'
-];
-
-const MOOD_EMOJIS: { [key: string]: string } = {
-  'Energetic': '⚡',
-  'Chill': '😌',
-  'Melancholic': '🌧️',
-  'Uplifting': '☀️',
-  'Aggressive': '🔥',
-  'Romantic': '💕',
-  'Mysterious': '🌙',
-  'Nostalgic': '🍂',
-  'Experimental': '🧪',
-  'Peaceful': '🕊️',
-  'Dark': '🖤',
-  'Dreamy': '☁️',
-  'Intense': '💥',
-  'Playful': '🎈',
-  'Contemplative': '🤔',
-  'Euphoric': '🌟'
-};
-
-interface AnimationBackgroundProps {
-  animationUrl?: string;
-  children: React.ReactNode;
-}
+import { getMoodsForSession } from '@/utils/music';
+import { type Mood } from '@/utils/constants';
+import { MoodButtons } from '@/components/selection';
+import { Screen } from '@/components/layout/Screen';
 
 // Animation Background Component - placeholder for future animation files
 function AnimationBackground({ animationUrl, children }: AnimationBackgroundProps) {
@@ -129,7 +97,7 @@ export default function DiscoverScreen() {
   const [currentTrack, setCurrentTrack] = useState<Track | null>(null);
   const [state, setState] = useState<DiscoverState>('mood_selection');
   const [selectedSessionMood, setSelectedSessionMood] = useState<string | null>(null);
-  const [availableMoods, setAvailableMoods] = useState<string[]>([]);
+  const [availableMoods, setAvailableMoods] = useState<Mood[]>([]);
   const [rating, setRating] = useState(0);
   const [review, setReview] = useState('');
   const [showRating, setShowRating] = useState(false);
@@ -419,32 +387,24 @@ export default function DiscoverScreen() {
         .single();
 
       if (error && error.code !== 'PGRST116') {
-        console.error('Error loading preferences:', error);
-        return;
+        throw error;
       }
 
       if (data) {
         setUserPreferences(data);
-        // Set available moods - only 3 moods, preferably from user preferences
-        if (data.preferred_moods && data.preferred_moods.length > 0) {
-          // Shuffle user's preferred moods and take 3
-          const shuffledUserMoods = data.preferred_moods.sort(() => 0.5 - Math.random()).slice(0, 3);
-          setAvailableMoods(shuffledUserMoods);
-        } else {
-          // Show 3 random moods if no preferences
-          const randomMoods = ALL_MOODS.sort(() => 0.5 - Math.random()).slice(0, 3);
-          setAvailableMoods(randomMoods);
-        }
+        // Set available moods using the utility function
+        const moodsForSession = getMoodsForSession(data.preferred_moods || [], 3);
+        setAvailableMoods(moodsForSession);
       } else {
         // No preferences found, show 3 random moods
-        const randomMoods = ALL_MOODS.sort(() => 0.5 - Math.random()).slice(0, 3);
-        setAvailableMoods(randomMoods);
+        const moodsForSession = getMoodsForSession([], 3);
+        setAvailableMoods(moodsForSession);
       }
     } catch (error) {
       console.error('Error loading user preferences:', error);
       // Fallback to 3 random moods
-      const randomMoods = ALL_MOODS.sort(() => 0.5 - Math.random()).slice(0, 3);
-      setAvailableMoods(randomMoods);
+      const moodsForSession = getMoodsForSession([], 3);
+      setAvailableMoods(moodsForSession);
     }
   };
 
@@ -892,8 +852,8 @@ export default function DiscoverScreen() {
   // No tracks in preferences state
   if (state === 'no_tracks_in_preferences') {
     return (
-      <View style={{ backgroundColor: '#19161a', flex: 1 }}>
-        <SafeAreaView style={{ flex: 1 }}>
+      <Screen backgroundColor="#19161a" withoutBottomSafeArea paddingHorizontal={0}>
+        <View style={{ flex: 1, paddingHorizontal: spacing.lg }}>
           <SessionHeader
             selectedMood={selectedSessionMood}
             onNewSession={handleNewSession}
@@ -903,16 +863,16 @@ export default function DiscoverScreen() {
             onChooseDifferentMood={handleChooseDifferentMood}
             selectedMood={selectedSessionMood}
           />
-        </SafeAreaView>
-      </View>
+        </View>
+      </Screen>
     );
   }
 
   // No tracks at all state
   if (state === 'no_tracks_at_all') {
     return (
-      <View style={{ backgroundColor: '#19161a', flex: 1 }}>
-        <SafeAreaView style={{ flex: 1 }}>
+      <Screen backgroundColor="#19161a" withoutBottomSafeArea paddingHorizontal={0}>
+        <View style={{ flex: 1, paddingHorizontal: spacing.lg }}>
           <SessionHeader
             selectedMood={selectedSessionMood}
             onNewSession={handleNewSession}
@@ -921,50 +881,75 @@ export default function DiscoverScreen() {
             onGoToHistory={handleGoToHistory}
             totalTracksRated={totalTracksRated}
           />
-        </SafeAreaView>
-      </View>
+        </View>
+      </Screen>
     );
   }
 
   // Mood Selection Screen
   if (state === 'mood_selection') {
     return (
-      <View style={{ backgroundColor: '#19161a', flex: 1 }}>
-        <SafeAreaView style={{ flex: 1 }}>
-          <AnimationBackground>
-            <MoodSelector
+      <Screen backgroundColor="#19161a" withoutBottomSafeArea>
+        <AnimationBackground>
+          <View style={{ flex: 1, paddingHorizontal: spacing.lg }}>
+            {/* Header */}
+            <View style={{ alignItems: 'center', paddingTop: spacing.md, paddingBottom: spacing.xxl }}>
+              <Heading variant="h3" color="primary" align="center" style={{ fontSize: 28, marginBottom: spacing.xl }}>
+                How do you feel today?
+              </Heading>
+            </View>
+
+            {/* Mood Buttons */}
+            <MoodButtons
               availableMoods={availableMoods}
               onMoodSelect={handleMoodSelection}
+              style={{ flex: 1, justifyContent: 'center' }}
             />
-          </AnimationBackground>
-        </SafeAreaView>
-      </View>
+
+            {/* Surprise Me Button */}
+            <View style={{ alignItems: 'center', paddingBottom: spacing.xxl }}>
+              <Button
+                variant="primary"
+                size="large"
+                onPress={() => handleMoodSelection(null)}
+                icon={<Shuffle size={20} color={colors.text.primary} strokeWidth={2} />}
+                iconPosition="left"
+                style={{
+                  shadowColor: colors.primary,
+                  shadowOffset: { width: 0, height: 6 },
+                  shadowOpacity: 0.4,
+                  shadowRadius: 12,
+                  elevation: 8,
+                }}
+              >
+                Surprise me
+              </Button>
+            </View>
+          </View>
+        </AnimationBackground>
+      </Screen>
     );
   }
 
   if (isLoading) {
     return (
-      <View style={{ backgroundColor: '#19161a', flex: 1 }}>
-        <SafeAreaView style={{ flex: 1 }}>
-          <LoadingState
-            selectedMood={selectedSessionMood}
-          />
-        </SafeAreaView>
-      </View>
+      <Screen backgroundColor="#19161a" withoutBottomSafeArea>
+        <LoadingState
+          selectedMood={selectedSessionMood}
+        />
+      </Screen>
     );
   }
 
   if (error) {
     return (
-      <View style={{ backgroundColor: '#19161a', flex: 1 }}>
-        <SafeAreaView style={{ flex: 1 }}>
-          <ErrorState
-            error={error}
-            onRetry={() => loadNextTrack(false, selectedSessionMood)}
-            onNewSession={handleNewSession}
-          />
-        </SafeAreaView>
-      </View>
+      <Screen backgroundColor="#19161a" withoutBottomSafeArea>
+        <ErrorState
+          error={error}
+          onRetry={() => loadNextTrack(false, selectedSessionMood)}
+          onNewSession={handleNewSession}
+        />
+      </Screen>
     );
   }
 
@@ -983,34 +968,40 @@ export default function DiscoverScreen() {
         onDiscoverNext={handleDiscoverNext}
         userRating={rating}
         userReview={review}
+        withoutBottomSafeArea
       />
     );
   }
 
   return (
     <TouchableWithoutFeedback onPress={dismissKeyboard}>
-      <View style={{ backgroundColor: '#19161a', flex: 1 }}>
-        <SafeAreaView style={{ flex: 1 }}>
-          <AnimationBackground>
+      <Screen backgroundColor="#19161a" withoutBottomSafeArea paddingHorizontal={0}>
+        <AnimationBackground>
+          <View style={{ paddingHorizontal: spacing.lg }}>
             <SessionHeader
               selectedMood={selectedSessionMood}
               onNewSession={handleNewSession}
             />
+          </View>
 
-            {showWelcomeTip && (
-              <WelcomeTip />
-            )}
+          {showWelcomeTip && (
+            <WelcomeTip />
+          )}
 
-            <ThankYouOverlay
-              visible={showThankYou}
-            />
+          <ThankYouOverlay
+            visible={showThankYou}
+          />
 
-            <TransitionOverlay
-              visible={isTransitioning}
-            />
+          <TransitionOverlay
+            visible={isTransitioning}
+          />
 
-            {/* Main Player Area */}
-            <Animated.View style={[fadeStyle, { flex: 1, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 24 }]}>
+          {/* Main Player Area */}
+          <KeyboardAvoidingView 
+            style={{ flex: 1 }}
+            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          >
+            <Animated.View style={[fadeStyle, { height: '100%', width: '100%', alignItems: 'center', paddingHorizontal: spacing.lg }]}>
               {state === 'full_listening' && currentTrack ? (
                 <FullListeningMode
                   track={currentTrack}
@@ -1045,9 +1036,9 @@ export default function DiscoverScreen() {
                 />
               )}
             </Animated.View>
-          </AnimationBackground>
-        </SafeAreaView>
-      </View>
+          </KeyboardAvoidingView>
+        </AnimationBackground>
+      </Screen>
     </TouchableWithoutFeedback>
   );
 }

@@ -3,29 +3,11 @@ import { View, ActivityIndicator, StyleSheet } from 'react-native';
 import { Text } from '@/components/typography/Text';
 import { colors } from '@/utils/colors';
 import { spacing } from '@/utils/spacing';
+import { getMoodEmoji } from '@/utils/music';
 
 interface LoadingStateProps {
   selectedMood?: string | null;
 }
-
-const MOOD_EMOJIS: { [key: string]: string } = {
-  'Energetic': '⚡',
-  'Chill': '😌',
-  'Melancholic': '🌧️',
-  'Uplifting': '☀️',
-  'Aggressive': '🔥',
-  'Romantic': '💕',
-  'Mysterious': '🌙',
-  'Nostalgic': '🍂',
-  'Experimental': '🧪',
-  'Peaceful': '🕊️',
-  'Dark': '🖤',
-  'Dreamy': '☁️',
-  'Intense': '💥',
-  'Playful': '🎈',
-  'Contemplative': '🤔',
-  'Euphoric': '🌟'
-};
 
 export function LoadingState({ selectedMood }: LoadingStateProps) {
   return (
@@ -37,7 +19,7 @@ export function LoadingState({ selectedMood }: LoadingStateProps) {
       </Text>
       {selectedMood && (
         <Text variant="body" color="secondary" align="center" style={styles.moodText}>
-          {MOOD_EMOJIS[selectedMood]} {selectedMood} vibes
+          {getMoodEmoji(selectedMood)} {selectedMood} vibes
         </Text>
       )}
     </View>

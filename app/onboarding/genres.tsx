@@ -7,21 +7,15 @@ import { Heading } from '@/components/typography/Heading';
 import { Text } from '@/components/typography/Text';
 import { Button } from '@/components/buttons/Button';
 import { ProgressBar } from '@/components/progress/ProgressBar';
-import { SelectionChip } from '@/components/selection/SelectionChip';
+import { GenreSelector } from '@/components/selection';
 import { colors } from '@/utils/colors';
 import { spacing } from '@/utils/spacing';
-
-const GENRES = [
-  'Rock', 'Pop', 'Hip-Hop', 'Electronic', 'Jazz', 'Classical',
-  'Folk', 'R&B', 'Country', 'Reggae', 'Blues', 'Punk',
-  'Metal', 'Indie', 'Alternative', 'Funk', 'Soul', 'Gospel',
-  'Ambient', 'Lo-Fi', 'Psychedelic', 'Experimental'
-];
+import { type Genre } from '@/utils/constants';
 
 export default function GenrePreferencesScreen() {
-  const [selectedGenres, setSelectedGenres] = useState<string[]>([]);
+  const [selectedGenres, setSelectedGenres] = useState<Genre[]>([]);
 
-  const toggleGenre = (genre: string) => {
+  const toggleGenre = (genre: Genre) => {
     setSelectedGenres(prev => 
       prev.includes(genre) 
         ? prev.filter(g => g !== genre)
@@ -56,17 +50,11 @@ export default function GenrePreferencesScreen() {
       <ProgressBar current={1} total={3} />
 
       {/* Genre Selection */}
-      <View style={styles.genreGrid}>
-        {GENRES.map((genre) => (
-          <SelectionChip
-            key={genre}
-            label={genre}
-            selected={selectedGenres.includes(genre)}
-            onPress={() => toggleGenre(genre)}
-            style={styles.genreChip}
-          />
-        ))}
-      </View>
+      <GenreSelector
+        selectedGenres={selectedGenres}
+        onGenreToggle={toggleGenre}
+        style={styles.genreGrid}
+      />
 
       {/* Continue Button */}
       <View style={styles.footer}>
@@ -97,7 +85,7 @@ export default function GenrePreferencesScreen() {
 
 const styles = StyleSheet.create({
   header: {
-    paddingTop: spacing.xl,
+    paddingTop: spacing.md,
     paddingBottom: spacing.lg,
   },
   subtitle: {
@@ -105,13 +93,7 @@ const styles = StyleSheet.create({
     marginTop: spacing.sm,
   },
   genreGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: spacing.sm,
     paddingBottom: spacing.lg,
-  },
-  genreChip: {
-    marginBottom: spacing.sm,
   },
   footer: {
     paddingTop: spacing.lg,

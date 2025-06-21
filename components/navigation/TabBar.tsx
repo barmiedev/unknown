@@ -2,18 +2,13 @@ import React from 'react';
 import { View, TouchableOpacity, StyleSheet } from 'react-native';
 import { colors } from '@/utils/colors';
 import { spacing, borderRadius } from '@/utils/spacing';
-import { Text } from '@/components/typography/Text';
-
-interface TabItem {
-  key: string;
-  label: string;
-  icon: React.ReactNode;
-}
+import { Text } from '@/components/typography';
+import { TabItem } from '@/types';
 
 interface TabBarProps {
-  activeTab: string;
-  onTabPress: (tab: string) => void;
   tabs: TabItem[];
+  activeTab: string;
+  onTabPress: (tabKey: string) => void;
   style?: any;
 }
 

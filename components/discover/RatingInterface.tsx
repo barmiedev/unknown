@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, StyleSheet } from 'react-native';
+import { View, StyleSheet, ScrollView } from 'react-native';
 import Animated, { 
   useAnimatedStyle, 
   useSharedValue, 
@@ -80,66 +80,76 @@ export function RatingInterface({
     maxHeight: interpolate(
       reviewInputHeight.value,
       [0, 1],
-      [0, 200],
+      [0, 300],
       Extrapolate.CLAMP
     ),
   }));
 
   return (
     <Animated.View style={[containerStyle, styles.container]}>
-      <Heading variant="h4" color="primary" align="center" style={styles.title}>
-        How does this track make you feel?
-      </Heading>
+      <ScrollView
+        contentContainerStyle={styles.scrollContainer}
+        showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
+      >
+        <Heading variant="h4" color="primary" align="center" style={styles.title}>
+          How does this track make you feel?
+        </Heading>
 
-      {/* Star Rating */}
-      <View style={styles.ratingContainer}>
-        <StarRating
-          rating={rating}
-          onRatingChange={onStarPress}
-          size="large"
-          style={styles.starRating}
-        />
-      </View>
+        {/* Star Rating */}
+        <View style={styles.ratingContainer}>
+          <StarRating
+            rating={rating}
+            onRatingChange={onStarPress}
+            size="large"
+            style={styles.starRating}
+          />
+        </View>
 
-      {/* Review Input for High Ratings */}
-      {showReviewInput && (
-        <Animated.View style={[reviewInputContainerStyle, styles.reviewInputContainer]}>
-          <Animated.View style={[reviewInputStyle, styles.reviewInput]}>
-            <Text variant="body" color="primary" style={styles.reviewLabel}>
-              Share your thoughts (optional)
-            </Text>
-            <TextInput
-              ref={reviewInputRef}
-              placeholder="What did you love about this track?"
-              value={review}
-              onChangeText={onReviewChange}
-              onFocus={() => setIsReviewFocused?.(true)}
-              onBlur={() => setIsReviewFocused?.(false)}
-              multiline
-              numberOfLines={3}
-              style={styles.textInput}
-            />
-            
-            <Button
-              variant="primary"
-              size="large"
-              onPress={onSubmitWithReview}
-              style={styles.submitButton}
-            >
-              Submit Rating
-            </Button>
+        {/* Review Input for High Ratings */}
+        {showReviewInput && (
+          <Animated.View style={[reviewInputContainerStyle, styles.reviewInputContainer]}>
+            <Animated.View style={[reviewInputStyle, styles.reviewInput]}>
+              <Text variant="body" color="primary" style={styles.reviewLabel}>
+                Share your thoughts (optional)
+              </Text>
+              <TextInput
+                ref={reviewInputRef}
+                placeholder="What did you love about this track?"
+                value={review}
+                onChangeText={onReviewChange}
+                onFocus={() => setIsReviewFocused?.(true)}
+                onBlur={() => setIsReviewFocused?.(false)}
+                multiline
+                numberOfLines={3}
+                style={styles.textInput}
+              />
+              
+              <Button
+                variant="primary"
+                size="large"
+                onPress={onSubmitWithReview}
+              >
+                Submit Rating
+              </Button>
+            </Animated.View>
           </Animated.View>
-        </Animated.View>
-      )}
+        )}
+      </ScrollView>
     </Animated.View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
-    alignItems: 'center',
+    flex: 1,
     width: '100%',
-    paddingHorizontal: spacing.lg,
+    // height: '100%',
+  },
+  scrollContainer: {
+    flexGrow: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   title: {
     fontSize: 18,
@@ -167,8 +177,5 @@ const styles = StyleSheet.create({
   },
   textInput: {
     marginBottom: spacing.sm,
-  },
-  submitButton: {
-    marginTop: spacing.sm,
   },
 });

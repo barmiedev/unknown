@@ -92,7 +92,7 @@ export default function OnboardingDecisionScreen() {
 
 const styles = StyleSheet.create({
   header: {
-    paddingTop: spacing.xxl,
+    paddingTop: spacing.lg,
     paddingBottom: spacing.xxl,
     alignItems: 'center',
   },

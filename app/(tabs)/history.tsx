@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { View, Image, TouchableOpacity, RefreshControl, StyleSheet } from 'react-native';
+import { View, Image, TouchableOpacity, RefreshControl, StyleSheet, ScrollView } from 'react-native';
 import { ExternalLink, Music, Users } from 'lucide-react-native';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/contexts/AuthContext';
@@ -14,31 +14,8 @@ import { colors } from '@/utils/colors';
 import { spacing, borderRadius } from '@/utils/spacing';
 import { formatDate } from '@/utils/formatting';
 import ArtistUnveilView from '@/components/ArtistUnveilView';
-
-interface HistoryTrack {
-  id: string;
-  title: string;
-  artist: string;
-  genre: string;
-  mood: string;
-  rating: number;
-  artwork_url?: string;
-  spotify_url?: string;
-  created_at: string;
-}
-
-interface SubscribedArtist {
-  id: string;
-  name: string;
-  bio: string;
-  location: string;
-  genres: string[];
-  avatar_url: string;
-  subscribed_at: string;
-  discovered_track_title?: string;
-}
-
-type TabType = 'tracks' | 'artists';
+import { HistoryTrack, SubscribedArtist, TabType, TrackDisplay } from '@/types';
+import { FloatingBackButton, TabHeader } from '@/components/navigation';
 
 export default function HistoryScreen() {
   const { user } = useAuth();
@@ -179,118 +156,110 @@ export default function HistoryScreen() {
 
   // Show track unveil view
   if (selectedTrack) {
-    // Ensure artwork_url is provided for ArtistUnveilView
-    const trackWithRequiredArtwork = {
-      ...selectedTrack,
-      artwork_url: selectedTrack.artwork_url || ''
+    // Convert HistoryTrack to TrackDisplay for ArtistUnveilView
+    const trackDisplay: TrackDisplay = {
+      id: selectedTrack.id,
+      title: selectedTrack.title,
+      artist: selectedTrack.artist,
+      genre: selectedTrack.genre,
+      mood: selectedTrack.mood,
+      artwork_url: selectedTrack.artwork_url,
     };
     
     return (
-      <Screen backgroundColor={colors.background}>
-        <Button
-          variant="secondary"
-          size="small"
-          onPress={handleBackToHistory}
-          style={styles.backButton}
-        >
-          <Text>← Back to History</Text>
-        </Button>
-        
-        <ArtistUnveilView
-          track={trackWithRequiredArtwork}
-          showPlaybackControls={false}
-        />
-      </Screen>
+      <ArtistUnveilView
+        track={trackDisplay}
+        showPlaybackControls={false}
+        onContinueListening={handleBackToHistory}
+        withoutBottomSafeArea
+      />
     );
   }
 
   // Show artist detail view
   if (selectedArtist) {
     return (
-      <Screen scrollable backgroundColor={colors.background}>
-        <Button
-          variant="secondary"
-          size="small"
-          onPress={handleBackToHistory}
-          style={styles.backButton}
-        >
-          <Text>← Back to History</Text>
-        </Button>
+      <Screen backgroundColor={colors.background} withoutBottomSafeArea paddingHorizontal={0}>
+        <FloatingBackButton onPress={handleBackToHistory} />
 
-        {/* Artist Header */}
-        <View style={styles.artistHeader}>
-          <View style={styles.artistAvatarContainer}>
-            {selectedArtist.avatar_url ? (
-              <Image
-                source={{ uri: selectedArtist.avatar_url }}
-                style={styles.artistAvatar}
-                resizeMode="cover"
-              />
-            ) : (
-              <View style={styles.artistAvatarPlaceholder}>
-                <Users size={40} color={colors.text.secondary} strokeWidth={1.5} />
+        <ScrollView showsVerticalScrollIndicator={false}>
+          <View style={{ paddingHorizontal: spacing.lg }}>
+            {/* Artist Header */}
+            <View style={styles.artistHeader}>
+              <View style={styles.artistAvatarContainer}>
+                {selectedArtist.avatar_url ? (
+                  <Image
+                    source={{ uri: selectedArtist.avatar_url }}
+                    style={styles.artistAvatar}
+                    resizeMode="cover"
+                  />
+                ) : (
+                  <View style={styles.artistAvatarPlaceholder}>
+                    <Users size={40} color={colors.text.secondary} strokeWidth={1.5} />
+                  </View>
+                )}
+              </View>
+              
+              <Heading variant="h3" color="primary" align="center" style={styles.artistName}>
+                {selectedArtist.name}
+              </Heading>
+              
+              {selectedArtist.location && (
+                <Text variant="body" color="secondary" align="center" style={styles.artistLocation}>
+                  {selectedArtist.location}
+                </Text>
+              )}
+
+              {selectedArtist.genres && selectedArtist.genres.length > 0 && (
+                <View style={styles.genresContainer}>
+                  {selectedArtist.genres.map((genre) => (
+                    <Text key={genre} style={styles.genreTag}>
+                      {genre}
+                    </Text>
+                  ))}
+                </View>
+              )}
+            </View>
+
+            {/* Discovery Info */}
+            {selectedArtist.discovered_track_title && (
+              <View style={styles.discoveryInfo}>
+                <Heading variant="h4" color="primary" style={styles.discoveryTitle}>
+                  How you discovered this artist
+                </Heading>
+                <Text variant="body" color="secondary" style={styles.discoveryText}>
+                  You discovered {selectedArtist.name || 'Unknown Artist'} by listening to "{selectedArtist.discovered_track_title || 'Unknown Track'}"
+                </Text>
               </View>
             )}
-          </View>
-          
-          <Heading variant="h3" color="primary" align="center" style={styles.artistName}>
-            {selectedArtist.name}
-          </Heading>
-          
-          {selectedArtist.location && (
-            <Text variant="body" color="secondary" align="center" style={styles.artistLocation}>
-              {selectedArtist.location}
-            </Text>
-          )}
 
-          {selectedArtist.genres && selectedArtist.genres.length > 0 && (
-            <View style={styles.genresContainer}>
-              {selectedArtist.genres.map((genre) => (
-                <Text key={genre} style={styles.genreTag}>
-                  {genre}
+            {/* Artist Bio */}
+            {selectedArtist.bio && (
+              <View style={styles.bioSection}>
+                <Heading variant="h4" color="primary" style={styles.bioTitle}>
+                  About the Artist
+                </Heading>
+                <Text variant="body" color="primary" style={styles.bioText}>
+                  {selectedArtist.bio}
                 </Text>
-              ))}
+              </View>
+            )}
+
+            {/* Following Since */}
+            <View style={styles.followingSince}>
+              <Text variant="caption" color="secondary" align="center">
+                Following since {formatDate(selectedArtist.subscribed_at)}
+              </Text>
             </View>
-          )}
-        </View>
-
-        {/* Discovery Info */}
-        {selectedArtist.discovered_track_title && (
-          <View style={styles.discoveryInfo}>
-            <Heading variant="h4" color="primary" style={styles.discoveryTitle}>
-              How you discovered this artist
-            </Heading>
-            <Text variant="body" color="secondary" style={styles.discoveryText}>
-              You discovered {selectedArtist.name || 'Unknown Artist'} by listening to "{selectedArtist.discovered_track_title || 'Unknown Track'}"
-            </Text>
           </View>
-        )}
-
-        {/* Artist Bio */}
-        {selectedArtist.bio && (
-          <View style={styles.bioSection}>
-            <Heading variant="h4" color="primary" style={styles.bioTitle}>
-              About the Artist
-            </Heading>
-            <Text variant="body" color="primary" style={styles.bioText}>
-              {selectedArtist.bio}
-            </Text>
-          </View>
-        )}
-
-        {/* Following Since */}
-        <View style={styles.followingSince}>
-          <Text variant="caption" color="secondary" align="center">
-            Following since {formatDate(selectedArtist.subscribed_at)}
-          </Text>
-        </View>
+        </ScrollView>
       </Screen>
     );
   }
 
   if (loading) {
     return (
-      <Screen>
+      <Screen withoutBottomSafeArea>
         <View style={styles.loadingContainer}>
           <Text variant="body" color="primary">Loading your discoveries...</Text>
         </View>
@@ -299,16 +268,11 @@ export default function HistoryScreen() {
   }
 
   return (
-    <Screen scrollable paddingHorizontal={24}>
-      {/* Header */}
-      <View style={styles.header}>
-        <Heading variant="h2" color="primary">
-          Your Discoveries
-        </Heading>
-        <Text variant="body" color="secondary" style={styles.subtitle}>
-          {activeTab === 'tracks' ? `${tracks.length} tracks you've loved` : `${artists.length} artists you're following`}
-        </Text>
-      </View>
+    <Screen scrollable paddingHorizontal={24} withoutBottomSafeArea>
+      <TabHeader
+        title="Your Discoveries"
+        subtitle={activeTab === 'tracks' ? `${tracks.length} tracks you've loved` : `${artists.length} artists you're following`}
+      />
 
       {/* Tab Navigation */}
       <TabBar
@@ -465,18 +429,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-  backButton: {
-    alignSelf: 'flex-start',
-    marginBottom: spacing.md,
-  },
-  header: {
-    paddingTop: spacing.xl,
-    paddingBottom: spacing.lg,
-  },
-  subtitle: {
-    fontSize: 16,
-    marginTop: spacing.sm,
-  },
   tabBar: {
     marginBottom: spacing.lg,
   },
@@ -503,7 +455,6 @@ const styles = StyleSheet.create({
   },
   tracksList: {
     gap: spacing.md,
-    paddingBottom: spacing.lg,
   },
   trackCard: {
     backgroundColor: colors.surface,
@@ -566,7 +517,6 @@ const styles = StyleSheet.create({
   },
   artistsList: {
     gap: spacing.md,
-    paddingBottom: spacing.lg,
   },
   artistCard: {
     backgroundColor: colors.surface,
@@ -626,7 +576,7 @@ const styles = StyleSheet.create({
   // Artist detail styles
   artistHeader: {
     alignItems: 'center',
-    paddingVertical: spacing.xl,
+    paddingVertical: spacing.lg,
   },
   artistAvatarContainer: {
     width: 120,
@@ -669,34 +619,30 @@ const styles = StyleSheet.create({
     borderRadius: borderRadius.sm,
   },
   discoveryInfo: {
-    backgroundColor: colors.surface,
-    borderRadius: borderRadius.lg,
-    padding: spacing.md,
-    marginBottom: spacing.lg,
+    marginBottom: spacing.xl,
   },
   discoveryTitle: {
-    fontSize: 16,
+    fontSize: 18,
     marginBottom: spacing.sm,
+    lineHeight: 24,
   },
   discoveryText: {
-    fontSize: 14,
-    lineHeight: 20,
+    fontSize: 16,
+    lineHeight: 24,
   },
   bioSection: {
-    marginBottom: spacing.lg,
+    marginBottom: spacing.xl,
   },
   bioTitle: {
     fontSize: 18,
     marginBottom: spacing.sm,
+    lineHeight: 24,
   },
   bioText: {
     fontSize: 16,
     lineHeight: 24,
   },
   followingSince: {
-    backgroundColor: colors.surface,
-    borderRadius: borderRadius.lg,
-    padding: spacing.md,
-    marginBottom: spacing.xl,
+    paddingBottom: spacing.lg,
   },
 });

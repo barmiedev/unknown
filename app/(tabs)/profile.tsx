@@ -9,23 +9,8 @@ import { Text } from '@/components/typography/Text';
 import { Button } from '@/components/buttons/Button';
 import { colors } from '@/utils/colors';
 import { spacing, borderRadius } from '@/utils/spacing';
-
-interface UserStats {
-  totalTracks: number;
-  averageRating: number;
-  streakDays: number;
-  badges: string[];
-  points: number;
-  reviewsWritten: number;
-}
-
-interface Badge {
-  id: string;
-  name: string;
-  description: string;
-  icon: string;
-  unlocked: boolean;
-}
+import { UserStats, Badge } from '@/types';
+import { TabHeader } from '@/components/navigation';
 
 const AVAILABLE_BADGES: Badge[] = [
   {
@@ -146,7 +131,7 @@ export default function ProfileScreen() {
 
   if (loading) {
     return (
-      <Screen>
+      <Screen withoutBottomSafeArea>
         <View style={styles.loadingContainer}>
           <Text variant="body" color="primary">Loading profile...</Text>
         </View>
@@ -155,16 +140,11 @@ export default function ProfileScreen() {
   }
 
   return (
-    <Screen scrollable paddingHorizontal={24}>
-      {/* Header */}
-      <View style={styles.header}>
-        <Heading variant="h3" color="primary">
-          {user?.profile?.display_name || user?.profile?.username || 'Profile'}
-        </Heading>
-        <Text variant="body" color="secondary">
-          Your music discovery journey
-        </Text>
-      </View>
+    <Screen scrollable paddingHorizontal={24} withoutBottomSafeArea>
+      <TabHeader
+        title={user?.profile?.display_name || user?.profile?.username || 'Profile'}
+        subtitle="Your music discovery journey"
+      />
 
       {/* Stats Overview */}
       <View style={styles.statsContainer}>
@@ -325,10 +305,6 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-  },
-  header: {
-    paddingTop: spacing.xl,
-    paddingBottom: spacing.lg,
   },
   statsContainer: {
     backgroundColor: colors.surface,

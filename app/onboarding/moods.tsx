@@ -7,21 +7,16 @@ import { Heading } from '@/components/typography/Heading';
 import { Text } from '@/components/typography/Text';
 import { Button } from '@/components/buttons/Button';
 import { ProgressBar } from '@/components/progress/ProgressBar';
-import { SelectionChip } from '@/components/selection/SelectionChip';
+import { MoodSelector } from '@/components/selection';
 import { colors } from '@/utils/colors';
 import { spacing } from '@/utils/spacing';
-
-const MOODS = [
-  'Energetic', 'Chill', 'Melancholic', 'Uplifting', 'Aggressive',
-  'Romantic', 'Mysterious', 'Nostalgic', 'Experimental', 'Peaceful',
-  'Dark', 'Dreamy', 'Intense', 'Playful', 'Contemplative', 'Euphoric'
-];
+import { type Mood } from '@/utils/constants';
 
 export default function MoodPreferencesScreen() {
   const params = useLocalSearchParams();
-  const [selectedMoods, setSelectedMoods] = useState<string[]>([]);
+  const [selectedMoods, setSelectedMoods] = useState<Mood[]>([]);
 
-  const toggleMood = (mood: string) => {
+  const toggleMood = (mood: Mood) => {
     setSelectedMoods(prev => 
       prev.includes(mood) 
         ? prev.filter(m => m !== mood)
@@ -60,17 +55,11 @@ export default function MoodPreferencesScreen() {
       <ProgressBar current={2} total={3} />
 
       {/* Mood Selection */}
-      <View style={styles.moodGrid}>
-        {MOODS.map((mood) => (
-          <SelectionChip
-            key={mood}
-            label={mood}
-            selected={selectedMoods.includes(mood)}
-            onPress={() => toggleMood(mood)}
-            style={styles.moodChip}
-          />
-        ))}
-      </View>
+      <MoodSelector
+        selectedMoods={selectedMoods}
+        onMoodToggle={toggleMood}
+        style={styles.moodGrid}
+      />
 
       {/* Continue Button */}
       <View style={styles.footer}>
@@ -101,7 +90,7 @@ export default function MoodPreferencesScreen() {
 
 const styles = StyleSheet.create({
   header: {
-    paddingTop: spacing.xl,
+    paddingTop: spacing.md,
     paddingBottom: spacing.lg,
   },
   subtitle: {
@@ -109,13 +98,7 @@ const styles = StyleSheet.create({
     marginTop: spacing.sm,
   },
   moodGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: spacing.sm,
     paddingBottom: spacing.lg,
-  },
-  moodChip: {
-    marginBottom: spacing.sm,
   },
   footer: {
     paddingTop: spacing.lg,

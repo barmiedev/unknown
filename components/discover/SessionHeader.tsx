@@ -4,30 +4,12 @@ import { Gift } from 'lucide-react-native';
 import { Text } from '@/components/typography/Text';
 import { colors } from '@/utils/colors';
 import { spacing, borderRadius } from '@/utils/spacing';
+import { getMoodEmoji } from '@/utils/music';
 
 interface SessionHeaderProps {
   selectedMood: string | null;
   onNewSession: () => void;
 }
-
-const MOOD_EMOJIS: { [key: string]: string } = {
-  'Energetic': '⚡',
-  'Chill': '😌',
-  'Melancholic': '🌧️',
-  'Uplifting': '☀️',
-  'Aggressive': '🔥',
-  'Romantic': '💕',
-  'Mysterious': '🌙',
-  'Nostalgic': '🍂',
-  'Experimental': '🧪',
-  'Peaceful': '🕊️',
-  'Dark': '🖤',
-  'Dreamy': '☁️',
-  'Intense': '💥',
-  'Playful': '🎈',
-  'Contemplative': '🤔',
-  'Euphoric': '🌟'
-};
 
 export function SessionHeader({ selectedMood, onNewSession }: SessionHeaderProps) {
   return (
@@ -46,7 +28,7 @@ export function SessionHeader({ selectedMood, onNewSession }: SessionHeaderProps
         {selectedMood ? (
           <>
             <Text style={styles.moodEmoji}>
-              {MOOD_EMOJIS[selectedMood]}
+              {getMoodEmoji(selectedMood)}
             </Text>
             <Text variant="caption" color="secondary" style={styles.moodText}>
               {selectedMood}
@@ -71,9 +53,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: spacing.lg,
-    paddingTop: spacing.lg,
-    paddingBottom: spacing.md,
+    paddingTop: spacing.md,
+    paddingBottom: spacing.lg,
   },
   logo: {
     fontSize: 24,

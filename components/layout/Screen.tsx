@@ -10,6 +10,7 @@ interface ScreenProps {
   scrollable?: boolean;
   showsVerticalScrollIndicator?: boolean;
   style?: any;
+  withoutBottomSafeArea?: boolean;
 }
 
 export function Screen({
@@ -19,12 +20,16 @@ export function Screen({
   scrollable = false,
   showsVerticalScrollIndicator = false,
   style,
+  withoutBottomSafeArea = false,
 }: ScreenProps) {
   const Container = scrollable ? ScrollView : View;
   
   return (
     <View style={[styles.container, { backgroundColor }, style]}>
-      <SafeAreaView style={styles.safeArea}>
+      <SafeAreaView 
+        style={styles.safeArea}
+        edges={withoutBottomSafeArea ? ['top', 'left', 'right'] : ['top', 'right', 'bottom', 'left']}
+      >
         <Container 
           style={[styles.content, { paddingHorizontal }]}
           showsVerticalScrollIndicator={showsVerticalScrollIndicator}

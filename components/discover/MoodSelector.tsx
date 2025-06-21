@@ -6,30 +6,13 @@ import { Text } from '@/components/typography/Text';
 import { Button } from '@/components/buttons/Button';
 import { colors } from '@/utils/colors';
 import { spacing, borderRadius } from '@/utils/spacing';
+import { getMoodEmoji } from '@/utils/music';
+import { type Mood } from '@/utils/constants';
 
 interface MoodSelectorProps {
-  availableMoods: string[];
-  onMoodSelect: (mood: string | null) => void;
+  availableMoods: Mood[];
+  onMoodSelect: (mood: Mood | null) => void;
 }
-
-const MOOD_EMOJIS: { [key: string]: string } = {
-  'Energetic': '⚡',
-  'Chill': '😌',
-  'Melancholic': '🌧️',
-  'Uplifting': '☀️',
-  'Aggressive': '🔥',
-  'Romantic': '💕',
-  'Mysterious': '🌙',
-  'Nostalgic': '🍂',
-  'Experimental': '🧪',
-  'Peaceful': '🕊️',
-  'Dark': '🖤',
-  'Dreamy': '☁️',
-  'Intense': '💥',
-  'Playful': '🎈',
-  'Contemplative': '🤔',
-  'Euphoric': '🌟'
-};
 
 export function MoodSelector({ availableMoods, onMoodSelect }: MoodSelectorProps) {
   return (
@@ -52,7 +35,7 @@ export function MoodSelector({ availableMoods, onMoodSelect }: MoodSelectorProps
               activeOpacity={0.8}
             >
               <Text style={styles.moodEmoji}>
-                {MOOD_EMOJIS[mood] || '🎵'}
+                {getMoodEmoji(mood)}
               </Text>
               <Text variant="caption" color="primary" align="center" style={styles.moodLabel}>
                 {mood}

@@ -11,6 +11,12 @@ import { SelectionChip } from '@/components/selection/SelectionChip';
 import { TabBar } from '@/components/navigation/TabBar';
 import { colors } from '@/utils/colors';
 import { spacing } from '@/utils/spacing';
+import { TabHeader } from '@/components/navigation';
+import { 
+  PLATFORM_NAMES, 
+  PLATFORM_COLORS, 
+  DEFAULT_STREAMING_PLATFORM 
+} from '@/lib/platforms';
 
 const GENRES = [
   'Rock', 'Pop', 'Hip-Hop', 'Electronic', 'Jazz', 'Classical',
@@ -33,20 +39,18 @@ const DURATION_OPTIONS = [
   { label: '5min+', min: 300, max: 600 },
 ];
 
-const STREAMING_PLATFORMS = [
-  { id: 'spotify', name: 'Spotify', color: '#1DB954' },
-  { id: 'apple_music', name: 'Apple Music', color: '#FA243C' },
-  { id: 'soundcloud', name: 'SoundCloud', color: '#FF5500' },
-  { id: 'bandcamp', name: 'Bandcamp', color: '#629AA0' },
-  { id: 'youtube', name: 'YouTube Music', color: '#FF0000' },
-];
+const STREAMING_PLATFORMS = Object.entries(PLATFORM_NAMES).map(([id, name]) => ({
+  id,
+  name,
+  color: PLATFORM_COLORS[id as keyof typeof PLATFORM_COLORS],
+}));
 
 export default function PreferencesScreen() {
   const { user } = useAuth();
   const [selectedGenres, setSelectedGenres] = useState<string[]>([]);
   const [selectedMoods, setSelectedMoods] = useState<string[]>([]);
   const [selectedDuration, setSelectedDuration] = useState({ min: 60, max: 300 });
-  const [preferredPlatform, setPreferredPlatform] = useState('spotify');
+  const [preferredPlatform, setPreferredPlatform] = useState<string>(DEFAULT_STREAMING_PLATFORM);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
@@ -160,7 +164,7 @@ export default function PreferencesScreen() {
 
   if (loading) {
     return (
-      <Screen>
+      <Screen withoutBottomSafeArea>
         <View style={styles.loadingContainer}>
           <Text variant="body" color="primary">Loading preferences...</Text>
         </View>
@@ -169,16 +173,11 @@ export default function PreferencesScreen() {
   }
 
   return (
-    <Screen scrollable paddingHorizontal={24}>
-      {/* Header */}
-      <View style={styles.header}>
-        <Heading variant="h2" color="primary">
-          Preferences
-        </Heading>
-        <Text variant="body" color="secondary" style={styles.subtitle}>
-          Customize your discovery experience
-        </Text>
-      </View>
+    <Screen scrollable paddingHorizontal={24} withoutBottomSafeArea>
+      <TabHeader
+        title="Preferences"
+        subtitle="Customize your discovery experience"
+      />
 
       {/* Streaming Platform Section */}
       <View style={styles.section}>
@@ -290,16 +289,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-  header: {
-    paddingTop: spacing.xl,
-    paddingBottom: spacing.lg,
-  },
-  subtitle: {
-    fontSize: 16,
-    marginTop: spacing.sm,
-  },
   section: {
-    marginBottom: spacing.xl,
+    marginBottom: spacing.lg,
   },
   sectionTitle: {
     fontSize: 20,
