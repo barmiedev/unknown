@@ -261,7 +261,7 @@ export default function HistoryScreen() {
               How you discovered this artist
             </Heading>
             <Text variant="body" color="secondary" style={styles.discoveryText}>
-              You discovered {selectedArtist.name} by listening to "{selectedArtist.discovered_track_title}"
+              You discovered {selectedArtist.name || 'Unknown Artist'} by listening to "{selectedArtist.discovered_track_title || 'Unknown Track'}"
             </Text>
           </View>
         )}

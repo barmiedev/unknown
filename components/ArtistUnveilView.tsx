@@ -303,11 +303,11 @@ export default function ArtistUnveilView({
 
           {/* Track Info */}
           <View style={styles.trackInfo}>
-            <Text style={styles.trackTitle}>{track.title}</Text>
-            <Text style={styles.artistName}>{track.artist}</Text>
+            <Text style={styles.trackTitle}>{track.title || 'Unknown Track'}</Text>
+            <Text style={styles.artistName}>{track.artist || 'Unknown Artist'}</Text>
             <View style={styles.genreMoodContainer}>
-              <Text style={styles.genreTag}>{track.genre}</Text>
-              <Text style={styles.moodTag}>{track.mood}</Text>
+              <Text style={styles.genreTag}>{track.genre || 'Unknown Genre'}</Text>
+              <Text style={styles.moodTag}>{track.mood || 'Unknown Mood'}</Text>
             </View>
           </View>
 
@@ -387,7 +387,7 @@ export default function ArtistUnveilView({
             <>
               {/* Connect with Artist Section */}
               <View style={styles.section}>
-                <Text style={styles.sectionTitle}>Connect with {artist.name}</Text>
+                <Text style={styles.sectionTitle}>Connect with {artist.name || 'Artist'}</Text>
                 
                 {/* Follow Button */}
                 <TouchableOpacity
@@ -445,7 +445,7 @@ export default function ArtistUnveilView({
                     {artist.genres && artist.genres.length > 0 && (
                       <View style={styles.genresContainer}>
                         {artist.genres.map((genre) => (
-                          <Text key={genre} style={styles.artistGenreTag}>{genre}</Text>
+                          <Text key={genre} style={styles.artistGenreTag}>{genre || 'Unknown'}</Text>
                         ))}
                       </View>
                     )}
