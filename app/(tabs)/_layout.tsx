@@ -1,6 +1,6 @@
 import { Tabs } from 'expo-router';
 import { Chrome as Home, History, Settings, User } from 'lucide-react-native';
-import Animated, { FadeIn, FadeOut } from 'react-native-reanimated';
+import { colors } from '@/utils/colors';
 
 export default function TabLayout() {
   return (
@@ -8,7 +8,7 @@ export default function TabLayout() {
       screenOptions={{
         headerShown: false,
         tabBarStyle: {
-          backgroundColor: '#19161a',
+          backgroundColor: colors.background,
           borderTopColor: '#28232a',
           borderTopWidth: 1,
           height: 100,
@@ -24,7 +24,7 @@ export default function TabLayout() {
           fontSize: 12,
           fontFamily: 'Chillax-Regular',
         },
-        // Add smooth transitions between tabs
+        // Smooth transitions between tabs
         animation: 'fade',
         animationDuration: 300,
       }}>

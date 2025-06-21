@@ -49,7 +49,7 @@ import { Screen } from '@/components/layout/Screen';
 // Animation Background Component - placeholder for future animation files
 function AnimationBackground({ animationUrl, children }: AnimationBackgroundProps) {
   return (
-    <View style={{ flex: 1, position: 'relative' }}>
+    <View style={{ flex: 1, position: 'relative', backgroundColor: colors.background }}>
       {/* Placeholder for future animation - transparent background */}
       <View style={{ 
         position: 'absolute', 
@@ -63,7 +63,7 @@ function AnimationBackground({ animationUrl, children }: AnimationBackgroundProp
       </View>
       
       {/* Content overlay */}
-      <View style={{ flex: 1, zIndex: 1 }}>
+      <View style={{ flex: 1, zIndex: 1, backgroundColor: colors.background }}>
         {children}
       </View>
     </View>
@@ -124,6 +124,7 @@ export default function DiscoverScreen() {
 
   // Ref hooks - always called in the same order
   const reviewInputRef = useRef<TextInput>(null);
+  const autoPlayTriggeredRef = useRef(false);
 
   // Animation shared values - always called in the same order
   const pulseAnimation = useSharedValue(1);
@@ -349,6 +350,17 @@ export default function DiscoverScreen() {
     }
   }, [position, duration, ratingThreshold, state]);
 
+  // Auto-play effect when track is loaded and state is playing
+  useEffect(() => {
+    if (currentTrack && state === 'playing' && !autoPlayTriggeredRef.current) {
+      autoPlayTriggeredRef.current = true;
+      // Small delay to ensure the track is properly loaded
+      setTimeout(() => {
+        playPauseAudio();
+      }, 500);
+    }
+  }, [currentTrack, state]);
+
   // Function definitions
   const animateRatingAppearance = () => {
     // Container animation - faster
@@ -460,15 +472,10 @@ export default function DiscoverScreen() {
     setState('loading');
     setIsLoading(true);
     
-    // Wait for animation to complete, then load track and auto-play
+    // Wait for animation to complete, then load track
     setTimeout(async () => {
-      await loadNextTrack(false, mood, mood === null); // Broaden search if "Surprise me"
-      // Auto-play the track after loading
-      setTimeout(() => {
-        if (currentTrack) {
-          playPauseAudio();
-        }
-      }, 500);
+      // For "Surprise me" (mood === null), always broaden search to avoid "no tracks" scenario
+      await loadNextTrack(false, mood, mood === null);
     }, 300);
   };
 
@@ -484,6 +491,9 @@ export default function DiscoverScreen() {
         await sound.unloadAsync();
         setSound(null);
       }
+
+      // Reset auto-play trigger
+      autoPlayTriggeredRef.current = false;
 
       // Get tracks that user hasn't rated yet
       const { data: ratedTrackIds, error: ratedError } = await supabase
@@ -865,126 +875,136 @@ export default function DiscoverScreen() {
   // No tracks in preferences state
   if (state === 'no_tracks_in_preferences') {
     return (
-      <Animated.View entering={FadeIn.duration(300)} exiting={FadeOut.duration(300)} style={{ flex: 1 }}>
-        <Screen backgroundColor="#19161a" withoutBottomSafeArea paddingHorizontal={0}>
-          <View style={{ flex: 1, paddingHorizontal: spacing.lg }}>
-            <SessionHeader
-              selectedMood={selectedSessionMood}
-              onNewSession={handleNewSession}
-            />
-            <NoTracksInPreferencesState
-              onBroadenSearch={handleBroadenSearch}
-              onChooseDifferentMood={handleChooseDifferentMood}
-              selectedMood={selectedSessionMood}
-            />
-          </View>
-        </Screen>
-      </Animated.View>
+      <View style={{ flex: 1, backgroundColor: colors.background }}>
+        <Animated.View entering={FadeIn.duration(300)} exiting={FadeOut.duration(300)} style={{ flex: 1 }}>
+          <Screen backgroundColor={colors.background} withoutBottomSafeArea paddingHorizontal={0}>
+            <View style={{ flex: 1, paddingHorizontal: spacing.lg }}>
+              <SessionHeader
+                selectedMood={selectedSessionMood}
+                onNewSession={handleNewSession}
+              />
+              <NoTracksInPreferencesState
+                onBroadenSearch={handleBroadenSearch}
+                onChooseDifferentMood={handleChooseDifferentMood}
+                selectedMood={selectedSessionMood}
+              />
+            </View>
+          </Screen>
+        </Animated.View>
+      </View>
     );
   }
 
   // No tracks at all state
   if (state === 'no_tracks_at_all') {
     return (
-      <Animated.View entering={FadeIn.duration(300)} exiting={FadeOut.duration(300)} style={{ flex: 1 }}>
-        <Screen backgroundColor="#19161a" withoutBottomSafeArea paddingHorizontal={0}>
-          <View style={{ flex: 1, paddingHorizontal: spacing.lg }}>
-            <SessionHeader
-              selectedMood={selectedSessionMood}
-              onNewSession={handleNewSession}
-            />
-            <NoTracksAtAllState
-              onGoToHistory={handleGoToHistory}
-              totalTracksRated={totalTracksRated}
-            />
-          </View>
-        </Screen>
-      </Animated.View>
+      <View style={{ flex: 1, backgroundColor: colors.background }}>
+        <Animated.View entering={FadeIn.duration(300)} exiting={FadeOut.duration(300)} style={{ flex: 1 }}>
+          <Screen backgroundColor={colors.background} withoutBottomSafeArea paddingHorizontal={0}>
+            <View style={{ flex: 1, paddingHorizontal: spacing.lg }}>
+              <SessionHeader
+                selectedMood={selectedSessionMood}
+                onNewSession={handleNewSession}
+              />
+              <NoTracksAtAllState
+                onGoToHistory={handleGoToHistory}
+                totalTracksRated={totalTracksRated}
+              />
+            </View>
+          </Screen>
+        </Animated.View>
+      </View>
     );
   }
 
   // Mood Selection Screen
   if (state === 'mood_selection') {
     return (
-      <Animated.View entering={FadeIn.duration(300)} exiting={FadeOut.duration(300)} style={{ flex: 1 }}>
-        <Screen backgroundColor="#19161a" withoutBottomSafeArea>
-          <AnimationBackground>
-            <View style={{ flex: 1, paddingHorizontal: spacing.lg }}>
-              {/* Logo at top left */}
-              <View style={{ 
-                position: 'absolute', 
-                top: spacing.md, 
-                left: spacing.lg, 
-                zIndex: 10 
-              }}>
-                <Text variant="button" color="primary" style={{ fontSize: 20 }}>
-                  unknown
-                </Text>
-              </View>
+      <View style={{ flex: 1, backgroundColor: colors.background }}>
+        <Animated.View entering={FadeIn.duration(300)} exiting={FadeOut.duration(300)} style={{ flex: 1 }}>
+          <Screen backgroundColor={colors.background} withoutBottomSafeArea>
+            <AnimationBackground>
+              <View style={{ flex: 1, paddingHorizontal: spacing.lg }}>
+                {/* Logo at top left */}
+                <View style={{ 
+                  position: 'absolute', 
+                  top: spacing.md, 
+                  left: spacing.lg, 
+                  zIndex: 10 
+                }}>
+                  <Text variant="button" color="primary" style={{ fontSize: 20 }}>
+                    unknown
+                  </Text>
+                </View>
 
-              {/* Header */}
-              <View style={{ alignItems: 'center', paddingTop: spacing.md, paddingBottom: spacing.xxl }}>
-                <Heading variant="h3" color="primary" align="center" style={{ fontSize: 28, marginBottom: spacing.xl, marginTop: spacing.xl }}>
-                  How do you feel today?
-                </Heading>
-              </View>
+                {/* Header */}
+                <View style={{ alignItems: 'center', paddingTop: spacing.md, paddingBottom: spacing.xxl }}>
+                  <Heading variant="h3" color="primary" align="center" style={{ fontSize: 28, marginBottom: spacing.xl, marginTop: spacing.xl }}>
+                    How do you feel today?
+                  </Heading>
+                </View>
 
-              {/* Mood Buttons */}
-              <MoodButtons
-                availableMoods={availableMoods}
-                onMoodSelect={handleMoodSelection}
-                style={{ flex: 1, justifyContent: 'center' }}
-              />
+                {/* Mood Buttons */}
+                <MoodButtons
+                  availableMoods={availableMoods}
+                  onMoodSelect={handleMoodSelection}
+                  style={{ flex: 1, justifyContent: 'center' }}
+                />
 
-              {/* Surprise Me Button */}
-              <View style={{ alignItems: 'center', paddingBottom: spacing.xxl }}>
-                <Button
-                  variant="primary"
-                  size="large"
-                  onPress={() => handleMoodSelection(null)}
-                  icon={<Shuffle size={20} color={colors.text.primary} strokeWidth={2} />}
-                  iconPosition="left"
-                  style={{
-                    shadowColor: colors.primary,
-                    shadowOffset: { width: 0, height: 6 },
-                    shadowOpacity: 0.4,
-                    shadowRadius: 12,
-                    elevation: 8,
-                  }}
-                >
-                  Surprise me
-                </Button>
+                {/* Surprise Me Button */}
+                <View style={{ alignItems: 'center', paddingBottom: spacing.xxl }}>
+                  <Button
+                    variant="primary"
+                    size="large"
+                    onPress={() => handleMoodSelection(null)}
+                    icon={<Shuffle size={20} color={colors.text.primary} strokeWidth={2} />}
+                    iconPosition="left"
+                    style={{
+                      shadowColor: colors.primary,
+                      shadowOffset: { width: 0, height: 6 },
+                      shadowOpacity: 0.4,
+                      shadowRadius: 12,
+                      elevation: 8,
+                    }}
+                  >
+                    Surprise me
+                  </Button>
+                </View>
               </View>
-            </View>
-          </AnimationBackground>
-        </Screen>
-      </Animated.View>
+            </AnimationBackground>
+          </Screen>
+        </Animated.View>
+      </View>
     );
   }
 
   if (isLoading) {
     return (
-      <Animated.View entering={FadeIn.duration(300)} exiting={FadeOut.duration(300)} style={{ flex: 1 }}>
-        <Screen backgroundColor="#19161a" withoutBottomSafeArea>
-          <LoadingState
-            selectedMood={selectedSessionMood}
-          />
-        </Screen>
-      </Animated.View>
+      <View style={{ flex: 1, backgroundColor: colors.background }}>
+        <Animated.View entering={FadeIn.duration(300)} exiting={FadeOut.duration(300)} style={{ flex: 1 }}>
+          <Screen backgroundColor={colors.background} withoutBottomSafeArea>
+            <LoadingState
+              selectedMood={selectedSessionMood}
+            />
+          </Screen>
+        </Animated.View>
+      </View>
     );
   }
 
   if (error) {
     return (
-      <Animated.View entering={FadeIn.duration(300)} exiting={FadeOut.duration(300)} style={{ flex: 1 }}>
-        <Screen backgroundColor="#19161a" withoutBottomSafeArea>
-          <ErrorState
-            error={error}
-            onRetry={() => loadNextTrack(false, selectedSessionMood)}
-            onNewSession={handleNewSession}
-          />
-        </Screen>
-      </Animated.View>
+      <View style={{ flex: 1, backgroundColor: colors.background }}>
+        <Animated.View entering={FadeIn.duration(300)} exiting={FadeOut.duration(300)} style={{ flex: 1 }}>
+          <Screen backgroundColor={colors.background} withoutBottomSafeArea>
+            <ErrorState
+              error={error}
+              onRetry={() => loadNextTrack(false, selectedSessionMood)}
+              onNewSession={handleNewSession}
+            />
+          </Screen>
+        </Animated.View>
+      </View>
     );
   }
 
@@ -997,87 +1017,91 @@ export default function DiscoverScreen() {
     };
     
     return (
-      <Animated.View entering={FadeIn.duration(300)} exiting={FadeOut.duration(300)} style={{ flex: 1 }}>
-        <ArtistUnveilView
-          track={trackWithRequiredArtwork}
-          onContinueListening={handleContinueListening}
-          onDiscoverNext={handleDiscoverNext}
-          userRating={rating}
-          userReview={review}
-          withoutBottomSafeArea
-        />
-      </Animated.View>
+      <View style={{ flex: 1, backgroundColor: colors.background }}>
+        <Animated.View entering={FadeIn.duration(300)} exiting={FadeOut.duration(300)} style={{ flex: 1 }}>
+          <ArtistUnveilView
+            track={trackWithRequiredArtwork}
+            onContinueListening={handleContinueListening}
+            onDiscoverNext={handleDiscoverNext}
+            userRating={rating}
+            userReview={review}
+            withoutBottomSafeArea
+          />
+        </Animated.View>
+      </View>
     );
   }
 
   return (
     <TouchableWithoutFeedback onPress={dismissKeyboard}>
-      <Animated.View entering={FadeIn.duration(300)} exiting={FadeOut.duration(300)} style={{ flex: 1 }}>
-        <Screen backgroundColor="#19161a" withoutBottomSafeArea paddingHorizontal={0}>
-          <AnimationBackground>
-            <View style={{ paddingHorizontal: spacing.lg }}>
-              <SessionHeader
-                selectedMood={selectedSessionMood}
-                onNewSession={handleNewSession}
+      <View style={{ flex: 1, backgroundColor: colors.background }}>
+        <Animated.View entering={FadeIn.duration(300)} exiting={FadeOut.duration(300)} style={{ flex: 1 }}>
+          <Screen backgroundColor={colors.background} withoutBottomSafeArea paddingHorizontal={0}>
+            <AnimationBackground>
+              <View style={{ paddingHorizontal: spacing.lg }}>
+                <SessionHeader
+                  selectedMood={selectedSessionMood}
+                  onNewSession={handleNewSession}
+                />
+              </View>
+
+              {showWelcomeTip && (
+                <WelcomeTip />
+              )}
+
+              <ThankYouOverlay
+                visible={showThankYou}
               />
-            </View>
 
-            {showWelcomeTip && (
-              <WelcomeTip />
-            )}
+              <TransitionOverlay
+                visible={isTransitioning}
+              />
 
-            <ThankYouOverlay
-              visible={showThankYou}
-            />
-
-            <TransitionOverlay
-              visible={isTransitioning}
-            />
-
-            {/* Main Player Area */}
-            <KeyboardAvoidingView 
-              style={{ flex: 1 }}
-              behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-            >
-              <Animated.View style={[fadeStyle, { height: '100%', width: '100%', alignItems: 'center', paddingHorizontal: spacing.lg }]}>
-                {state === 'full_listening' && currentTrack ? (
-                  <FullListeningMode
-                    track={currentTrack}
-                    isPlaying={isPlaying}
-                    onPlayPause={playPauseAudio}
-                    position={position}
-                    duration={duration}
-                    userRating={rating}
-                    userReview={review}
-                    onSkip={skipTrack}
-                  />
-                ) : !showRating ? (
-                  <PlaybackControls
-                    isPlaying={isPlaying}
-                    onPlayPause={playPauseAudio}
-                    position={position}
-                    duration={duration}
-                    canSkip={canSkip}
-                    onSkip={skipTrack}
-                  />
-                ) : (
-                  <RatingInterface
-                    onStarPress={handleStarPress}
-                    rating={rating}
-                    showReviewInput={showReviewInput}
-                    review={review}
-                    onReviewChange={setReview}
-                    onSubmitWithReview={handleSubmitWithReview}
-                    isReviewFocused={isReviewFocused}
-                    setIsReviewFocused={setIsReviewFocused}
-                    reviewInputRef={reviewInputRef}
-                  />
-                )}
-              </Animated.View>
-            </KeyboardAvoidingView>
-          </AnimationBackground>
-        </Screen>
-      </Animated.View>
+              {/* Main Player Area */}
+              <KeyboardAvoidingView 
+                style={{ flex: 1 }}
+                behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+              >
+                <Animated.View style={[fadeStyle, { height: '100%', width: '100%', alignItems: 'center', paddingHorizontal: spacing.lg }]}>
+                  {state === 'full_listening' && currentTrack ? (
+                    <FullListeningMode
+                      track={currentTrack}
+                      isPlaying={isPlaying}
+                      onPlayPause={playPauseAudio}
+                      position={position}
+                      duration={duration}
+                      userRating={rating}
+                      userReview={review}
+                      onSkip={skipTrack}
+                    />
+                  ) : !showRating ? (
+                    <PlaybackControls
+                      isPlaying={isPlaying}
+                      onPlayPause={playPauseAudio}
+                      position={position}
+                      duration={duration}
+                      canSkip={canSkip}
+                      onSkip={skipTrack}
+                    />
+                  ) : (
+                    <RatingInterface
+                      onStarPress={handleStarPress}
+                      rating={rating}
+                      showReviewInput={showReviewInput}
+                      review={review}
+                      onReviewChange={setReview}
+                      onSubmitWithReview={handleSubmitWithReview}
+                      isReviewFocused={isReviewFocused}
+                      setIsReviewFocused={setIsReviewFocused}
+                      reviewInputRef={reviewInputRef}
+                    />
+                  )}
+                </Animated.View>
+              </KeyboardAvoidingView>
+            </AnimationBackground>
+          </Screen>
+        </Animated.View>
+      </View>
     </TouchableWithoutFeedback>
   );
 }
