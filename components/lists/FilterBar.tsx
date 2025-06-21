@@ -9,7 +9,7 @@ import { colors } from '@/utils/colors';
 import { spacing, borderRadius } from '@/utils/spacing';
 import { getMoodEmoji, getGenreEmoji } from '@/utils/music';
 
-export type SortOption = 'date_desc' | 'date_asc' | 'title_asc' | 'title_desc' | 'artist_asc' | 'artist_desc';
+export type SortOption = 'date_desc' | 'date_asc' | 'title_asc' | 'title_desc' | 'artist_asc' | 'artist_desc' | 'name_asc' | 'name_desc';
 
 interface FilterBarProps {
   selectedGenre: string | null;
@@ -22,15 +22,23 @@ interface FilterBarProps {
   onSortChange: (sort: SortOption) => void;
   totalTracks: number;
   filteredCount: number;
+  isArtistTab?: boolean;
 }
 
-const SORT_OPTIONS: { value: SortOption; label: string }[] = [
+const TRACK_SORT_OPTIONS: { value: SortOption; label: string }[] = [
   { value: 'date_desc', label: 'Newest' },
   { value: 'date_asc', label: 'Oldest' },
   { value: 'title_asc', label: 'Song A-Z' },
   { value: 'title_desc', label: 'Song Z-A' },
   { value: 'artist_asc', label: 'Artist A-Z' },
   { value: 'artist_desc', label: 'Artist Z-A' },
+];
+
+const ARTIST_SORT_OPTIONS: { value: SortOption; label: string }[] = [
+  { value: 'date_desc', label: 'Newest' },
+  { value: 'date_asc', label: 'Oldest' },
+  { value: 'name_asc', label: 'Name A-Z' },
+  { value: 'name_desc', label: 'Name Z-A' },
 ];
 
 export function FilterBar({
@@ -44,6 +52,7 @@ export function FilterBar({
   onSortChange,
   totalTracks,
   filteredCount,
+  isArtistTab = false,
 }: FilterBarProps) {
   const [showGenreModal, setShowGenreModal] = useState(false);
   const [showMoodModal, setShowMoodModal] = useState(false);
@@ -54,6 +63,8 @@ export function FilterBar({
   const isSortFiltered = selectedSort !== 'date_desc';
   const hasActiveFilters = isGenreFiltered || isMoodFiltered || isSortFiltered;
   const showClearFilters = totalTracks > 0 && filteredCount === 0 && hasActiveFilters;
+
+  const sortOptions = isArtistTab ? ARTIST_SORT_OPTIONS : TRACK_SORT_OPTIONS;
 
   const clearAllFilters = () => {
     onGenreChange(null);
@@ -164,7 +175,7 @@ export function FilterBar({
 
         {/* Sort Filter */}
         <FilterButton
-          label={SORT_OPTIONS.find(opt => opt.value === selectedSort)?.label || 'Sort'}
+          label={sortOptions.find(opt => opt.value === selectedSort)?.label || 'Sort'}
           onPress={() => setShowSortModal(true)}
           isActive={showSortModal}
           isFiltered={isSortFiltered}
@@ -175,17 +186,17 @@ export function FilterBar({
       {showClearFilters && (
         <View style={styles.clearFiltersContainer}>
           <Text variant="body" color="secondary" style={styles.clearFiltersText}>
-            No tracks match your current filters
+            No {isArtistTab ? 'artists' : 'tracks'} match your current filters
           </Text>
           <Button
             variant="secondary"
             size="small"
             onPress={clearAllFilters}
-            icon={<RotateCcw size={16} color={colors.text.primary} strokeWidth={2} />}
+            icon={<RotateCcw size={14} color={colors.text.primary} strokeWidth={2} />}
             iconPosition="left"
             style={styles.clearFiltersButton}
           >
-            Clear Filters
+            <Text style={styles.clearFiltersButtonText}>Clear Filters</Text>
           </Button>
         </View>
       )}
@@ -254,7 +265,7 @@ export function FilterBar({
         onClose={() => setShowSortModal(false)}
         title="Sort by"
       >
-        {SORT_OPTIONS.map((option) => (
+        {sortOptions.map((option) => (
           <SelectionChip
             key={option.value}
             label={option.label}
@@ -315,8 +326,8 @@ const styles = StyleSheet.create({
     fontSize: 13,
     textAlign: 'left',
     overflow: 'hidden',
-    lineHeight: 16, // Fixed line height to prevent wrapping
-    height: 16, // Fixed height to match line height
+    lineHeight: 16,
+    height: 16,
   },
   chevronIcon: {
     flexShrink: 0,
@@ -324,7 +335,7 @@ const styles = StyleSheet.create({
     height: 14,
   },
   clearFiltersContainer: {
-    backgroundColor: colors.surface,
+    backgroundColor: 'transparent',
     borderRadius: borderRadius.md,
     padding: spacing.md,
     marginTop: spacing.sm,
@@ -338,6 +349,9 @@ const styles = StyleSheet.create({
   clearFiltersButton: {
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.sm,
+  },
+  clearFiltersButtonText: {
+    fontSize: 12,
   },
   modalOverlay: {
     flex: 1,
