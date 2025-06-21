@@ -1,7 +1,8 @@
 import React from 'react';
-import { Text, StyleSheet } from 'react-native';
+import { StyleSheet } from 'react-native';
 import { colors } from '@/utils/colors';
 import { fonts } from '@/lib/fonts';
+import { Text } from './Text';
 
 interface HeadingProps {
   children: React.ReactNode;
@@ -32,12 +33,15 @@ export function Heading({
   style 
 }: HeadingProps) {
   return (
-    <Text style={[
-      headingStyles[variant],
-      colorStyles[color],
-      { textAlign: align },
-      style
-    ]}>
+    <Text 
+      variant="body"
+      color={color}
+      align={align}
+      style={[
+        headingStyles[variant],
+        style
+      ]}
+    >
       {children}
     </Text>
   );
