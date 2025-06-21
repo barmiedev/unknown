@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { View, Text, TouchableOpacity, Alert, Image, ActivityIndicator, TextInput, Keyboard, TouchableWithoutFeedback, ScrollView } from 'react-native';
+import { View, Text, TouchableOpacity, Alert, Image, ActivityIndicator, TextInput, Keyboard, TouchableWithoutFeedback, ScrollView, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Play, Pause, Star, SkipForward, Shuffle, Gift } from 'lucide-react-native';
 import { router } from 'expo-router';
@@ -108,6 +108,29 @@ function AnimationBackground({ animationUrl, children }: AnimationBackgroundProp
     </View>
   );
 }
+
+// Helper function to check if audio URL is web-compatible
+const isWebCompatibleAudio = (url: string): boolean => {
+  if (Platform.OS !== 'web') return true;
+  
+  const webCompatibleFormats = ['.mp3', '.wav', '.ogg', '.m4a', '.aac'];
+  const urlLower = url.toLowerCase();
+  return webCompatibleFormats.some(format => urlLower.includes(format));
+};
+
+// Helper function to get a fallback audio URL for web
+const getWebCompatibleAudioUrl = (originalUrl: string): string => {
+  if (Platform.OS !== 'web') return originalUrl;
+  
+  // If the original URL is already web-compatible, return it
+  if (isWebCompatibleAudio(originalUrl)) {
+    return originalUrl;
+  }
+  
+  // For demo purposes, return a placeholder web-compatible audio file
+  // In production, you would convert/serve the audio in a web-compatible format
+  return 'https://www.soundjay.com/misc/sounds/bell-ringing-05.wav';
+};
 
 export default function DiscoverScreen() {
   // All hooks must be called at the top level in the same order every time
@@ -675,6 +698,9 @@ export default function DiscoverScreen() {
         throw new Error('No audio URL available');
       }
 
+      // Get web-compatible audio URL
+      const audioUrl = getWebCompatibleAudioUrl(currentTrack.audio_url);
+
       if (sound) {
         const status = await sound.getStatusAsync();
         if (status.isLoaded) {
@@ -691,8 +717,15 @@ export default function DiscoverScreen() {
           }
         }
       } else {
+        // Check if the audio URL is web-compatible before attempting to load
+        if (Platform.OS === 'web' && !isWebCompatibleAudio(currentTrack.audio_url)) {
+          console.warn('Audio file may not be web-compatible:', currentTrack.audio_url);
+          setError('Audio format not supported in web browser. Please use MP3, WAV, or OGG format.');
+          return;
+        }
+
         const { sound: newSound } = await Audio.Sound.createAsync(
-          { uri: currentTrack.audio_url },
+          { uri: audioUrl },
           { shouldPlay: true },
           onPlaybackStatusUpdate
         );
@@ -701,7 +734,19 @@ export default function DiscoverScreen() {
       }
     } catch (error) {
       console.error('Error playing audio:', error);
-      Alert.alert('Error', 'Failed to play audio');
+      
+      // Provide more specific error messages for web
+      if (Platform.OS === 'web') {
+        if (error.message?.includes('no supported source')) {
+          setError('Audio format not supported in web browser. Please ensure the audio file is in MP3, WAV, or OGG format and served with proper CORS headers.');
+        } else if (error.message?.includes('CORS')) {
+          setError('Unable to load audio due to CORS restrictions. Please ensure the audio server allows cross-origin requests.');
+        } else {
+          setError('Failed to load audio. Please check the audio file format and server configuration.');
+        }
+      } else {
+        setError('Failed to play audio. Please try again.');
+      }
     }
   };
 
