@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { View, ScrollView, TouchableOpacity, Image, StyleSheet, Linking, Alert, Modal } from 'react-native';
 import { 
   Heart,
@@ -58,11 +58,17 @@ export default function ArtistUnveilView({
   const [isSubscribed, setIsSubscribed] = useState(false);
   const [loading, setLoading] = useState(true);
   const [showOtherPlatforms, setShowOtherPlatforms] = useState(false);
+  const isMountedRef = useRef(true);
 
   useEffect(() => {
+    setLoading(true);
     loadArtistData();
     loadUserPreferences();
-  }, [track]);
+    
+    return () => {
+      isMountedRef.current = false;
+    };
+  }, [track.id, user?.id]);
 
   const loadArtistData = async () => {
     try {
@@ -89,7 +95,9 @@ export default function ArtistUnveilView({
         const artist = Array.isArray(artistData.artists) ? artistData.artists[0] : artistData.artists;
         
         if (artist) {
-          setArtist(artist);
+          if (isMountedRef.current) {
+            setArtist(artist);
+          }
 
           // Get social links
           const { data: socialData, error: socialError } = await supabase
@@ -98,7 +106,9 @@ export default function ArtistUnveilView({
             .eq('artist_id', artist.id);
 
           if (socialError) throw socialError;
-          setSocialLinks(socialData || []);
+          if (isMountedRef.current) {
+            setSocialLinks(socialData || []);
+          }
 
           // Check if user is subscribed
           if (user?.id) {
@@ -109,7 +119,9 @@ export default function ArtistUnveilView({
               .eq('artist_id', artist.id);
 
             // Check if subscription exists by checking if data array is not empty
-            setIsSubscribed(Boolean(subscriptionData && subscriptionData.length > 0));
+            if (isMountedRef.current) {
+              setIsSubscribed(Boolean(subscriptionData && subscriptionData.length > 0));
+            }
           }
         }
       }
@@ -121,12 +133,16 @@ export default function ArtistUnveilView({
         .eq('track_id', track.id);
 
       if (streamingError) throw streamingError;
-      setStreamingLinks(streamingData || []);
+      if (isMountedRef.current) {
+        setStreamingLinks(streamingData || []);
+      }
 
     } catch (error) {
       console.error('Error loading artist data:', error);
     } finally {
-      setLoading(false);
+      if (isMountedRef.current) {
+        setLoading(false);
+      }
     }
   };
 
@@ -142,7 +158,9 @@ export default function ArtistUnveilView({
         .maybeSingle();
 
       if (data) {
-        setPreferredPlatform(data.preferred_platform);
+        if (isMountedRef.current) {
+          setPreferredPlatform(data.preferred_platform);
+        }
       }
     } catch (error) {
       console.error('Error loading user preferences:', error);
@@ -196,15 +214,13 @@ export default function ArtistUnveilView({
     }
   };
 
-  const getPreferredStreamingLink = () => {
+  const getPreferredStreamingLink = useCallback(() => {
     return streamingLinks.find(link => link.platform === preferredPlatform) || streamingLinks[0];
-  };
+  }, [streamingLinks, preferredPlatform]);
 
-  const getOtherStreamingLinks = () => {
+  const getOtherStreamingLinks = useCallback(() => {
     return streamingLinks.filter(link => link.platform !== preferredPlatform);
-  };
-
-  const otherStreamingLinks = getOtherStreamingLinks();
+  }, [streamingLinks, preferredPlatform]);
 
   if (loading) {
     return (
@@ -310,7 +326,7 @@ export default function ArtistUnveilView({
                       variant="secondary"
                       size="medium"
                       onPress={() => handleOpenLink(getPreferredStreamingLink()!.url)}
-                      style={[styles.preferredStreamingButton, { flex: 1, marginRight: otherStreamingLinks.length > 0 ? 4 : 0 }]}
+                      style={[styles.preferredStreamingButton, { flex: 1, marginRight: getOtherStreamingLinks().length > 0 ? 4 : 0 }]}
                     >
                       <Text 
                         variant="body" 
@@ -325,7 +341,7 @@ export default function ArtistUnveilView({
                   )}
 
                   {/* Listen Elsewhere Button */}
-                  {otherStreamingLinks.length > 0 && (
+                  {getOtherStreamingLinks().length > 0 && (
                     <Button
                       variant="secondary"
                       size="medium"
@@ -485,7 +501,7 @@ export default function ArtistUnveilView({
             </View>
             
             <View style={styles.modalPlatformsList}>
-              {otherStreamingLinks.map((link) => (
+              {getOtherStreamingLinks().map((link) => (
                 <Button
                   key={link.platform}
                   variant="secondary"
