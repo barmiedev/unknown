@@ -211,19 +211,25 @@ export default function ProfileScreen() {
     );
   };
 
-  const handleGenreModalClose = () => {
+  const handleGenreModalClose = (save: boolean) => () => {
     setShowGenreModal(false);
-    savePreferences();
+    if (save) {
+      savePreferences();
+    }
   };
 
-  const handleMoodModalClose = () => {
+  const handleMoodModalClose = (save: boolean) => () => {
     setShowMoodModal(false);
-    savePreferences();
+    if (save) {
+      savePreferences();
+    }
   };
 
-  const handlePlatformModalClose = () => {
+  const handlePlatformModalClose = (save: boolean) => () => {
     setShowPlatformModal(false);
-    savePreferences();
+    if (save) {
+      savePreferences();
+    }
   };
 
   if (loading) {
@@ -354,9 +360,6 @@ export default function ProfileScreen() {
               <Text variant="body" color="primary" style={styles.settingTitle}>
                 Account Settings
               </Text>
-              <Text variant="caption" color="secondary" style={styles.settingSubtitle}>
-                Update display name and password
-              </Text>
             </View>
             <ChevronRight size={16} color={colors.text.secondary} strokeWidth={2} />
           </View>
@@ -366,17 +369,14 @@ export default function ProfileScreen() {
           variant="setting" 
           size="medium" 
           onPress={handleSignOut}
-          icon={<LogOut size={20} color={colors.status.error} strokeWidth={2} />}
+          icon={<LogOut size={20} color={colors.text.primary} strokeWidth={2} />}
           iconPosition="left"
-          style={[styles.settingButton, styles.signOutButton]}
+          style={[styles.settingButton]}
         >
           <View style={styles.settingContent}>
             <View style={styles.settingTextContainer}>
-              <Text variant="body" color="statusError" style={styles.settingTitle}>
+              <Text variant="body" style={styles.settingTitle}>
                 Sign Out
-              </Text>
-              <Text variant="caption" color="secondary" style={styles.settingSubtitle}>
-                Sign out of your account
               </Text>
             </View>
             <ChevronRight size={16} color={colors.status.error} strokeWidth={2} />
@@ -389,14 +389,14 @@ export default function ProfileScreen() {
         visible={showGenreModal}
         transparent={true}
         animationType="fade"
-        onRequestClose={handleGenreModalClose}
+        onRequestClose={handleGenreModalClose(false)}
       >
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
             <View style={styles.modalHeader}>
               <Heading variant="h4" color="primary">Select Genres</Heading>
               <TouchableOpacity
-                onPress={handleGenreModalClose}
+                onPress={handleGenreModalClose(false)}
                 style={styles.modalCloseButton}
               >
                 <X size={24} color={colors.text.secondary} strokeWidth={2} />
@@ -420,8 +420,8 @@ export default function ProfileScreen() {
             <View style={styles.modalFooter}>
               <Button
                 variant="primary"
-                size="large"
-                onPress={handleGenreModalClose}
+                size="medium"
+                onPress={handleGenreModalClose(true)}
                 loading={saving}
                 icon={<Save size={20} color={colors.text.primary} strokeWidth={2} />}
                 iconPosition="left"
@@ -438,14 +438,14 @@ export default function ProfileScreen() {
         visible={showMoodModal}
         transparent={true}
         animationType="fade"
-        onRequestClose={handleMoodModalClose}
+        onRequestClose={handleMoodModalClose(false)}
       >
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
             <View style={styles.modalHeader}>
               <Heading variant="h4" color="primary">Select Moods</Heading>
               <TouchableOpacity
-                onPress={handleMoodModalClose}
+                onPress={handleMoodModalClose(false)}
                 style={styles.modalCloseButton}
               >
                 <X size={24} color={colors.text.secondary} strokeWidth={2} />
@@ -469,8 +469,8 @@ export default function ProfileScreen() {
             <View style={styles.modalFooter}>
               <Button
                 variant="primary"
-                size="large"
-                onPress={handleMoodModalClose}
+                size="medium"
+                onPress={handleMoodModalClose(true)}
                 loading={saving}
                 icon={<Save size={20} color={colors.text.primary} strokeWidth={2} />}
                 iconPosition="left"
@@ -487,14 +487,14 @@ export default function ProfileScreen() {
         visible={showPlatformModal}
         transparent={true}
         animationType="fade"
-        onRequestClose={handlePlatformModalClose}
+        onRequestClose={handlePlatformModalClose(false)}
       >
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
             <View style={styles.modalHeader}>
               <Heading variant="h4" color="primary">Streaming Platform</Heading>
               <TouchableOpacity
-                onPress={handlePlatformModalClose}
+                onPress={handlePlatformModalClose(false)}
                 style={styles.modalCloseButton}
               >
                 <X size={24} color={colors.text.secondary} strokeWidth={2} />
@@ -518,8 +518,8 @@ export default function ProfileScreen() {
             <View style={styles.modalFooter}>
               <Button
                 variant="primary"
-                size="large"
-                onPress={handlePlatformModalClose}
+                size="medium"
+                onPress={handlePlatformModalClose(true)}
                 loading={saving}
                 icon={<Save size={20} color={colors.text.primary} strokeWidth={2} />}
                 iconPosition="left"
@@ -585,7 +585,7 @@ export default function ProfileScreen() {
             <View style={styles.modalFooter}>
               <Button
                 variant="primary"
-                size="large"
+                size="medium"
                 onPress={saveAccountSettings}
                 loading={accountSaving}
                 icon={<Save size={20} color={colors.text.primary} strokeWidth={2} />}
@@ -645,9 +645,6 @@ const styles = StyleSheet.create({
   },
   settingSubtitle: {
     fontSize: 14,
-  },
-  signOutButton: {
-    marginTop: spacing.md,
   },
   modalOverlay: {
     flex: 1,
