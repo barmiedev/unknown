@@ -390,7 +390,7 @@ export default function HistoryScreen() {
   }
 
   return (
-    <View style={{ flex: 1, backgroundColor: colors.background }}>
+    <Animated.View entering={FadeIn.duration(300)} style={{ flex: 1, backgroundColor: colors.background }}>
       <Screen paddingHorizontal={24} withoutBottomSafeArea>
         {/* Fixed Header Section */}
         <View style={styles.fixedHeader}>
@@ -504,7 +504,7 @@ export default function HistoryScreen() {
           </ScrollView>
         </Animated.View>
       </Screen>
-    </View>
+    </Animated.View>
   );
 }
 
