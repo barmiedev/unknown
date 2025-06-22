@@ -81,6 +81,22 @@ export function FilterBar({
     onSortChange(isArtistTab ? 'name_asc' : 'date_desc');
   };
 
+  const handleGenreModalOpen = () => {
+    setShowGenreModal(true);
+  };
+
+  const handleMoodModalOpen = () => {
+    setShowMoodModal(true);
+  };
+
+  const handleGenreModalClose = () => {
+    setShowGenreModal(false);
+  };
+
+  const handleMoodModalClose = () => {
+    setShowMoodModal(false);
+  };
+
   const FilterButton = ({ 
     label, 
     onPress, 
@@ -151,7 +167,7 @@ export function FilterBar({
           </View>
           
           <ScrollView style={styles.modalScrollView} showsVerticalScrollIndicator={false}>
-            <View style={styles.modalOptions}>
+            <View style={styles.modalOptionsGrid}>
               {children}
             </View>
           </ScrollView>
@@ -167,7 +183,7 @@ export function FilterBar({
         {/* Genre Filter */}
         <FilterButton
           label={selectedGenre || 'Genres'}
-          onPress={() => setShowGenreModal(true)}
+          onPress={handleGenreModalOpen}
           isActive={showGenreModal}
           isFiltered={isGenreFiltered}
         />
@@ -176,7 +192,7 @@ export function FilterBar({
         {!isArtistTab && (
           <FilterButton
             label={selectedMood || 'Moods'}
-            onPress={() => setShowMoodModal(true)}
+            onPress={handleMoodModalOpen}
             isActive={showMoodModal}
             isFiltered={isMoodFiltered}
           />
@@ -213,7 +229,7 @@ export function FilterBar({
       {/* Genre Modal */}
       <FilterModal
         visible={showGenreModal}
-        onClose={() => setShowGenreModal(false)}
+        onClose={handleGenreModalClose}
         title="Filter by Genre"
       >
         <SelectionChip
@@ -228,7 +244,7 @@ export function FilterBar({
         {availableGenres.map((genre) => (
           <SelectionChip
             key={genre}
-            label={`${getGenreEmoji(genre)} ${genre}`}
+            label={genre}
             selected={selectedGenre === genre}
             onPress={() => {
               onGenreChange(genre);
@@ -243,7 +259,7 @@ export function FilterBar({
       {!isArtistTab && (
         <FilterModal
           visible={showMoodModal}
-          onClose={() => setShowMoodModal(false)}
+          onClose={handleMoodModalClose}
           title="Filter by Mood"
         >
           <SelectionChip
@@ -258,7 +274,7 @@ export function FilterBar({
           {availableMoods.map((mood) => (
             <SelectionChip
               key={mood}
-              label={`${getMoodEmoji(mood)} ${mood}`}
+              label={mood}
               selected={selectedMood === mood}
               onPress={() => {
                 onMoodChange(mood);
@@ -391,8 +407,10 @@ const styles = StyleSheet.create({
   modalScrollView: {
     maxHeight: 400,
   },
-  modalOptions: {
+  modalOptionsGrid: {
     padding: spacing.lg,
+    flexDirection: 'row',
+    flexWrap: 'wrap',
     gap: spacing.sm,
   },
   modalOptionChip: {
