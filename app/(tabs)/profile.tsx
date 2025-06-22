@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { View, StyleSheet, Modal, TouchableOpacity, ScrollView } from 'react-native';
-import { LogOut, ChevronRight, X, Music, Heart, Headphones } from 'lucide-react-native';
+import { LogOut, ChevronRight, X, Music, Heart, Headphones, User, Save } from 'lucide-react-native';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/contexts/AuthContext';
 import { Screen } from '@/components/layout/Screen';
@@ -8,6 +8,8 @@ import { Heading } from '@/components/typography/Heading';
 import { Text } from '@/components/typography/Text';
 import { Button } from '@/components/buttons/Button';
 import { SelectionChip } from '@/components/selection/SelectionChip';
+import { TextInput } from '@/components/inputs/TextInput';
+import { PasswordInput } from '@/components/inputs/PasswordInput';
 import { colors } from '@/utils/colors';
 import { spacing, borderRadius } from '@/utils/spacing';
 import { TabHeader } from '@/components/navigation';
@@ -25,7 +27,7 @@ const STREAMING_PLATFORMS = Object.entries(PLATFORM_NAMES).map(([id, name]) => (
 }));
 
 export default function ProfileScreen() {
-  const { user, signOut } = useAuth();
+  const { user, signOut, updateProfile } = useAuth();
   const [selectedGenres, setSelectedGenres] = useState<string[]>([]);
   const [selectedMoods, setSelectedMoods] = useState<string[]>([]);
   const [preferredPlatform, setPreferredPlatform] = useState<string>(DEFAULT_STREAMING_PLATFORM);
@@ -36,6 +38,13 @@ export default function ProfileScreen() {
   const [showGenreModal, setShowGenreModal] = useState(false);
   const [showMoodModal, setShowMoodModal] = useState(false);
   const [showPlatformModal, setShowPlatformModal] = useState(false);
+  const [showAccountModal, setShowAccountModal] = useState(false);
+
+  // Account settings states
+  const [displayName, setDisplayName] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [accountSaving, setAccountSaving] = useState(false);
 
   // Discovery stats
   const [totalTracks, setTotalTracks] = useState(0);
@@ -45,6 +54,7 @@ export default function ProfileScreen() {
     if (user?.id) {
       loadPreferences();
       loadDiscoveryStats();
+      setDisplayName(user.profile?.display_name || '');
     }
   }, [user]);
 
@@ -144,6 +154,36 @@ export default function ProfileScreen() {
       console.error('Error saving preferences:', error);
     } finally {
       setSaving(false);
+    }
+  };
+
+  const saveAccountSettings = async () => {
+    if (!user?.id) return;
+
+    setAccountSaving(true);
+    try {
+      // Update display name if changed
+      if (displayName !== user.profile?.display_name) {
+        await updateProfile({ display_name: displayName });
+      }
+
+      // Update password if provided
+      if (newPassword && newPassword === confirmPassword) {
+        const { error } = await supabase.auth.updateUser({
+          password: newPassword
+        });
+        if (error) throw error;
+        
+        // Clear password fields
+        setNewPassword('');
+        setConfirmPassword('');
+      }
+
+      setShowAccountModal(false);
+    } catch (error) {
+      console.error('Error saving account settings:', error);
+    } finally {
+      setAccountSaving(false);
     }
   };
 
@@ -304,39 +344,43 @@ export default function ProfileScreen() {
         <Button
           variant="setting"
           size="medium"
-          onPress={() => {}}
+          onPress={() => setShowAccountModal(true)}
+          icon={<User size={20} color={colors.text.primary} strokeWidth={2} />}
+          iconPosition="left"
           style={styles.settingButton}
         >
-          Account Settings
-        </Button>
-        
-        <Button
-          variant="setting"
-          size="medium"
-          onPress={() => {}}
-          style={styles.settingButton}
-        >
-          Privacy Settings
-        </Button>
-        
-        <Button
-          variant="setting"
-          size="medium"
-          onPress={() => {}}
-          style={styles.settingButton}
-        >
-          Notifications
+          <View style={styles.settingContent}>
+            <View style={styles.settingTextContainer}>
+              <Text variant="body" color="primary" style={styles.settingTitle}>
+                Account Settings
+              </Text>
+              <Text variant="caption" color="secondary" style={styles.settingSubtitle}>
+                Update display name and password
+              </Text>
+            </View>
+            <ChevronRight size={16} color={colors.text.secondary} strokeWidth={2} />
+          </View>
         </Button>
         
         <Button 
-          variant="outline" 
+          variant="setting" 
           size="medium" 
           onPress={handleSignOut}
-          icon={<LogOut size={20} color={colors.text.primary} strokeWidth={2} />}
+          icon={<LogOut size={20} color={colors.status.error} strokeWidth={2} />}
           iconPosition="left"
           style={[styles.settingButton, styles.signOutButton]}
         >
-          Sign Out
+          <View style={styles.settingContent}>
+            <View style={styles.settingTextContainer}>
+              <Text variant="body" color="statusError" style={styles.settingTitle}>
+                Sign Out
+              </Text>
+              <Text variant="caption" color="secondary" style={styles.settingSubtitle}>
+                Sign out of your account
+              </Text>
+            </View>
+            <ChevronRight size={16} color={colors.status.error} strokeWidth={2} />
+          </View>
         </Button>
       </View>
 
@@ -360,7 +404,7 @@ export default function ProfileScreen() {
             </View>
             
             <ScrollView style={styles.modalScrollView} showsVerticalScrollIndicator={false}>
-              <View style={styles.modalOptions}>
+              <View style={styles.modalOptionsGrid}>
                 {GENRES.map((genre) => (
                   <SelectionChip
                     key={genre}
@@ -372,6 +416,19 @@ export default function ProfileScreen() {
                 ))}
               </View>
             </ScrollView>
+            
+            <View style={styles.modalFooter}>
+              <Button
+                variant="primary"
+                size="large"
+                onPress={handleGenreModalClose}
+                loading={saving}
+                icon={<Save size={20} color={colors.text.primary} strokeWidth={2} />}
+                iconPosition="left"
+              >
+                Save Preferences
+              </Button>
+            </View>
           </View>
         </View>
       </Modal>
@@ -396,7 +453,7 @@ export default function ProfileScreen() {
             </View>
             
             <ScrollView style={styles.modalScrollView} showsVerticalScrollIndicator={false}>
-              <View style={styles.modalOptions}>
+              <View style={styles.modalOptionsGrid}>
                 {MOODS.map((mood) => (
                   <SelectionChip
                     key={mood}
@@ -408,6 +465,19 @@ export default function ProfileScreen() {
                 ))}
               </View>
             </ScrollView>
+            
+            <View style={styles.modalFooter}>
+              <Button
+                variant="primary"
+                size="large"
+                onPress={handleMoodModalClose}
+                loading={saving}
+                icon={<Save size={20} color={colors.text.primary} strokeWidth={2} />}
+                iconPosition="left"
+              >
+                Save Preferences
+              </Button>
+            </View>
           </View>
         </View>
       </Modal>
@@ -432,7 +502,7 @@ export default function ProfileScreen() {
             </View>
             
             <ScrollView style={styles.modalScrollView} showsVerticalScrollIndicator={false}>
-              <View style={styles.modalOptions}>
+              <View style={styles.modalOptionsGrid}>
                 {STREAMING_PLATFORMS.map((platform) => (
                   <SelectionChip
                     key={platform.id}
@@ -444,6 +514,86 @@ export default function ProfileScreen() {
                 ))}
               </View>
             </ScrollView>
+            
+            <View style={styles.modalFooter}>
+              <Button
+                variant="primary"
+                size="large"
+                onPress={handlePlatformModalClose}
+                loading={saving}
+                icon={<Save size={20} color={colors.text.primary} strokeWidth={2} />}
+                iconPosition="left"
+              >
+                Save Preferences
+              </Button>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Account Settings Modal */}
+      <Modal
+        visible={showAccountModal}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => setShowAccountModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <Heading variant="h4" color="primary">Account Settings</Heading>
+              <TouchableOpacity
+                onPress={() => setShowAccountModal(false)}
+                style={styles.modalCloseButton}
+              >
+                <X size={24} color={colors.text.secondary} strokeWidth={2} />
+              </TouchableOpacity>
+            </View>
+            
+            <ScrollView style={styles.modalScrollView} showsVerticalScrollIndicator={false}>
+              <View style={styles.accountForm}>
+                <View style={styles.formSection}>
+                  <Text variant="body" color="primary" style={styles.formLabel}>
+                    Display Name
+                  </Text>
+                  <TextInput
+                    placeholder="Enter your display name"
+                    value={displayName}
+                    onChangeText={setDisplayName}
+                    icon={<User size={20} color={colors.text.secondary} strokeWidth={2} />}
+                  />
+                </View>
+
+                <View style={styles.formSection}>
+                  <Text variant="body" color="primary" style={styles.formLabel}>
+                    Change Password
+                  </Text>
+                  <PasswordInput
+                    placeholder="New password"
+                    value={newPassword}
+                    onChangeText={setNewPassword}
+                  />
+                  <PasswordInput
+                    placeholder="Confirm new password"
+                    value={confirmPassword}
+                    onChangeText={setConfirmPassword}
+                  />
+                </View>
+              </View>
+            </ScrollView>
+            
+            <View style={styles.modalFooter}>
+              <Button
+                variant="primary"
+                size="large"
+                onPress={saveAccountSettings}
+                loading={accountSaving}
+                icon={<Save size={20} color={colors.text.primary} strokeWidth={2} />}
+                iconPosition="left"
+              >
+                Save Changes
+              </Button>
+            </View>
           </View>
         </View>
       </Modal>
@@ -497,7 +647,6 @@ const styles = StyleSheet.create({
     fontSize: 14,
   },
   signOutButton: {
-    borderColor: colors.status.error,
     marginTop: spacing.md,
   },
   modalOverlay: {
@@ -528,11 +677,28 @@ const styles = StyleSheet.create({
   modalScrollView: {
     maxHeight: 400,
   },
-  modalOptions: {
+  modalOptionsGrid: {
     padding: spacing.lg,
+    flexDirection: 'row',
+    flexWrap: 'wrap',
     gap: spacing.sm,
   },
   modalOptionChip: {
     marginBottom: 0,
+  },
+  modalFooter: {
+    padding: spacing.lg,
+    borderTopWidth: 1,
+    borderTopColor: colors.surface,
+  },
+  accountForm: {
+    padding: spacing.lg,
+  },
+  formSection: {
+    marginBottom: spacing.lg,
+  },
+  formLabel: {
+    fontSize: 16,
+    marginBottom: spacing.sm,
   },
 });
