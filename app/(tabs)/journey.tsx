@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { View, StyleSheet, Modal, TouchableOpacity, ScrollView } from 'react-native';
 import { Award, Flame, Star, TrendingUp, Trophy, X, Users, Crown } from 'lucide-react-native';
+import { useFocusEffect } from '@react-navigation/native';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/contexts/AuthContext';
 import { Screen } from '@/components/layout/Screen';
@@ -13,7 +14,7 @@ import { UserStats, Badge, LeaderboardData } from '@/types';
 import { TabHeader } from '@/components/navigation';
 
 export default function JourneyScreen() {
-  const { user } = useAuth();
+  const { user, refreshUser } = useAuth();
   const [stats, setStats] = useState<UserStats>({
     totalTracksRatedCount: 0,
     totalTextReviewsCount: 0,
@@ -42,6 +43,16 @@ export default function JourneyScreen() {
   const [loading, setLoading] = useState(true);
   const [showBadgesModal, setShowBadgesModal] = useState(false);
   const [showLeaderboardModal, setShowLeaderboardModal] = useState(false);
+
+  // Reload data when screen comes into focus (after XP changes)
+  useFocusEffect(
+    React.useCallback(() => {
+      if (user?.id) {
+        loadUserStats();
+        refreshUser(); // Refresh user profile data including total_xp
+      }
+    }, [user])
+  );
 
   useEffect(() => {
     if (user?.id) {

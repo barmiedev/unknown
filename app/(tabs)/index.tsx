@@ -761,7 +761,7 @@ export default function DiscoverScreen() {
 
       if (gamificationError) {
         console.error('Error calculating gamification rewards for skip:', gamificationError);
-      } else if (gamificationData.xp_earned > 0) {
+      } else if (gamificationData && gamificationData.xp_earned > 0) {
         setGamificationReward(gamificationData);
         setShowGamificationReward(true);
         
@@ -848,7 +848,7 @@ export default function DiscoverScreen() {
 
       if (gamificationError) {
         console.error('Error calculating gamification rewards:', gamificationError);
-      } else {
+      } else if (gamificationData) {
         setGamificationReward(gamificationData);
         console.log('XP Earned:', gamificationData.xp_earned);
         console.log('New Badges:', gamificationData.new_badges);

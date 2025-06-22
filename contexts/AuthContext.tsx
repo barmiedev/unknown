@@ -10,6 +10,7 @@ interface AuthContextType {
   signOut: () => Promise<void>;
   updateProfile: (updates: any) => Promise<void>;
   completeOnboarding: (data: any) => Promise<void>;
+  refreshUser: () => Promise<void>; // Add refresh function
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -17,6 +18,15 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<AuthUser | null>(null);
   const [loading, setLoading] = useState(true);
+
+  const refreshUser = async () => {
+    try {
+      const authUser = await AuthService.getCurrentUser();
+      setUser(authUser);
+    } catch (error) {
+      console.error('Error refreshing user:', error);
+    }
+  };
 
   useEffect(() => {
     // Get initial session
@@ -80,6 +90,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         signOut,
         updateProfile,
         completeOnboarding,
+        refreshUser,
       }}
     >
       {children}
