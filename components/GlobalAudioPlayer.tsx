@@ -15,6 +15,7 @@ import { Text } from '@/components/typography/Text';
 import { colors } from '@/utils/colors';
 import { spacing } from '@/utils/spacing';
 import { fonts } from '@/lib/fonts';
+import { router, usePathname } from 'expo-router';
 
 interface GlobalAudioPlayerProps {
   onPress?: () => void;
@@ -37,6 +38,7 @@ export default function GlobalAudioPlayer({ onPress, onSkip, hidden, hideTrackIn
     isTrackUnveiled
   } = useAudio();
   
+  const pathname = usePathname();
   const [isExpanded, setIsExpanded] = useState(false);
   
   // Animation values
@@ -78,6 +80,12 @@ export default function GlobalAudioPlayer({ onPress, onSkip, hidden, hideTrackIn
   const handlePress = () => {
     if (onPress) {
       onPress();
+    } else if (!isTrackUnveiled) {
+      // If track is hidden and we're not on the discover page, navigate there
+      const isOnDiscoverPage = pathname === '/(tabs)/' || pathname === '/(tabs)/index';
+      if (!isOnDiscoverPage) {
+        router.push('/(tabs)');
+      }
     } else {
       setIsExpanded(!isExpanded);
       expandAnimation.value = withTiming(isExpanded ? 0 : 1, { duration: 300 });
