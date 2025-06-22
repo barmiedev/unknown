@@ -3,6 +3,7 @@ import { View, StyleSheet, Modal, TouchableOpacity, ScrollView } from 'react-nat
 import { LogOut, ChevronRight, X, Music, Heart, Headphones, User, Save } from 'lucide-react-native';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/contexts/AuthContext';
+import { useAudioPlayerPadding } from '@/hooks/useAudioPlayerPadding';
 import { Screen } from '@/components/layout/Screen';
 import { Heading } from '@/components/typography/Heading';
 import { Text } from '@/components/typography/Text';
@@ -28,6 +29,7 @@ const STREAMING_PLATFORMS = Object.entries(PLATFORM_NAMES).map(([id, name]) => (
 
 export default function ProfileScreen() {
   const { user, signOut, updateProfile } = useAuth();
+  const { paddingBottom } = useAudioPlayerPadding();
   const [selectedGenres, setSelectedGenres] = useState<string[]>([]);
   const [selectedMoods, setSelectedMoods] = useState<string[]>([]);
   const [preferredPlatform, setPreferredPlatform] = useState<string>(DEFAULT_STREAMING_PLATFORM);
@@ -243,7 +245,12 @@ export default function ProfileScreen() {
   }
 
   return (
-    <Screen scrollable paddingHorizontal={24} withoutBottomSafeArea>
+    <Screen 
+      scrollable 
+      paddingHorizontal={24} 
+      withoutBottomSafeArea
+      contentContainerStyle={{ paddingBottom }}
+    >
       <TabHeader
         title={user?.profile?.display_name || user?.profile?.username || 'Profile'}
         subtitle="Manage your account and preferences"
@@ -283,7 +290,6 @@ export default function ProfileScreen() {
           onPress={() => setShowGenreModal(true)}
           icon={<Music size={20} color={colors.text.primary} strokeWidth={2} />}
           iconPosition="left"
-          style={styles.settingButton}
         >
           <View style={styles.settingContent}>
             <View style={styles.settingTextContainer}>
@@ -304,7 +310,6 @@ export default function ProfileScreen() {
           onPress={() => setShowMoodModal(true)}
           icon={<Heart size={20} color={colors.text.primary} strokeWidth={2} />}
           iconPosition="left"
-          style={styles.settingButton}
         >
           <View style={styles.settingContent}>
             <View style={styles.settingTextContainer}>
@@ -325,7 +330,6 @@ export default function ProfileScreen() {
           onPress={() => setShowPlatformModal(true)}
           icon={<Headphones size={20} color={colors.text.primary} strokeWidth={2} />}
           iconPosition="left"
-          style={styles.settingButton}
         >
           <View style={styles.settingContent}>
             <View style={styles.settingTextContainer}>
@@ -342,7 +346,7 @@ export default function ProfileScreen() {
       </View>
 
       {/* Account Settings */}
-      <View style={styles.section}>
+      <View style={[styles.section, styles.lastSection]}>
         <Heading variant="h4" color="primary" style={styles.sectionTitle}>
           Account
         </Heading>
@@ -353,7 +357,6 @@ export default function ProfileScreen() {
           onPress={() => setShowAccountModal(true)}
           icon={<User size={20} color={colors.text.primary} strokeWidth={2} />}
           iconPosition="left"
-          style={styles.settingButton}
         >
           <View style={styles.settingContent}>
             <View style={styles.settingTextContainer}>
@@ -371,7 +374,6 @@ export default function ProfileScreen() {
           onPress={handleSignOut}
           icon={<LogOut size={20} color={colors.text.primary} strokeWidth={2} />}
           iconPosition="left"
-          style={[styles.settingButton]}
         >
           <View style={styles.settingContent}>
             <View style={styles.settingTextContainer}>
@@ -609,10 +611,14 @@ const styles = StyleSheet.create({
   },
   section: {
     marginBottom: spacing.xl,
+    gap: spacing.sm,
+  },
+  lastSection: {
+    marginBottom: spacing.sm,
   },
   sectionTitle: {
     fontSize: 20,
-    marginBottom: spacing.md,
+    marginBottom: spacing.sm,
   },
   statsGrid: {
     flexDirection: 'row',
@@ -626,9 +632,6 @@ const styles = StyleSheet.create({
   },
   statValue: {
     fontSize: 24,
-  },
-  settingButton: {
-    marginBottom: spacing.sm,
   },
   settingContent: {
     flexDirection: 'row',

@@ -43,6 +43,7 @@ interface ArtistUnveilViewProps {
   gamificationReward?: GamificationReward | null;
   showGamificationReward?: boolean;
   onGamificationRewardDismiss?: () => void;
+  paddingBottom?: number;
 }
 
 export default function ArtistUnveilView({ 
@@ -57,6 +58,7 @@ export default function ArtistUnveilView({
   gamificationReward,
   showGamificationReward = false,
   onGamificationRewardDismiss,
+  paddingBottom,
 }: ArtistUnveilViewProps) {
   const { user } = useAuth();
   const [artist, setArtist] = useState<Artist | null>(null);
@@ -260,7 +262,7 @@ export default function ArtistUnveilView({
         />
       )}
 
-      <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
+      <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom }}>
         <View style={{ paddingHorizontal: spacing.lg }}>
           {/* Track Artwork */}
           <View style={styles.artworkContainer}>
@@ -465,7 +467,7 @@ export default function ArtistUnveilView({
 
           {/* Playback Controls */}
           {showPlaybackControls && (
-            <View style={styles.section}>
+            <View style={[styles.section, styles.lastSection]}>
               <View style={styles.playbackControls}>
                 {onContinueListening && (
                   <Button
@@ -474,7 +476,6 @@ export default function ArtistUnveilView({
                     onPress={onContinueListening}
                     icon={<Play size={20} color={colors.text.primary} strokeWidth={2} />}
                     iconPosition="left"
-                    style={styles.playbackButton}
                   >
                     Listen to Full Track
                   </Button>
@@ -487,7 +488,6 @@ export default function ArtistUnveilView({
                     onPress={onDiscoverNext}
                     icon={<SkipForward size={20} color={colors.text.primary} strokeWidth={2} />}
                     iconPosition="left"
-                    style={styles.playbackButton}
                   >
                     Discover Next
                   </Button>
@@ -613,14 +613,17 @@ const styles = StyleSheet.create({
   section: {
     marginBottom: spacing.xl,
   },
+  lastSection: {
+    marginBottom: spacing.sm,
+  },
   sectionTitle: {
     fontSize: 20,
     marginBottom: spacing.md,
   },
   userRatingContainer: {
-    backgroundColor: 'rgba(222, 215, 224, 0.1)',
+    // backgroundColor: 'rgba(222, 215, 224, 0.1)',
     borderRadius: borderRadius.lg,
-    padding: spacing.md,
+    // padding: spacing.md,
     alignItems: 'flex-start',
     width: '100%',
   },
@@ -668,7 +671,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surface,
   },
   followButton: {
-    marginBottom: spacing.md,
+    marginBottom: spacing.sm,
   },
   socialLinksContainer: {
     flexDirection: 'row',
@@ -721,9 +724,6 @@ const styles = StyleSheet.create({
   },
   playbackControls: {
     gap: spacing.sm,
-  },
-  playbackButton: {
-    marginBottom: spacing.sm,
   },
   modalOverlay: {
     flex: 1,

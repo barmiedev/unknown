@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { View, Alert, TextInput, Keyboard, TouchableWithoutFeedback, Platform, KeyboardAvoidingView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
+import { useFocusEffect } from '@react-navigation/native';
 import { Shuffle } from 'lucide-react-native';
 import Animated, { 
   useAnimatedStyle, 
@@ -16,11 +17,12 @@ import Animated, {
   FadeIn,
   FadeOut,
 } from 'react-native-reanimated';
-import { Audio, AVPlaybackStatus } from 'expo-av';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/contexts/AuthContext';
+import { useAudio } from '@/contexts/AudioContext';
 import { colors } from '@/utils/colors';
 import { spacing } from '@/utils/spacing';
+import { useAudioPlayerPadding } from '@/hooks/useAudioPlayerPadding';
 import { Button } from '@/components/buttons';
 import { Heading } from '@/components/typography';
 import { Text } from '@/components/typography/Text';
@@ -71,32 +73,21 @@ function AnimationBackground({ animationUrl, children }: AnimationBackgroundProp
   );
 }
 
-// Helper function to check if audio URL is web-compatible
-const isWebCompatibleAudio = (url: string): boolean => {
-  if (Platform.OS !== 'web') return true;
-  
-  const webCompatibleFormats = ['.mp3', '.wav', '.ogg', '.m4a', '.aac'];
-  const urlLower = url.toLowerCase();
-  return webCompatibleFormats.some(format => urlLower.includes(format));
-};
-
-// Helper function to get a fallback audio URL for web
-const getWebCompatibleAudioUrl = (originalUrl: string): string => {
-  if (Platform.OS !== 'web') return originalUrl;
-  
-  // If the original URL is already web-compatible, return it
-  if (isWebCompatibleAudio(originalUrl)) {
-    return originalUrl;
-  }
-  
-  // For demo purposes, return a placeholder web-compatible audio file
-  // In production, you would convert/serve the audio in a web-compatible format
-  return 'https://www.soundjay.com/misc/sounds/bell-ringing-05.wav';
-};
-
 export default function DiscoverScreen() {
   // All hooks must be called at the top level in the same order every time
   const { user, refreshUser } = useAuth();
+  const { 
+    currentTrack: globalCurrentTrack, 
+    isPlaying, 
+    position, 
+    duration, 
+    loadTrack, 
+    playPause, 
+    stop, 
+    error: audioError,
+    unveilTrack
+  } = useAudio();
+  const { paddingBottom } = useAudioPlayerPadding();
   
   // State hooks - always called in the same order
   const [currentTrack, setCurrentTrack] = useState<Track | null>(null);
@@ -109,10 +100,6 @@ export default function DiscoverScreen() {
   const [trackRevealed, setTrackRevealed] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [sound, setSound] = useState<Audio.Sound | null>(null);
-  const [isPlaying, setIsPlaying] = useState(false);
-  const [position, setPosition] = useState(0);
-  const [duration, setDuration] = useState(0);
   const [showWelcomeTip, setShowWelcomeTip] = useState(false);
   const [userPreferences, setUserPreferences] = useState<UserPreferences | null>(null);
   const [showThankYou, setShowThankYou] = useState(false);
@@ -129,12 +116,9 @@ export default function DiscoverScreen() {
   // Gamification state
   const [gamificationReward, setGamificationReward] = useState<GamificationReward | null>(null);
   const [showGamificationReward, setShowGamificationReward] = useState(false);
-  const [shouldAutoPlay, setShouldAutoPlay] = useState(true);
 
   // Ref hooks - always called in the same order
   const reviewInputRef = useRef<TextInput>(null);
-  const autoPlayTriggeredRef = useRef(false);
-  const audioOperationInProgressRef = useRef(false);
 
   // Animation shared values - always called in the same order
   const pulseAnimation = useSharedValue(1);
@@ -320,19 +304,6 @@ export default function DiscoverScreen() {
 
   // Effect hooks - always called in the same order
   useEffect(() => {
-    if (user?.id) {
-      loadUserData();
-      loadUserPreferences();
-    }
-
-    return () => {
-      if (sound) {
-        sound.unloadAsync();
-      }
-    };
-  }, [user]);
-
-  useEffect(() => {
     if (isPlaying) {
       pulseAnimation.value = withRepeat(
         withSequence(
@@ -345,46 +316,6 @@ export default function DiscoverScreen() {
       pulseAnimation.value = withTiming(1);
     }
   }, [isPlaying]);
-
-  // Monitor playback progress for rating trigger
-  useEffect(() => {
-    if (duration > 0 && position > 0 && state === 'playing') {
-      const progress = position / duration;
-      if (progress >= ratingThreshold) {
-        setState('rating');
-        setShowRating(true);
-        // Trigger rating animations
-        animateRatingAppearance();
-      }
-    }
-  }, [position, duration, ratingThreshold, state]);
-
-  // Auto-play effect when track is loaded and state is playing
-  useEffect(() => {
-    if (currentTrack && state === 'playing' && !autoPlayTriggeredRef.current && shouldAutoPlay) {
-      autoPlayTriggeredRef.current = true;
-      // Small delay to ensure the track is properly loaded
-      setTimeout(() => {
-        playPauseAudio();
-      }, 500);
-    }
-  }, [currentTrack, state, shouldAutoPlay]);
-
-  // Cleanup effect for audio operations
-  useEffect(() => {
-    return () => {
-      // Cleanup audio when component unmounts
-      if (sound) {
-        try {
-          sound.stopAsync().catch(() => {});
-          sound.unloadAsync().catch(() => {});
-        } catch (error) {
-          console.warn('Error cleaning up audio on unmount:', error);
-        }
-      }
-      audioOperationInProgressRef.current = false;
-    };
-  }, [sound]);
 
   // Function definitions
   const animateRatingAppearance = () => {
@@ -399,6 +330,19 @@ export default function DiscoverScreen() {
     star4Animation.value = withDelay(250, withTiming(1, { duration: 200 }));
     star5Animation.value = withDelay(300, withTiming(1, { duration: 200 }));
   };
+
+  // Monitor playback progress for rating trigger
+  useEffect(() => {
+    if (duration > 0 && position > 0 && state === 'playing') {
+      const progress = position / duration;
+      if (progress >= ratingThreshold) {
+        setState('rating');
+        setShowRating(true);
+        // Trigger rating animations
+        animateRatingAppearance();
+      }
+    }
+  }, [position, duration, ratingThreshold, state]);
 
   const animateReviewInput = () => {
     reviewInputAnimation.value = withTiming(1, { duration: 250 });
@@ -479,6 +423,14 @@ export default function DiscoverScreen() {
     }
   };
 
+  // Load user data when user changes
+  useEffect(() => {
+    if (user?.id) {
+      loadUserData();
+      loadUserPreferences();
+    }
+  }, [user]);
+
   const handleMoodSelection = async (mood: string | null) => {
     setSelectedSessionMood(mood);
     
@@ -508,28 +460,6 @@ export default function DiscoverScreen() {
         setError(null);
         setState('loading');
       }
-      
-      // Only unload sound if it exists and we're not in a background load
-      // (background loads should have already unloaded the sound)
-      if (sound && !isBackgroundLoad) {
-        try {
-          const status = await sound.getStatusAsync();
-          if (status.isLoaded) {
-            await sound.stopAsync();
-          }
-        } catch (error) {
-          console.warn('Error stopping sound in loadNextTrack:', error);
-        }
-        try {
-          await sound.unloadAsync();
-        } catch (error) {
-          console.warn('Error unloading sound in loadNextTrack:', error);
-        }
-        setSound(null);
-      }
-
-      // Reset auto-play trigger
-      autoPlayTriggeredRef.current = false;
 
       // Use stored rated track IDs instead of making another query
       const excludeIds = ratedTrackIds || [];
@@ -598,7 +528,7 @@ export default function DiscoverScreen() {
             return;
           }
         } else {
-          // Even broadened search found nothing
+          // Even broadened search found no tracks
           setState('no_tracks_at_all');
           setIsLoading(false);
           return;
@@ -608,23 +538,19 @@ export default function DiscoverScreen() {
       const randomTrack = tracks[Math.floor(Math.random() * tracks.length)];
       setCurrentTrack(randomTrack);
 
+      // Load track into global audio context
+      await loadTrack(randomTrack, autoPlay);
+
       // Reset UI state
       setRating(0);
       setReview('');
       setShowRating(false);
       setTrackRevealed(false);
-      setIsPlaying(false);
-      setPosition(0);
-      setDuration(0);
       setShowWelcomeTip(false);
       setCanSkip(true);
       setShowReviewInput(false);
       setIsReviewFocused(false);
       setState('playing');
-      setShouldAutoPlay(autoPlay);
-
-      // Reset auto-play trigger when auto-play setting changes
-      autoPlayTriggeredRef.current = false;
 
       // Reset animations
       resetRatingAnimations();
@@ -655,20 +581,8 @@ export default function DiscoverScreen() {
     }
   };
 
-  const fadeAudioAndTransition = async (callback: () => void) => {
+  const fadeAudioAndTransition = useCallback(async (callback: () => void) => {
     setIsTransitioning(true);
-    
-    // Fade out audio volume over 0.2 seconds
-    if (sound) {
-      try {
-        const status = await sound.getStatusAsync();
-        if (status.isLoaded && status.isPlaying) {
-          await sound.setVolumeAsync(0);
-        }
-      } catch (error) {
-        console.warn('Error fading audio:', error);
-      }
-    }
     
     // Fade out current content
     fadeOpacity.value = withTiming(0, { duration: 300 });
@@ -687,7 +601,7 @@ export default function DiscoverScreen() {
         setIsTransitioning(false);
       }, 1000);
     }, 2000);
-  };
+  }, [fadeOpacity, transitionTextOpacity]);
 
   const showThankYouMessage = () => {
     setShowThankYou(true);
@@ -705,116 +619,6 @@ export default function DiscoverScreen() {
         runOnJS(setShowThankYou)(false);
       });
     }, 3000);
-  };
-
-  const playPauseAudio = async (autoPlay = true) => {
-    // Prevent multiple simultaneous audio operations
-    if (audioOperationInProgressRef.current) {
-      console.warn('Audio operation in progress, skipping');
-      return;
-    }
-    
-    audioOperationInProgressRef.current = true;
-    
-    try {
-      if (!currentTrack?.audio_url) {
-        console.warn('No current track or audio URL available');
-        return;
-      }
-
-      // Additional safety check - ensure track is properly loaded
-      if (!currentTrack.id || !currentTrack.title) {
-        console.warn('Track not fully loaded yet');
-        return;
-      }
-
-      // Get web-compatible audio URL
-      const audioUrl = getWebCompatibleAudioUrl(currentTrack.audio_url);
-      
-      if (!audioUrl) {
-        console.warn('Invalid audio URL');
-        return;
-      }
-
-      // Play/pause existing sound
-      if (sound) {
-        try {
-          const status = await sound.getStatusAsync();
-          
-          // Check if sound is loaded and ready
-          if (!status.isLoaded) {
-            console.warn('Sound not loaded, cannot play');
-            return;
-          }
-          
-          if (isPlaying) {
-            await sound.pauseAsync();
-            setIsPlaying(false);
-          } else {
-            await sound.playAsync();
-            setIsPlaying(true);
-          }
-        } catch (error) {
-          console.error('Error playing/pausing audio:', error);
-          // If there's an error, try to recreate the sound
-          try {
-            await sound.unloadAsync();
-          } catch (unloadError) {
-            console.warn('Error unloading sound:', unloadError);
-          }
-          setSound(null);
-          setIsPlaying(false);
-        }
-        return;
-      }
-      
-      // Create new sound if needed
-      if (!sound) {
-        // Add a small delay to prevent race conditions after unloading
-        await new Promise(resolve => setTimeout(resolve, 200));
-        
-        // Check if the audio URL is web-compatible before attempting to load
-        if (Platform.OS === 'web' && !isWebCompatibleAudio(currentTrack.audio_url)) {
-          console.warn('Audio file may not be web-compatible:', currentTrack.audio_url);
-          setError('Audio format not supported in web browser. Please ensure the audio file is in MP3, WAV, or OGG format and served with proper CORS headers.');
-          return;
-        }
-
-        const { sound: newSound } = await Audio.Sound.createAsync(
-          { uri: audioUrl },
-          { shouldPlay: autoPlay },
-          onPlaybackStatusUpdate
-        );
-        setSound(newSound);
-        setIsPlaying(autoPlay);
-      }
-    } catch (error) {
-      console.error('Error playing audio:', error);
-      
-      // Provide more specific error messages for web
-      if (Platform.OS === 'web') {
-        const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-        if (errorMessage.includes('no supported source')) {
-          setError('Audio format not supported in web browser. Please ensure the audio file is in MP3, WAV, or OGG format and served with proper CORS headers.');
-        } else if (errorMessage.includes('CORS')) {
-          setError('Unable to load audio due to CORS restrictions. Please ensure the audio server allows cross-origin requests.');
-        } else {
-          setError('Failed to load audio. Please check the audio file format and server configuration.');
-        }
-      } else {
-        setError('Failed to play audio. Please try again.');
-      }
-    } finally {
-      audioOperationInProgressRef.current = false;
-    }
-  };
-
-  const onPlaybackStatusUpdate = (status: AVPlaybackStatus) => {
-    if (status.isLoaded) {
-      setPosition(status.positionMillis || 0);
-      setDuration(status.durationMillis || 0);
-      setIsPlaying(status.isPlaying || false);
-    }
   };
 
   const skipTrack = async () => {
@@ -934,6 +738,9 @@ export default function DiscoverScreen() {
         setIsTransitioning(false);
         setShowWelcomeTip(false);
         
+        // Unveil track in global audio player for high ratings
+        unveilTrack();
+        
         // Show gamification reward immediately when track is revealed
         if (gamificationData) {
           setShowGamificationReward(true);
@@ -985,17 +792,10 @@ export default function DiscoverScreen() {
     setCurrentTrack(null);
     // Reset broadened search state when starting new session
     setIsBroadenedSearch(false);
-    if (sound) {
-      try {
-        await sound.unloadAsync();
-      } catch (error) {
-        console.warn('Error unloading sound in handleNewSession:', error);
-      }
-      setSound(null);
-    }
-    setIsPlaying(false);
-    setPosition(0);
-    setDuration(0);
+    
+    // Stop audio using global context
+    await stop();
+    
     resetRatingAnimations();
     
     // Refresh available moods for new session
@@ -1010,23 +810,20 @@ export default function DiscoverScreen() {
     loadNextTrack(false, selectedSessionMood, true);
   };
 
-  const handleChooseDifferentMood = () => {
+  const handleChooseDifferentMood = async () => {
     setState('mood_selection');
     setSelectedSessionMood(null);
     setCurrentTrack(null);
     // Reset broadened search state when choosing different mood
     setIsBroadenedSearch(false);
-    if (sound) {
-      sound.unloadAsync();
-      setSound(null);
-    }
-    setIsPlaying(false);
-    setPosition(0);
-    setDuration(0);
+    
+    // Stop audio using global context
+    await stop();
+    
     resetRatingAnimations();
     
     // Refresh available moods
-    loadUserPreferences();
+    await loadUserPreferences();
   };
 
   const handleGoToHistory = () => {
@@ -1044,7 +841,7 @@ export default function DiscoverScreen() {
       <View style={{ flex: 1, backgroundColor: colors.background }}>
         <Animated.View entering={FadeIn.duration(300)} exiting={FadeOut.duration(300)} style={{ flex: 1 }}>
           <Screen backgroundColor={colors.background} withoutBottomSafeArea paddingHorizontal={0}>
-            <View style={{ flex: 1, paddingHorizontal: spacing.lg }}>
+            <View style={{ flex: 1, paddingHorizontal: spacing.lg, paddingBottom }}>
               <SessionHeader
                 selectedMood={selectedSessionMood}
                 onNewSession={handleNewSession}
@@ -1067,7 +864,7 @@ export default function DiscoverScreen() {
       <View style={{ flex: 1, backgroundColor: colors.background }}>
         <Animated.View entering={FadeIn.duration(300)} exiting={FadeOut.duration(300)} style={{ flex: 1 }}>
           <Screen backgroundColor={colors.background} withoutBottomSafeArea paddingHorizontal={0}>
-            <View style={{ flex: 1, paddingHorizontal: spacing.lg }}>
+            <View style={{ flex: 1, paddingHorizontal: spacing.lg, paddingBottom }}>
               <SessionHeader
                 selectedMood={selectedSessionMood}
                 onNewSession={handleNewSession}
@@ -1090,7 +887,7 @@ export default function DiscoverScreen() {
         <Animated.View entering={FadeIn.duration(300)} exiting={FadeOut.duration(300)} style={{ flex: 1 }}>
           <Screen backgroundColor={colors.background} withoutBottomSafeArea>
             <AnimationBackground>
-              <View style={{ flex: 1, paddingHorizontal: spacing.lg }}>
+              <View style={{ flex: 1, paddingHorizontal: spacing.lg, paddingBottom }}>
                 {/* Logo at top left */}
                 <View style={{ 
                   position: 'absolute', 
@@ -1148,9 +945,11 @@ export default function DiscoverScreen() {
       <View style={{ flex: 1, backgroundColor: colors.background }}>
         <Animated.View entering={FadeIn.duration(300)} exiting={FadeOut.duration(300)} style={{ flex: 1 }}>
           <Screen backgroundColor={colors.background} withoutBottomSafeArea>
-            <LoadingState
-              selectedMood={selectedSessionMood}
-            />
+            <View style={{ flex: 1, paddingBottom }}>
+              <LoadingState
+                selectedMood={selectedSessionMood}
+              />
+            </View>
           </Screen>
         </Animated.View>
       </View>
@@ -1162,11 +961,13 @@ export default function DiscoverScreen() {
       <View style={{ flex: 1, backgroundColor: colors.background }}>
         <Animated.View entering={FadeIn.duration(300)} exiting={FadeOut.duration(300)} style={{ flex: 1 }}>
           <Screen backgroundColor={colors.background} withoutBottomSafeArea>
-            <ErrorState
-              error={error}
-              onRetry={() => loadNextTrack(false, selectedSessionMood, isBroadenedSearch)}
-              onNewSession={handleNewSession}
-            />
+            <View style={{ flex: 1, paddingBottom }}>
+              <ErrorState
+                error={error}
+                onRetry={() => loadNextTrack(false, selectedSessionMood, isBroadenedSearch)}
+                onNewSession={handleNewSession}
+              />
+            </View>
           </Screen>
         </Animated.View>
       </View>
@@ -1197,6 +998,7 @@ export default function DiscoverScreen() {
               setGamificationReward(null);
             }}
             withoutBottomSafeArea
+            paddingBottom={paddingBottom}
           />
         </Animated.View>
       </View>
@@ -1242,22 +1044,23 @@ export default function DiscoverScreen() {
                 style={{ flex: 1 }}
                 behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
               >
-                <Animated.View style={[fadeStyle, { height: '100%', width: '100%', alignItems: 'center', paddingHorizontal: spacing.lg }]}>
+                <Animated.View style={[fadeStyle, { height: '100%', width: '100%', alignItems: 'center', paddingHorizontal: spacing.lg, paddingBottom }]}>
                   {state === 'full_listening' && currentTrack ? (
                     <FullListeningMode
                       track={currentTrack}
                       isPlaying={isPlaying}
-                      onPlayPause={playPauseAudio}
+                      onPlayPause={playPause}
                       position={position}
                       duration={duration}
                       userRating={rating}
                       userReview={review}
                       onSkip={skipTrack}
+                      paddingBottom={paddingBottom}
                     />
                   ) : !showRating ? (
                     <PlaybackControls
                       isPlaying={isPlaying}
-                      onPlayPause={playPauseAudio}
+                      onPlayPause={playPause}
                       position={position}
                       duration={duration}
                       canSkip={canSkip}

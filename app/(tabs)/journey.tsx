@@ -13,9 +13,11 @@ import { spacing, borderRadius } from '@/utils/spacing';
 import { UserStats, Badge, LeaderboardData } from '@/types';
 import { TabHeader } from '@/components/navigation';
 import { fonts } from '@/lib/fonts';
+import { useAudioPlayerPadding } from '@/hooks/useAudioPlayerPadding';
 
 export default function JourneyScreen() {
   const { user, refreshUser } = useAuth();
+  const { paddingBottom } = useAudioPlayerPadding();
   const [stats, setStats] = useState<UserStats>({
     totalTracksRatedCount: 0,
     totalTextReviewsCount: 0,
@@ -213,7 +215,12 @@ export default function JourneyScreen() {
   }
 
   return (
-    <Screen scrollable paddingHorizontal={24} withoutBottomSafeArea>
+    <Screen 
+      scrollable 
+      paddingHorizontal={24} 
+      withoutBottomSafeArea
+      contentContainerStyle={{ paddingBottom }}
+    >
       <TabHeader
         title="Your Journey"
         subtitle="Track your music discovery progress"
@@ -348,7 +355,7 @@ export default function JourneyScreen() {
       )}
 
       {/* Action Buttons */}
-      <View style={styles.section}>
+      <View style={styles.lastSection}>
         <View style={styles.actionButtonsContainer}>
           <Button
             variant="secondary"
@@ -525,6 +532,9 @@ const styles = StyleSheet.create({
   },
   section: {
     marginBottom: spacing.xl,
+  },
+  lastSection: {
+    marginBottom: spacing.sm,
   },
   sectionTitle: {
     fontSize: 20,

@@ -4,6 +4,7 @@ import { Users, Music } from 'lucide-react-native';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/contexts/AuthContext';
 import { useFocusEffect } from '@react-navigation/native';
+import { useAudioPlayerPadding } from '@/hooks/useAudioPlayerPadding';
 import Animated, { FadeIn, FadeOut, SlideInRight, SlideOutLeft, withTiming, useSharedValue, useAnimatedStyle } from 'react-native-reanimated';
 import { Screen } from '@/components/layout/Screen';
 import { Heading } from '@/components/typography/Heading';
@@ -20,6 +21,7 @@ import { TrackListItem, ArtistListItem, FilterBar, type SortOption } from '@/com
 
 export default function HistoryScreen() {
   const { user } = useAuth();
+  const { paddingBottom } = useAudioPlayerPadding();
   const [activeTab, setActiveTab] = useState<TabType>('tracks');
   const [tracks, setTracks] = useState<HistoryTrack[]>([]);
   const [filteredTracks, setFilteredTracks] = useState<HistoryTrack[]>([]);
@@ -443,6 +445,7 @@ export default function HistoryScreen() {
           <ScrollView 
             ref={scrollViewRef}
             style={styles.content}
+            contentContainerStyle={{ paddingBottom }}
             showsVerticalScrollIndicator={false}
             onScroll={handleScroll}
             scrollEventThrottle={16}

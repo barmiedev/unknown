@@ -51,16 +51,12 @@ export function GamificationRewardDisplay({
           <Heading variant="h3" color="primary" style={styles.celebrationTitle}>
             Great Job!
           </Heading>
-          <TouchableOpacity onPress={onDismiss} style={styles.gamificationClose}>
-            <X size={20} color={colors.text.secondary} strokeWidth={2} />
-          </TouchableOpacity>
         </View>
 
         {/* XP Display */}
         <View style={styles.xpDisplay}>
           <View style={styles.xpBadge}>
-            <Text style={styles.xpAmount}>+{reward.xp_earned}</Text>
-            <Text variant="caption" color="secondary" style={styles.xpLabel}>XP</Text>
+            <Text style={styles.xpAmount}>+{reward.xp_earned} <Text variant="caption" color="secondary" style={styles.xpLabel}>XP</Text></Text>
           </View>
         </View>
 
@@ -162,7 +158,7 @@ const styles = StyleSheet.create({
   },
   celebrationHeader: {
     alignItems: 'center',
-    marginBottom: spacing.xl,
+    marginBottom: spacing.md,
     position: 'relative',
   },
   celebrationIcon: {
@@ -178,23 +174,15 @@ const styles = StyleSheet.create({
     fontSize: 28,
     textAlign: 'center',
   },
-  gamificationClose: {
-    position: 'absolute',
-    top: -10,
-    right: -10,
-    padding: spacing.sm,
-    backgroundColor: colors.surface,
-    borderRadius: 20,
-  },
   xpDisplay: {
     alignItems: 'center',
-    marginBottom: spacing.xl,
+    marginBottom: spacing.lg,
   },
   xpBadge: {
     backgroundColor: colors.primary,
     borderRadius: 50,
-    paddingHorizontal: spacing.xl,
-    paddingVertical: spacing.lg,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.sm,
     alignItems: 'center',
     shadowColor: colors.primary,
     shadowOffset: { width: 0, height: 6 },
@@ -207,6 +195,7 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: colors.text.primary,
     marginBottom: spacing.xs,
+    flexDirection: 'row',
   },
   xpLabel: {
     fontSize: 16,

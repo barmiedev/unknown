@@ -11,6 +11,7 @@ interface ScreenProps {
   showsVerticalScrollIndicator?: boolean;
   style?: any;
   withoutBottomSafeArea?: boolean;
+  contentContainerStyle?: any;
 }
 
 export function Screen({
@@ -21,6 +22,7 @@ export function Screen({
   showsVerticalScrollIndicator = false,
   style,
   withoutBottomSafeArea = false,
+  contentContainerStyle,
 }: ScreenProps) {
   const Container = scrollable ? ScrollView : View;
   
@@ -33,7 +35,7 @@ export function Screen({
         <Container 
           style={[styles.content, { paddingHorizontal }]}
           showsVerticalScrollIndicator={showsVerticalScrollIndicator}
-          contentContainerStyle={scrollable ? styles.scrollContent : undefined}
+          contentContainerStyle={[scrollable ? styles.scrollContent : undefined, contentContainerStyle]}
         >
           {children}
         </Container>

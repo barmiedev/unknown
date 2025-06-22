@@ -5,6 +5,7 @@ import { useFrameworkReady } from '@/hooks/useFrameworkReady';
 import { useFonts } from 'expo-font';
 import * as SplashScreen from 'expo-splash-screen';
 import { AuthProvider, useAuth } from '@/contexts/AuthContext';
+import { AudioProvider } from '@/contexts/AudioContext';
 import { router } from 'expo-router';
 import '../global.css';
 
@@ -83,8 +84,10 @@ export default function RootLayout() {
 
   return (
     <AuthProvider>
-      <RootLayoutNav />
-      <StatusBar style="light" backgroundColor="#19161a" />
+      <AudioProvider>
+        <RootLayoutNav />
+        <StatusBar style="light" backgroundColor="#19161a" />
+      </AudioProvider>
     </AuthProvider>
   );
 }
