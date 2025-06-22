@@ -419,7 +419,7 @@ export default function ArtistUnveilView({
               </View>
 
               {/* About the Artist */}
-              <View style={styles.section}>
+              <View style={styles.lastSection}>
                 <Heading variant="h4" color="primary" style={styles.sectionTitle}>
                   About the Artist
                 </Heading>

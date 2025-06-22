@@ -356,6 +356,7 @@ export default function HistoryScreen() {
           showPlaybackControls={false}
           onContinueListening={handleBackToHistory}
           withoutBottomSafeArea
+          paddingBottom={paddingBottom}
         />
       </Animated.View>
     );
@@ -371,6 +372,7 @@ export default function HistoryScreen() {
           onUnfollow={handleUnfollow}
           onFollow={handleFollow}
           isFollowing={isFollowingArtist}
+          paddingBottom={paddingBottom}
         />
       </Animated.View>
     );

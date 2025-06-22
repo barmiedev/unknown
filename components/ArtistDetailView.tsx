@@ -17,6 +17,7 @@ interface ArtistDetailViewProps {
   onUnfollow: (artistId: string) => void;
   onFollow: (artistId: string) => void;
   isFollowing: boolean;
+  paddingBottom?: number;
 }
 
 export default function ArtistDetailView({ 
@@ -24,7 +25,8 @@ export default function ArtistDetailView({
   onBack, 
   onUnfollow, 
   onFollow, 
-  isFollowing 
+  isFollowing,
+  paddingBottom = 0
 }: ArtistDetailViewProps) {
   const handleToggleFollow = () => {
     if (isFollowing) {
@@ -38,7 +40,7 @@ export default function ArtistDetailView({
     <Screen backgroundColor={colors.background} withoutBottomSafeArea paddingHorizontal={0}>
       <FloatingBackButton onPress={onBack} />
 
-      <ScrollView showsVerticalScrollIndicator={false}>
+      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom }}>
         <View style={{ paddingHorizontal: spacing.lg }}>
           {/* Artist Header */}
           <View style={styles.artistHeader}>
@@ -206,7 +208,7 @@ const styles = StyleSheet.create({
     paddingBottom: spacing.lg,
   },
   followSection: {
-    paddingBottom: spacing.xl,
+    paddingBottom: spacing.sm,
   },
   followButton: {
     flexDirection: 'row',
