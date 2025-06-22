@@ -6,7 +6,7 @@ import { Text } from '@/components/typography/Text';
 
 interface ButtonProps {
   children: React.ReactNode;
-  variant?: 'primary' | 'secondary' | 'outline' | 'ghost' | 'success' | 'outlineError';
+  variant?: 'primary' | 'secondary' | 'outline' | 'ghost' | 'success' | 'outlineError' | 'setting';
   size?: 'small' | 'medium' | 'large';
   disabled?: boolean;
   loading?: boolean;
@@ -46,6 +46,11 @@ const variantStyles = {
     backgroundColor: 'transparent',
     borderWidth: 1,
     borderColor: colors.status.error,
+  },
+  setting: {
+    backgroundColor: colors.surface,
+    borderWidth: 0,
+    borderColor: 'transparent',
   }
 };
 
@@ -84,6 +89,8 @@ export function Button({
                    variant === 'outline' ? 'accent' : 
                    variant === 'outlineError' ? 'statusError' : 'primary';
 
+  const isSettingVariant = variant === 'setting';
+
   return (
     <TouchableOpacity
       style={[
@@ -91,6 +98,7 @@ export function Button({
         variantStyles[variant],
         sizeStyles[size],
         isDisabled && styles.disabled,
+        isSettingVariant && styles.settingButton,
         style,
       ]}
       onPress={onPress}
@@ -100,11 +108,16 @@ export function Button({
       {loading ? (
         <ActivityIndicator color={colors.text.primary} />
       ) : (
-        <View style={styles.content}>
+        <View style={[styles.content, isSettingVariant && styles.settingContent]}>
           {icon && iconPosition === 'left' && (
             <View style={styles.iconLeft}>{icon}</View>
           )}
-          <Text variant="button" color={textColor}>
+          <Text 
+            variant={isSettingVariant ? "body" : "button"} 
+            color={textColor}
+            weight={isSettingVariant ? "regular" : undefined}
+            style={isSettingVariant && styles.settingText}
+          >
             {children}
           </Text>
           {icon && iconPosition === 'right' && (
@@ -128,6 +141,19 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  settingButton: {
+    justifyContent: 'flex-start',
+    alignItems: 'flex-start',
+  },
+  settingContent: {
+    justifyContent: 'flex-start',
+    alignItems: 'center',
+    width: '100%',
+  },
+  settingText: {
+    textAlign: 'left',
+    flex: 1,
   },
   iconLeft: {
     marginRight: spacing.sm,

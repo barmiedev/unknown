@@ -1,123 +1,149 @@
 import React, { useState, useEffect } from 'react';
-import { View, StyleSheet } from 'react-native';
-import { Award, Flame, Star, TrendingUp, LogOut } from 'lucide-react-native';
+import { View, StyleSheet, Modal, TouchableOpacity, ScrollView } from 'react-native';
+import { LogOut, ChevronRight, X, Music, Heart, Headphones } from 'lucide-react-native';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/contexts/AuthContext';
 import { Screen } from '@/components/layout/Screen';
 import { Heading } from '@/components/typography/Heading';
 import { Text } from '@/components/typography/Text';
 import { Button } from '@/components/buttons/Button';
+import { SelectionChip } from '@/components/selection/SelectionChip';
 import { colors } from '@/utils/colors';
 import { spacing, borderRadius } from '@/utils/spacing';
-import { UserStats, Badge } from '@/types';
 import { TabHeader } from '@/components/navigation';
+import { 
+  PLATFORM_NAMES, 
+  PLATFORM_COLORS, 
+  DEFAULT_STREAMING_PLATFORM 
+} from '@/lib/platforms';
+import { GENRES, MOODS } from '@/utils/constants';
 
-const AVAILABLE_BADGES: Badge[] = [
-  {
-    id: 'first_discovery',
-    name: 'First Discovery',
-    description: 'Rated your first track',
-    icon: '🎵',
-    unlocked: false,
-  },
-  {
-    id: 'streak_7',
-    name: 'Weekly Explorer',
-    description: '7-day listening streak',
-    icon: '🔥',
-    unlocked: false,
-  },
-  {
-    id: 'critic',
-    name: 'Music Critic',
-    description: 'Written 10 reviews',
-    icon: '✍️',
-    unlocked: false,
-  },
-  {
-    id: 'trendsetter',
-    name: 'Trendsetter',
-    description: 'First to 5-star a track that hit 5K streams',
-    icon: '🚀',
-    unlocked: false,
-  },
-  {
-    id: 'deep_diver',
-    name: 'Deep Diver',
-    description: 'Discovered 100 tracks',
-    icon: '🤿',
-    unlocked: false,
-  },
-];
+const STREAMING_PLATFORMS = Object.entries(PLATFORM_NAMES).map(([id, name]) => ({
+  id,
+  name,
+  color: PLATFORM_COLORS[id as keyof typeof PLATFORM_COLORS],
+}));
 
 export default function ProfileScreen() {
   const { user, signOut } = useAuth();
-  const [stats, setStats] = useState<UserStats>({
-    totalTracks: 0,
-    averageRating: 0,
-    streakDays: 0,
-    badges: [],
-    points: 0,
-    reviewsWritten: 0,
-  });
-  const [badges, setBadges] = useState<Badge[]>(AVAILABLE_BADGES);
+  const [selectedGenres, setSelectedGenres] = useState<string[]>([]);
+  const [selectedMoods, setSelectedMoods] = useState<string[]>([]);
+  const [preferredPlatform, setPreferredPlatform] = useState<string>(DEFAULT_STREAMING_PLATFORM);
   const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  
+  // Modal states
+  const [showGenreModal, setShowGenreModal] = useState(false);
+  const [showMoodModal, setShowMoodModal] = useState(false);
+  const [showPlatformModal, setShowPlatformModal] = useState(false);
+
+  // Discovery stats
+  const [totalTracks, setTotalTracks] = useState(0);
+  const [averageRating, setAverageRating] = useState(0);
 
   useEffect(() => {
     if (user?.id) {
-      loadUserStats();
+      loadPreferences();
+      loadDiscoveryStats();
     }
   }, [user]);
 
-  const loadUserStats = async () => {
+  const loadPreferences = async () => {
     if (!user?.id) return;
 
     try {
-      // Load user ratings
-      const { data: ratings, error: ratingsError } = await supabase
-        .from('user_ratings')
-        .select('rating, created_at')
-        .eq('profile_id', user.id);
+      // Load music preferences
+      const { data: musicPrefs, error: musicError } = await supabase
+        .from('user_preferences')
+        .select('*')
+        .eq('profile_id', user.id)
+        .single();
 
-      if (ratingsError) throw ratingsError;
+      if (musicPrefs) {
+        setSelectedGenres(musicPrefs.preferred_genres || []);
+        setSelectedMoods(musicPrefs.preferred_moods || []);
+      }
 
-      // Load user badges
-      const { data: userBadges, error: badgesError } = await supabase
-        .from('user_badges')
-        .select('badge_id')
-        .eq('profile_id', user.id);
+      // Load streaming preferences
+      const { data: streamingPrefs, error: streamingError } = await supabase
+        .from('user_streaming_preferences')
+        .select('preferred_platform')
+        .eq('profile_id', user.id)
+        .maybeSingle();
 
-      if (badgesError) throw badgesError;
-
-      // Calculate stats
-      const totalTracks = ratings?.length || 0;
-      const averageRating = ratings?.length 
-        ? ratings.reduce((sum, r) => sum + r.rating, 0) / ratings.length 
-        : 0;
-      
-      const streakDays = 5; // Demo value
-      const points = totalTracks * 10 + (userBadges?.length || 0) * 50;
-      
-      const unlockedBadgeIds = userBadges?.map(b => b.badge_id) || [];
-      const updatedBadges = badges.map(badge => ({
-        ...badge,
-        unlocked: unlockedBadgeIds.includes(badge.id),
-      }));
-
-      setStats({
-        totalTracks,
-        averageRating,
-        streakDays,
-        badges: unlockedBadgeIds,
-        points,
-        reviewsWritten: 0,
-      });
-      setBadges(updatedBadges);
+      if (streamingPrefs) {
+        setPreferredPlatform(streamingPrefs.preferred_platform);
+      }
 
     } catch (error) {
-      console.error('Error loading user stats:', error);
+      console.error('Error loading preferences:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadDiscoveryStats = async () => {
+    if (!user?.id) return;
+
+    try {
+      const { data: ratings, error } = await supabase
+        .from('user_ratings')
+        .select('rating')
+        .eq('profile_id', user.id);
+
+      if (error) throw error;
+
+      const total = ratings?.length || 0;
+      const average = ratings?.length 
+        ? ratings.reduce((sum, r) => sum + r.rating, 0) / ratings.length 
+        : 0;
+
+      setTotalTracks(total);
+      setAverageRating(average);
+    } catch (error) {
+      console.error('Error loading discovery stats:', error);
+    }
+  };
+
+  const savePreferences = async () => {
+    if (!user?.id) return;
+
+    setSaving(true);
+    try {
+      // Save music preferences
+      const { error: musicError } = await supabase
+        .from('user_preferences')
+        .upsert({
+          profile_id: user.id,
+          user_id: user.id,
+          preferred_genres: selectedGenres,
+          preferred_moods: selectedMoods,
+          min_duration: 60,
+          max_duration: 300,
+          updated_at: new Date().toISOString(),
+        }, {
+          onConflict: 'user_id'
+        });
+
+      if (musicError) throw musicError;
+
+      // Save streaming preferences
+      const { error: streamingError } = await supabase
+        .from('user_streaming_preferences')
+        .upsert({
+          profile_id: user.id,
+          preferred_platform: preferredPlatform,
+          updated_at: new Date().toISOString(),
+        }, {
+          onConflict: 'profile_id'
+        });
+
+      if (streamingError) throw streamingError;
+
+    } catch (error) {
+      console.error('Error saving preferences:', error);
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -127,6 +153,37 @@ export default function ProfileScreen() {
     } catch (error) {
       console.error('Error signing out:', error);
     }
+  };
+
+  const toggleGenre = (genre: string) => {
+    setSelectedGenres(prev => 
+      prev.includes(genre) 
+        ? prev.filter(g => g !== genre)
+        : [...prev, genre]
+    );
+  };
+
+  const toggleMood = (mood: string) => {
+    setSelectedMoods(prev => 
+      prev.includes(mood) 
+        ? prev.filter(m => m !== mood)
+        : [...prev, mood]
+    );
+  };
+
+  const handleGenreModalClose = () => {
+    setShowGenreModal(false);
+    savePreferences();
+  };
+
+  const handleMoodModalClose = () => {
+    setShowMoodModal(false);
+    savePreferences();
+  };
+
+  const handlePlatformModalClose = () => {
+    setShowPlatformModal(false);
+    savePreferences();
   };
 
   if (loading) {
@@ -143,145 +200,131 @@ export default function ProfileScreen() {
     <Screen scrollable paddingHorizontal={24} withoutBottomSafeArea>
       <TabHeader
         title={user?.profile?.display_name || user?.profile?.username || 'Profile'}
-        subtitle="Your music discovery journey"
+        subtitle="Manage your account and preferences"
       />
 
-      {/* Stats Overview */}
-      <View style={styles.statsContainer}>
-        <View style={styles.statsHeader}>
-          <Heading variant="h4" color="primary">Discovery Stats</Heading>
-          <View style={styles.pointsBadge}>
-            <Text variant="caption" color="primary" style={styles.pointsText}>
-              {stats.points} pts
-            </Text>
-          </View>
-        </View>
-
+      {/* Discovery Stats */}
+      <View style={styles.section}>
+        <Heading variant="h4" color="primary" style={styles.sectionTitle}>
+          Discovery Stats
+        </Heading>
+        
         <View style={styles.statsGrid}>
           <View style={styles.statItem}>
             <Text variant="button" color="primary" style={styles.statValue}>
-              {stats.totalTracks}
+              {totalTracks}
             </Text>
-            <Text variant="caption" color="secondary">Tracks</Text>
+            <Text variant="caption" color="secondary">Tracks Rated</Text>
           </View>
           <View style={styles.statItem}>
             <Text variant="button" color="primary" style={styles.statValue}>
-              {stats.averageRating.toFixed(1)}
+              {averageRating.toFixed(1)}
             </Text>
             <Text variant="caption" color="secondary">Avg Rating</Text>
           </View>
-          <View style={styles.statItem}>
-            <Text variant="button" color="primary" style={styles.statValue}>
-              {stats.streakDays}
-            </Text>
-            <Text variant="caption" color="secondary">Day Streak</Text>
-          </View>
         </View>
       </View>
 
-      {/* Achievements */}
+      {/* Discovery Preferences */}
       <View style={styles.section}>
         <Heading variant="h4" color="primary" style={styles.sectionTitle}>
-          Achievements
+          Discovery Preferences
         </Heading>
         
-        <View style={styles.badgesContainer}>
-          {badges.map((badge) => (
-            <View
-              key={badge.id}
-              style={[
-                styles.badgeItem,
-                !badge.unlocked && styles.badgeItemLocked
-              ]}
-            >
-              <View style={styles.badgeContent}>
-                <View style={[
-                  styles.badgeIcon,
-                  badge.unlocked ? styles.badgeIconUnlocked : styles.badgeIconLocked
-                ]}>
-                  <Text style={styles.badgeEmoji}>{badge.icon}</Text>
-                </View>
-                
-                <View style={styles.badgeInfo}>
-                  <Text 
-                    variant="body" 
-                    color={badge.unlocked ? 'primary' : 'secondary'}
-                    style={styles.badgeName}
-                  >
-                    {badge.name}
-                  </Text>
-                  <Text 
-                    variant="caption" 
-                    color="secondary"
-                    style={styles.badgeDescription}
-                  >
-                    {badge.description}
-                  </Text>
-                </View>
-
-                {badge.unlocked && (
-                  <Award size={20} color={colors.primary} strokeWidth={2} />
-                )}
-              </View>
+        <Button
+          variant="setting"
+          size="medium"
+          onPress={() => setShowGenreModal(true)}
+          icon={<Music size={20} color={colors.text.primary} strokeWidth={2} />}
+          iconPosition="left"
+          style={styles.settingButton}
+        >
+          <View style={styles.settingContent}>
+            <View style={styles.settingTextContainer}>
+              <Text variant="body" color="primary" style={styles.settingTitle}>
+                Genres
+              </Text>
+              <Text variant="caption" color="secondary" style={styles.settingSubtitle}>
+                {selectedGenres.length > 0 ? `${selectedGenres.length} selected` : 'None selected'}
+              </Text>
             </View>
-          ))}
-        </View>
+            <ChevronRight size={16} color={colors.text.secondary} strokeWidth={2} />
+          </View>
+        </Button>
+        
+        <Button
+          variant="setting"
+          size="medium"
+          onPress={() => setShowMoodModal(true)}
+          icon={<Heart size={20} color={colors.text.primary} strokeWidth={2} />}
+          iconPosition="left"
+          style={styles.settingButton}
+        >
+          <View style={styles.settingContent}>
+            <View style={styles.settingTextContainer}>
+              <Text variant="body" color="primary" style={styles.settingTitle}>
+                Moods
+              </Text>
+              <Text variant="caption" color="secondary" style={styles.settingSubtitle}>
+                {selectedMoods.length > 0 ? `${selectedMoods.length} selected` : 'None selected'}
+              </Text>
+            </View>
+            <ChevronRight size={16} color={colors.text.secondary} strokeWidth={2} />
+          </View>
+        </Button>
+        
+        <Button
+          variant="setting"
+          size="medium"
+          onPress={() => setShowPlatformModal(true)}
+          icon={<Headphones size={20} color={colors.text.primary} strokeWidth={2} />}
+          iconPosition="left"
+          style={styles.settingButton}
+        >
+          <View style={styles.settingContent}>
+            <View style={styles.settingTextContainer}>
+              <Text variant="body" color="primary" style={styles.settingTitle}>
+                Streaming Platform
+              </Text>
+              <Text variant="caption" color="secondary" style={styles.settingSubtitle}>
+                {PLATFORM_NAMES[preferredPlatform as keyof typeof PLATFORM_NAMES] || preferredPlatform}
+              </Text>
+            </View>
+            <ChevronRight size={16} color={colors.text.secondary} strokeWidth={2} />
+          </View>
+        </Button>
       </View>
 
-      {/* Quick Stats */}
+      {/* Account Settings */}
       <View style={styles.section}>
         <Heading variant="h4" color="primary" style={styles.sectionTitle}>
-          Quick Stats
+          Account
         </Heading>
         
-        <View style={styles.quickStatsGrid}>
-          <View style={styles.quickStatItem}>
-            <Flame size={24} color={colors.primary} strokeWidth={2} style={styles.quickStatIcon} />
-            <Text variant="body" color="primary" style={styles.quickStatValue}>
-              {stats.streakDays}
-            </Text>
-            <Text variant="caption" color="secondary" style={styles.quickStatLabel}>
-              Current Streak
-            </Text>
-          </View>
-
-          <View style={styles.quickStatItem}>
-            <Star size={24} color={colors.primary} strokeWidth={2} style={styles.quickStatIcon} />
-            <Text variant="body" color="primary" style={styles.quickStatValue}>
-              {stats.averageRating.toFixed(1)}
-            </Text>
-            <Text variant="caption" color="secondary" style={styles.quickStatLabel}>
-              Avg Rating
-            </Text>
-          </View>
-
-          <View style={styles.quickStatItem}>
-            <TrendingUp size={24} color={colors.primary} strokeWidth={2} style={styles.quickStatIcon} />
-            <Text variant="body" color="primary" style={styles.quickStatValue}>
-              {stats.badges.length}
-            </Text>
-            <Text variant="caption" color="secondary" style={styles.quickStatLabel}>
-              Badges
-            </Text>
-          </View>
-        </View>
-      </View>
-
-      {/* Settings */}
-      <View style={styles.section}>
-        <Heading variant="h4" color="primary" style={styles.sectionTitle}>
-          Settings
-        </Heading>
-        
-        <Button variant="secondary" size="medium" onPress={() => {}} style={styles.settingButton}>
+        <Button
+          variant="setting"
+          size="medium"
+          onPress={() => {}}
+          style={styles.settingButton}
+        >
           Account Settings
         </Button>
         
-        <Button variant="secondary" size="medium" onPress={() => {}} style={styles.settingButton}>
+        <Button
+          variant="setting"
+          size="medium"
+          onPress={() => {}}
+          style={styles.settingButton}
+        >
           Privacy Settings
         </Button>
         
-        <Button variant="secondary" size="medium" onPress={() => {}} style={styles.settingButton}>
+        <Button
+          variant="setting"
+          size="medium"
+          onPress={() => {}}
+          style={styles.settingButton}
+        >
           Notifications
         </Button>
         
@@ -296,6 +339,114 @@ export default function ProfileScreen() {
           Sign Out
         </Button>
       </View>
+
+      {/* Genre Modal */}
+      <Modal
+        visible={showGenreModal}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={handleGenreModalClose}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <Heading variant="h4" color="primary">Select Genres</Heading>
+              <TouchableOpacity
+                onPress={handleGenreModalClose}
+                style={styles.modalCloseButton}
+              >
+                <X size={24} color={colors.text.secondary} strokeWidth={2} />
+              </TouchableOpacity>
+            </View>
+            
+            <ScrollView style={styles.modalScrollView} showsVerticalScrollIndicator={false}>
+              <View style={styles.modalOptions}>
+                {GENRES.map((genre) => (
+                  <SelectionChip
+                    key={genre}
+                    label={genre}
+                    selected={selectedGenres.includes(genre)}
+                    onPress={() => toggleGenre(genre)}
+                    style={styles.modalOptionChip}
+                  />
+                ))}
+              </View>
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Mood Modal */}
+      <Modal
+        visible={showMoodModal}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={handleMoodModalClose}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <Heading variant="h4" color="primary">Select Moods</Heading>
+              <TouchableOpacity
+                onPress={handleMoodModalClose}
+                style={styles.modalCloseButton}
+              >
+                <X size={24} color={colors.text.secondary} strokeWidth={2} />
+              </TouchableOpacity>
+            </View>
+            
+            <ScrollView style={styles.modalScrollView} showsVerticalScrollIndicator={false}>
+              <View style={styles.modalOptions}>
+                {MOODS.map((mood) => (
+                  <SelectionChip
+                    key={mood}
+                    label={mood}
+                    selected={selectedMoods.includes(mood)}
+                    onPress={() => toggleMood(mood)}
+                    style={styles.modalOptionChip}
+                  />
+                ))}
+              </View>
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Platform Modal */}
+      <Modal
+        visible={showPlatformModal}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={handlePlatformModalClose}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <Heading variant="h4" color="primary">Streaming Platform</Heading>
+              <TouchableOpacity
+                onPress={handlePlatformModalClose}
+                style={styles.modalCloseButton}
+              >
+                <X size={24} color={colors.text.secondary} strokeWidth={2} />
+              </TouchableOpacity>
+            </View>
+            
+            <ScrollView style={styles.modalScrollView} showsVerticalScrollIndicator={false}>
+              <View style={styles.modalOptions}>
+                {STREAMING_PLATFORMS.map((platform) => (
+                  <SelectionChip
+                    key={platform.id}
+                    label={platform.name}
+                    selected={preferredPlatform === platform.id}
+                    onPress={() => setPreferredPlatform(platform.id)}
+                    style={styles.modalOptionChip}
+                  />
+                ))}
+              </View>
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
     </Screen>
   );
 }
@@ -306,37 +457,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-  statsContainer: {
-    backgroundColor: colors.surface,
-    borderRadius: borderRadius.lg,
-    padding: spacing.lg,
-    marginBottom: spacing.lg,
-  },
-  statsHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: spacing.md,
-  },
-  pointsBadge: {
-    backgroundColor: colors.primary,
-    paddingHorizontal: spacing.sm,
-    paddingVertical: spacing.xs,
-    borderRadius: borderRadius.md,
-  },
-  pointsText: {
-    fontSize: 14,
-  },
-  statsGrid: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-  },
-  statItem: {
-    alignItems: 'center',
-  },
-  statValue: {
-    fontSize: 24,
-  },
   section: {
     marginBottom: spacing.xl,
   },
@@ -344,72 +464,75 @@ const styles = StyleSheet.create({
     fontSize: 20,
     marginBottom: spacing.md,
   },
-  badgesContainer: {
-    gap: spacing.sm,
-  },
-  badgeItem: {
+  statsGrid: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
     backgroundColor: colors.surface,
     borderRadius: borderRadius.lg,
-    padding: spacing.md,
+    padding: spacing.lg,
   },
-  badgeItemLocked: {
-    opacity: 0.5,
-  },
-  badgeContent: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.md,
-  },
-  badgeIcon: {
-    width: 48,
-    height: 48,
-    borderRadius: borderRadius.md,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  badgeIconUnlocked: {
-    backgroundColor: 'rgba(69, 36, 81, 0.2)',
-  },
-  badgeIconLocked: {
-    backgroundColor: colors.surface,
-  },
-  badgeEmoji: {
-    fontSize: 18,
-  },
-  badgeInfo: {
-    flex: 1,
-  },
-  badgeName: {
-    fontSize: 16,
-  },
-  badgeDescription: {
-    fontSize: 14,
-  },
-  quickStatsGrid: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    gap: spacing.sm,
-  },
-  quickStatItem: {
-    flex: 1,
-    backgroundColor: colors.surface,
-    borderRadius: borderRadius.lg,
-    padding: spacing.md,
+  statItem: {
     alignItems: 'center',
   },
-  quickStatIcon: {
-    marginBottom: spacing.sm,
-  },
-  quickStatValue: {
-    fontSize: 18,
-  },
-  quickStatLabel: {
-    fontSize: 14,
+  statValue: {
+    fontSize: 24,
   },
   settingButton: {
     marginBottom: spacing.sm,
   },
+  settingContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    width: '100%',
+  },
+  settingTextContainer: {
+    flex: 1,
+  },
+  settingTitle: {
+    fontSize: 16,
+    marginBottom: 2,
+  },
+  settingSubtitle: {
+    fontSize: 14,
+  },
   signOutButton: {
     borderColor: colors.status.error,
+    marginTop: spacing.md,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: spacing.lg,
+  },
+  modalContent: {
+    backgroundColor: colors.background,
+    borderRadius: 20,
+    width: '100%',
+    maxWidth: 400,
+    maxHeight: '80%',
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: spacing.lg,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.surface,
+  },
+  modalCloseButton: {
+    padding: spacing.xs,
+  },
+  modalScrollView: {
+    maxHeight: 400,
+  },
+  modalOptions: {
+    padding: spacing.lg,
+    gap: spacing.sm,
+  },
+  modalOptionChip: {
+    marginBottom: 0,
   },
 });
