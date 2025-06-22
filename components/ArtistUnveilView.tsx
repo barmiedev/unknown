@@ -659,7 +659,6 @@ const styles = StyleSheet.create({
   },
   streamingButtonsRow: {
     flexDirection: 'row',
-    gap: spacing.sm,
   },
   preferredStreamingButton: {
     backgroundColor: colors.surface,

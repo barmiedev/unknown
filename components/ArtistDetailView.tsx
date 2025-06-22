@@ -1,5 +1,5 @@
-import React from 'react';
-import { View, StyleSheet, ScrollView, Image, TouchableOpacity } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, StyleSheet, ScrollView, Image, TouchableOpacity, Linking, Alert } from 'react-native';
 import { Users, UserMinus, UserPlus } from 'lucide-react-native';
 import { Screen } from '@/components/layout/Screen';
 import { Heading } from '@/components/typography/Heading';
@@ -9,7 +9,9 @@ import { Button } from '@/components/buttons';
 import { colors } from '@/utils/colors';
 import { spacing, borderRadius } from '@/utils/spacing';
 import { formatDate } from '@/utils/formatting';
-import { SubscribedArtist } from '@/types';
+import { SubscribedArtist, SocialLink } from '@/types';
+import SocialIcon from '@/components/media/SocialIcon';
+import { supabase } from '@/lib/supabase';
 
 interface ArtistDetailViewProps {
   artist: SubscribedArtist;
@@ -28,6 +30,39 @@ export default function ArtistDetailView({
   isFollowing,
   paddingBottom = 0
 }: ArtistDetailViewProps) {
+  const [socialLinks, setSocialLinks] = useState<SocialLink[]>([]);
+
+  useEffect(() => {
+    loadSocialLinks();
+  }, [artist.id]);
+
+  const loadSocialLinks = async () => {
+    try {
+      const { data: socialData, error: socialError } = await supabase
+        .from('artist_social_links')
+        .select('platform, url')
+        .eq('artist_id', artist.id);
+
+      if (socialError) throw socialError;
+      setSocialLinks(socialData || []);
+    } catch (error) {
+      console.error('Error loading social links:', error);
+    }
+  };
+
+  const handleOpenLink = async (url: string) => {
+    try {
+      const supported = await Linking.canOpenURL(url);
+      if (supported) {
+        await Linking.openURL(url);
+      } else {
+        Alert.alert('Error', 'Cannot open this link');
+      }
+    } catch (error) {
+      Alert.alert('Error', 'Failed to open link');
+    }
+  };
+
   const handleToggleFollow = () => {
     if (isFollowing) {
       onUnfollow(artist.id);
@@ -107,6 +142,29 @@ export default function ArtistDetailView({
               </Text>
             </View>
           )}
+
+          
+
+          {/* Social Media Links */}
+          {socialLinks.length > 0? (
+            <View style={styles.socialSection}>
+              <Heading variant="h4" color="primary" style={styles.socialTitle}>
+                Connect with {artist.name}
+              </Heading>
+              <View style={styles.socialLinksContainer}>
+                {socialLinks.map((link) => (
+                  <TouchableOpacity
+                    key={link.platform}
+                    style={styles.socialButton}
+                    onPress={() => handleOpenLink(link.url)}
+                    activeOpacity={0.8}
+                  >
+                    <SocialIcon platform={link.platform} size={24} color={colors.text.primary} />
+                  </TouchableOpacity>
+                ))}
+              </View>
+            </View>
+          ): null}
 
           {/* Follow/Unfollow Button */}
           <View style={styles.followSection}>
@@ -208,7 +266,7 @@ const styles = StyleSheet.create({
     paddingBottom: spacing.lg,
   },
   followSection: {
-    paddingBottom: spacing.sm,
+    paddingBottom: spacing.md,
   },
   followButton: {
     flexDirection: 'row',
@@ -224,5 +282,26 @@ const styles = StyleSheet.create({
     borderColor: colors.status.error,
     backgroundColor: 'transparent',
     borderWidth: 1,
+  },
+  socialSection: {
+    paddingBottom: spacing.sm,
+  },
+  socialTitle: {
+    fontSize: 18,
+    marginBottom: spacing.md,
+    lineHeight: 24,
+  },
+  socialLinksContainer: {
+    flexDirection: 'row',
+    gap: spacing.sm,
+    justifyContent: 'center',
+  },
+  socialButton: {
+    backgroundColor: colors.surface,
+    height: 48,
+    borderRadius: borderRadius.lg,
+    alignItems: 'center',
+    justifyContent: 'center',
+    flex: 1,
   },
 }); 
