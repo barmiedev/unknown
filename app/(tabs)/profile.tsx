@@ -638,10 +638,10 @@ const styles = StyleSheet.create({
   },
   settingTextContainer: {
     flex: 1,
+    gap: spacing.xs,
   },
   settingTitle: {
     fontSize: 16,
-    marginBottom: 2,
   },
   settingSubtitle: {
     fontSize: 14,

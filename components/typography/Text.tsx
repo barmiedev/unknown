@@ -7,7 +7,7 @@ import { FontWeight } from '@/lib/fonts';
 interface TextProps {
   children: React.ReactNode;
   variant?: 'body' | 'caption' | 'button' | 'link';
-  color?: 'primary' | 'secondary' | 'accent' | 'statusError';
+  color?: 'primary' | 'secondary' | 'accent' | 'statusError' | 'reward';
   weight?: FontWeight;
   align?: 'left' | 'center' | 'right';
   style?: any;
@@ -25,6 +25,7 @@ const colorStyles = {
   secondary: { color: colors.text.secondary },
   accent: { color: colors.primary },
   statusError: { color: colors.status.error },
+  reward: { color: colors.rewards.accent },
 };
 
 export function Text({ 

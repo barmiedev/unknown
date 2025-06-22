@@ -171,7 +171,7 @@ const styles = StyleSheet.create({
   },
   trackInfo: {
     alignItems: 'center',
-    marginBottom: spacing.xl,
+    marginBottom: spacing.sm,
   },
   trackTitle: {
     fontSize: 24,
@@ -183,7 +183,7 @@ const styles = StyleSheet.create({
   progressContainer: {
     width: '100%',
     maxWidth: 320,
-    marginBottom: spacing.xl,
+    marginBottom: spacing.sm,
   },
   progressBar: {
     height: 4,
@@ -196,14 +196,14 @@ const styles = StyleSheet.create({
     borderRadius: 2,
   },
   nextButton: {
-    marginBottom: spacing.xl,
+    marginBottom: spacing.sm,
   },
   ratingDisplay: {
     width: '100%',
-    backgroundColor: 'rgba(222, 215, 224, 0.1)',
+    backgroundColor: colors.background,
     borderRadius: borderRadius.lg,
     padding: spacing.md,
-    alignItems: 'flex-start',
+    alignItems: 'center',
   },
   ratingTitle: {
     fontSize: 16,

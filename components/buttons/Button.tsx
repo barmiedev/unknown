@@ -156,7 +156,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   iconLeft: {
-    marginRight: spacing.sm,
+    marginRight: spacing.md,
   },
   iconRight: {
     marginLeft: spacing.sm,

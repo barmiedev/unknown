@@ -11,6 +11,10 @@ export const colors = {
     error: '#51242d',
     warning: '#51410c',
   },
+  rewards: {
+    accent: '#efa504',
+    secondary: '#de9400',
+  }
 } as const;
 
 export type ColorKey = keyof typeof colors;

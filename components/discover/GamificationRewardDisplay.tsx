@@ -46,7 +46,7 @@ export function GamificationRewardDisplay({
         {/* Celebration Header */}
         <View style={styles.celebrationHeader}>
           <View style={styles.celebrationIcon}>
-            <Zap size={32} color={colors.primary} strokeWidth={2} />
+            <Zap size={32} color={colors.rewards.accent} strokeWidth={2} />
           </View>
           <Heading variant="h3" color="primary" style={styles.celebrationTitle}>
             Great Job!
@@ -65,7 +65,7 @@ export function GamificationRewardDisplay({
         </View>
 
         {/* XP Breakdown */}
-        <View style={styles.xpBreakdown}>
+        {reward.daily_streak_xp || reward.consecutive_bonus_xp ? <View style={styles.xpBreakdown}>
           <Text variant="body" color="primary" style={styles.breakdownTitle}>
             XP Breakdown:
           </Text>
@@ -89,7 +89,7 @@ export function GamificationRewardDisplay({
               </Text>
             </View>
           ) : null}
-        </View>
+        </View> : null}
 
         {/* New Badges */}
         {reward.new_badges && reward.new_badges.length > 0 ? (
@@ -153,7 +153,7 @@ const styles = StyleSheet.create({
     width: '100%',
     maxWidth: 380,
     borderWidth: 3,
-    borderColor: colors.primary,
+    borderColor: 'transparent',
     shadowColor: colors.primary,
     shadowOffset: { width: 0, height: 12 },
     shadowOpacity: 0.3,
@@ -169,7 +169,7 @@ const styles = StyleSheet.create({
     width: 80,
     height: 80,
     borderRadius: 40,
-    backgroundColor: 'rgba(69, 36, 81, 0.2)',
+    backgroundColor: colors.surface,
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: spacing.md,

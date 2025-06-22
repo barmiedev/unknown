@@ -1,5 +1,6 @@
 import React from 'react';
 import { View, TouchableOpacity, StyleSheet } from 'react-native';
+import { Star, StarOff } from 'lucide-react-native';
 import { colors } from '@/utils/colors';
 import { spacing } from '@/utils/spacing';
 import { Text } from '@/components/typography/Text';
@@ -14,9 +15,9 @@ interface StarRatingProps {
 }
 
 const sizeStyles = {
-  small: { fontSize: 14 },
-  medium: { fontSize: 18 },
-  large: { fontSize: 24 },
+  small: { size: 14 },
+  medium: { size: 18 },
+  large: { size: 24 },
 };
 
 export function StarRating({
@@ -44,14 +45,18 @@ export function StarRating({
             activeOpacity={readonly ? 1 : 0.7}
             style={styles.starButton}
           >
-            <Text 
-              style={[
-                sizeStyles[size],
-                { color: index < rating ? colors.text.primary : colors.text.secondary }
-              ]}
-            >
-              ★
-            </Text>
+            {index < rating ? (
+              <Star 
+                size={sizeStyles[size].size}
+                color={colors.text.primary}
+                fill={colors.text.primary}
+              />
+            ) : (
+              <Star
+                size={sizeStyles[size].size}
+                color={colors.text.secondary}
+              />
+            )}
           </TouchableOpacity>
         ))}
       </View>

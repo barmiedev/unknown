@@ -1,5 +1,5 @@
 import { Tabs } from 'expo-router';
-import { Chrome as Home, History, Trophy, User } from 'lucide-react-native';
+import { Chrome as Home, History, Trophy, User, Gem, Radar } from 'lucide-react-native';
 import { colors } from '@/utils/colors';
 
 export default function TabLayout() {
@@ -30,16 +30,16 @@ export default function TabLayout() {
         options={{
           title: 'Discover',
           tabBarIcon: ({ size, color }) => (
-            <Home size={size} color={color} strokeWidth={1.5} />
+            <Radar size={size} color={color} strokeWidth={1.5} />
           ),
         }}
       />
       <Tabs.Screen
         name="history"
         options={{
-          title: 'History',
+          title: 'My finds',
           tabBarIcon: ({ size, color }) => (
-            <History size={size} color={color} strokeWidth={1.5} />
+            <Gem size={size} color={color} strokeWidth={1.5} />
           ),
         }}
       />

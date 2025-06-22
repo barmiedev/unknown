@@ -12,6 +12,7 @@ import { colors } from '@/utils/colors';
 import { spacing, borderRadius } from '@/utils/spacing';
 import { UserStats, Badge, LeaderboardData } from '@/types';
 import { TabHeader } from '@/components/navigation';
+import { fonts } from '@/lib/fonts';
 
 export default function JourneyScreen() {
   const { user, refreshUser } = useAuth();
@@ -263,7 +264,7 @@ export default function JourneyScreen() {
         
         <View style={styles.quickStatsGrid}>
           <View style={styles.quickStatItem}>
-            <Flame size={24} color={colors.primary} strokeWidth={2} style={styles.quickStatIcon} />
+            <Flame size={24} color={colors.rewards.accent} strokeWidth={2} style={styles.quickStatIcon} />
             <Text variant="body" color="primary" style={styles.quickStatValue}>
               {stats.streakDays}
             </Text>
@@ -273,7 +274,7 @@ export default function JourneyScreen() {
           </View>
 
           <View style={styles.quickStatItem}>
-            <Star size={24} color={colors.primary} strokeWidth={2} style={styles.quickStatIcon} />
+            <Star size={24} color={colors.rewards.accent} strokeWidth={2} style={styles.quickStatIcon} />
             <Text variant="body" color="primary" style={styles.quickStatValue}>
               {stats.reviewsWritten}
             </Text>
@@ -283,7 +284,7 @@ export default function JourneyScreen() {
           </View>
 
           <View style={styles.quickStatItem}>
-            <TrendingUp size={24} color={colors.primary} strokeWidth={2} style={styles.quickStatIcon} />
+            <TrendingUp size={24} color={colors.rewards.accent} strokeWidth={2} style={styles.quickStatIcon} />
             <Text variant="body" color="primary" style={styles.quickStatValue}>
               {stats.consecutiveListenStreak}
             </Text>
@@ -302,7 +303,7 @@ export default function JourneyScreen() {
         
         <View style={styles.preferencesContainer}>
           {favoriteGenre && (
-            <View style={styles.preferenceItem}>
+            <View>
               <Text variant="caption" color="secondary" style={styles.preferenceLabel}>
                 Favorite Genre
               </Text>
@@ -313,7 +314,7 @@ export default function JourneyScreen() {
           )}
           
           {favoriteMood && (
-            <View style={styles.preferenceItem}>
+            <View>
               <Text variant="caption" color="secondary" style={styles.preferenceLabel}>
                 Favorite Mood
               </Text>
@@ -396,11 +397,19 @@ export default function JourneyScreen() {
               </TouchableOpacity>
             </View>
             
+            {/* if no unlocked badges, show a message */}
+            {getUnlockedBadgesCount() === 0 && (
+              <View style={styles.noBadgesContainer}>
+                <Text variant="body" color="secondary">No badges unlocked yet</Text>
+              </View>
+            )}
+
             <ScrollView style={styles.modalScrollView} showsVerticalScrollIndicator={false}>
               {['discovery', 'engagement', 'critic', 'listening', 'social', 'special', 'experimental'].map((category) => {
-                const categoryBadges = getBadgesByCategory(category);
-                if (categoryBadges.length === 0) return null;
+                const categoryBadges = getBadgesByCategory(category).filter(badge => badge.unlocked);
                 
+                // if user has no badges in this category, don't show the category
+                if (categoryBadges.length === 0) return null;
                 return (
                   <View key={category} style={styles.badgeCategoryContainer}>
                     <Text variant="body" color="primary" style={styles.badgeCategoryTitle}>
@@ -412,13 +421,12 @@ export default function JourneyScreen() {
                           key={badge.id}
                           style={[
                             styles.badgeItem,
-                            !badge.unlocked && styles.badgeItemLocked
                           ]}
                         >
                           <Text style={styles.badgeEmoji}>{badge.icon}</Text>
                           <Text 
                             variant="caption" 
-                            color={badge.unlocked ? 'primary' : 'secondary'}
+                            color='primary'
                             style={styles.badgeName}
                           >
                             {badge.name}
@@ -430,9 +438,6 @@ export default function JourneyScreen() {
                           >
                             {badge.description}
                           </Text>
-                          {badge.unlocked && (
-                            <Award size={16} color={colors.primary} strokeWidth={2} style={styles.badgeUnlockedIcon} />
-                          )}
                         </View>
                       ))}
                     </View>
@@ -466,10 +471,6 @@ export default function JourneyScreen() {
             <ScrollView style={styles.modalScrollView} showsVerticalScrollIndicator={false}>
               {leaderboardData && (
                 <View style={styles.leaderboardContainer}>
-                  <Text variant="body" color="secondary" style={styles.leaderboardSubtitle}>
-                    Your Rank: #{leaderboardData.user_rank} with {leaderboardData.user_xp.toLocaleString()} XP
-                  </Text>
-                  
                   <View style={styles.leaderboardList}>
                     {leaderboardData.leaderboard.map((entry) => (
                       <View
@@ -482,7 +483,7 @@ export default function JourneyScreen() {
                         <View style={styles.leaderboardRank}>
                           <Text 
                             variant="body" 
-                            color={entry.is_current_user ? 'accent' : 'primary'}
+                            color='primary'
                             style={styles.leaderboardRankText}
                           >
                             #{entry.rank}
@@ -491,8 +492,8 @@ export default function JourneyScreen() {
                         <View style={styles.leaderboardInfo}>
                           <Text 
                             variant="body" 
-                            color={entry.is_current_user ? 'accent' : 'primary'}
-                            style={styles.leaderboardName}
+                            color='primary'
+                            style={[styles.leaderboardName, entry.is_current_user && styles.leaderboardNameCurrent]}
                           >
                             {entry.display_name}
                           </Text>
@@ -505,7 +506,7 @@ export default function JourneyScreen() {
                           </Text>
                         </View>
                         {entry.is_current_user && (
-                          <Users size={16} color={colors.primary} strokeWidth={2} />
+                          <Users size={16} color={colors.text.primary} strokeWidth={2} />
                         )}
                       </View>
                     ))}
@@ -586,9 +587,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surface,
     borderRadius: borderRadius.lg,
     padding: spacing.lg,
-  },
-  preferenceItem: {
-    marginBottom: spacing.md,
+    gap: spacing.md,
   },
   preferenceLabel: {
     fontSize: 12,
@@ -689,8 +688,12 @@ const styles = StyleSheet.create({
     top: spacing.sm,
     right: spacing.sm,
   },
-  leaderboardContainer: {
+  noBadgesContainer: {
     padding: spacing.lg,
+    alignItems: 'center',
+  },
+  leaderboardContainer: {
+    padding: spacing.md,
   },
   leaderboardSubtitle: {
     fontSize: 14,
@@ -707,10 +710,12 @@ const styles = StyleSheet.create({
     borderRadius: borderRadius.lg,
     padding: spacing.md,
     gap: spacing.md,
+    borderWidth: 1,
+    borderColor: 'transparent',
   },
   leaderboardItemCurrent: {
-    borderWidth: 2,
-    borderColor: colors.primary,
+    borderWidth: 1,
+    borderColor: colors.surface,
   },
   leaderboardRank: {
     width: 40,
@@ -726,6 +731,10 @@ const styles = StyleSheet.create({
   leaderboardName: {
     fontSize: 16,
     marginBottom: spacing.xs,
+  },
+  leaderboardNameCurrent: {
+    fontFamily: fonts.chillax.bold,
+    color: colors.text.primary,
   },
   leaderboardXP: {
     fontSize: 12,

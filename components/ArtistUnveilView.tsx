@@ -634,6 +634,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'flex-start',
     maxWidth: '100%',
+    marginTop: spacing.sm,
   },
   quoteSymbol: {
     fontSize: 28,
