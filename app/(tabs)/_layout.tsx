@@ -1,5 +1,5 @@
 import { Tabs } from 'expo-router';
-import { Chrome as Home, History, Trophy, User, Gem, Radar } from 'lucide-react-native';
+import { Chrome as Home, History, Trophy, User, Gem, Radar, Route } from 'lucide-react-native';
 import { colors } from '@/utils/colors';
 
 export default function TabLayout() {
@@ -15,8 +15,8 @@ export default function TabLayout() {
           paddingBottom: 20,
           paddingTop: 10,
         },
-        tabBarActiveTintColor: '#8b6699',
-        tabBarInactiveTintColor: '#ded7e0',
+        tabBarActiveTintColor: colors.text.primary,
+        tabBarInactiveTintColor: colors.text.secondary,
         tabBarIconStyle: {
           marginBottom: 4,
         },
@@ -48,7 +48,7 @@ export default function TabLayout() {
         options={{
           title: 'Journey',
           tabBarIcon: ({ size, color }) => (
-            <Trophy size={size} color={color} strokeWidth={1.5} />
+            <Route size={size} color={color} strokeWidth={1.5} />
           ),
         }}
       />

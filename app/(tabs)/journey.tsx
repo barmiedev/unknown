@@ -221,10 +221,6 @@ export default function JourneyScreen() {
 
       {/* XP Summary */}
       <View style={styles.section}>
-        <Heading variant="h4" color="primary" style={styles.sectionTitle}>
-          Experience Points
-        </Heading>
-        
         <View style={styles.xpContainer}>
           <View style={styles.xpBadge}>
             <Text variant="button" color="primary" style={styles.xpAmount}>
@@ -238,19 +234,19 @@ export default function JourneyScreen() {
               <Text variant="body" color="primary" style={styles.xpStatValue}>
                 {getUnlockedBadgesCount()}
               </Text>
-              <Text variant="caption" color="secondary">Badges</Text>
+              <Text variant="caption" color="secondary" style={styles.xpStatLabel}>Badges</Text>
             </View>
             <View style={styles.xpStatItem}>
               <Text variant="body" color="primary" style={styles.xpStatValue}>
                 {stats.totalTracksRatedCount}
               </Text>
-              <Text variant="caption" color="secondary">Tracks Rated</Text>
+              <Text variant="caption" color="secondary" style={styles.xpStatLabel}>Tracks Rated</Text>
             </View>
             <View style={styles.xpStatItem}>
               <Text variant="body" color="primary" style={styles.xpStatValue}>
                 {stats.averageRating.toFixed(1)}
               </Text>
-              <Text variant="caption" color="secondary">Avg Rating</Text>
+              <Text variant="caption" color="secondary" style={styles.xpStatLabel}>Avg Rating</Text>
             </View>
           </View>
         </View>
@@ -264,7 +260,7 @@ export default function JourneyScreen() {
         
         <View style={styles.quickStatsGrid}>
           <View style={styles.quickStatItem}>
-            <Flame size={24} color={colors.rewards.accent} strokeWidth={2} style={styles.quickStatIcon} />
+            <Flame size={24} color={colors.text.secondary} strokeWidth={2} style={styles.quickStatIcon} />
             <Text variant="body" color="primary" style={styles.quickStatValue}>
               {stats.streakDays}
             </Text>
@@ -274,7 +270,7 @@ export default function JourneyScreen() {
           </View>
 
           <View style={styles.quickStatItem}>
-            <Star size={24} color={colors.rewards.accent} strokeWidth={2} style={styles.quickStatIcon} />
+            <Star size={24} color={colors.text.secondary} strokeWidth={2} style={styles.quickStatIcon} />
             <Text variant="body" color="primary" style={styles.quickStatValue}>
               {stats.reviewsWritten}
             </Text>
@@ -284,7 +280,7 @@ export default function JourneyScreen() {
           </View>
 
           <View style={styles.quickStatItem}>
-            <TrendingUp size={24} color={colors.rewards.accent} strokeWidth={2} style={styles.quickStatIcon} />
+            <TrendingUp size={24} color={colors.text.secondary} strokeWidth={2} style={styles.quickStatIcon} />
             <Text variant="body" color="primary" style={styles.quickStatValue}>
               {stats.consecutiveListenStreak}
             </Text>
@@ -537,12 +533,11 @@ const styles = StyleSheet.create({
   xpContainer: {
     backgroundColor: colors.surface,
     borderRadius: borderRadius.lg,
-    padding: spacing.lg,
-    alignItems: 'center',
+    padding: spacing.md,
   },
   xpBadge: {
     alignItems: 'center',
-    marginBottom: spacing.md,
+    marginBottom: spacing.lg,
   },
   xpAmount: {
     fontSize: 32,
@@ -550,15 +545,20 @@ const styles = StyleSheet.create({
   },
   xpStats: {
     flexDirection: 'row',
-    justifyContent: 'space-around',
     width: '100%',
   },
   xpStatItem: {
     alignItems: 'center',
+    flex: 1,
+    paddingHorizontal: spacing.xs,
   },
   xpStatValue: {
     fontSize: 18,
     marginBottom: spacing.xs,
+    textAlign: 'center',
+  },
+  xpStatLabel: {
+    textAlign: 'center',
   },
   quickStatsGrid: {
     flexDirection: 'row',
