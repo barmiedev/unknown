@@ -40,6 +40,7 @@ import {
   ErrorState,
   NoTracksInPreferencesState,
   NoTracksAtAllState,
+  GamificationRewardDisplay,
 } from '@/components/discover';
 import { getMoodsForSession } from '@/utils/music';
 import { type Mood } from '@/utils/constants';
@@ -115,7 +116,7 @@ export default function DiscoverScreen() {
   const [showWelcomeTip, setShowWelcomeTip] = useState(false);
   const [userPreferences, setUserPreferences] = useState<UserPreferences | null>(null);
   const [showThankYou, setShowThankYou] = useState(false);
-  const [ratingThreshold] = useState(0.01); // 80% of track length
+  const [ratingThreshold] = useState(0.05); // 5% of track length
   const [canSkip, setCanSkip] = useState(true);
   const [isTransitioning, setIsTransitioning] = useState(false);
   const [showReviewInput, setShowReviewInput] = useState(false);
@@ -123,14 +124,17 @@ export default function DiscoverScreen() {
   const [totalTracksRated, setTotalTracksRated] = useState(0);
   // Track if we're in broadened search mode (Surprise me or broadened search)
   const [isBroadenedSearch, setIsBroadenedSearch] = useState(false);
+  const [ratedTrackIds, setRatedTrackIds] = useState<string[]>([]);
   
   // Gamification state
   const [gamificationReward, setGamificationReward] = useState<GamificationReward | null>(null);
   const [showGamificationReward, setShowGamificationReward] = useState(false);
+  const [shouldAutoPlay, setShouldAutoPlay] = useState(true);
 
   // Ref hooks - always called in the same order
   const reviewInputRef = useRef<TextInput>(null);
   const autoPlayTriggeredRef = useRef(false);
+  const audioOperationInProgressRef = useRef(false);
 
   // Animation shared values - always called in the same order
   const pulseAnimation = useSharedValue(1);
@@ -317,9 +321,8 @@ export default function DiscoverScreen() {
   // Effect hooks - always called in the same order
   useEffect(() => {
     if (user?.id) {
+      loadUserData();
       loadUserPreferences();
-      checkFirstTimeUser();
-      loadUserStats();
     }
 
     return () => {
@@ -358,14 +361,30 @@ export default function DiscoverScreen() {
 
   // Auto-play effect when track is loaded and state is playing
   useEffect(() => {
-    if (currentTrack && state === 'playing' && !autoPlayTriggeredRef.current) {
+    if (currentTrack && state === 'playing' && !autoPlayTriggeredRef.current && shouldAutoPlay) {
       autoPlayTriggeredRef.current = true;
       // Small delay to ensure the track is properly loaded
       setTimeout(() => {
         playPauseAudio();
       }, 500);
     }
-  }, [currentTrack, state]);
+  }, [currentTrack, state, shouldAutoPlay]);
+
+  // Cleanup effect for audio operations
+  useEffect(() => {
+    return () => {
+      // Cleanup audio when component unmounts
+      if (sound) {
+        try {
+          sound.stopAsync().catch(() => {});
+          sound.unloadAsync().catch(() => {});
+        } catch (error) {
+          console.warn('Error cleaning up audio on unmount:', error);
+        }
+      }
+      audioOperationInProgressRef.current = false;
+    };
+  }, [sound]);
 
   // Function definitions
   const animateRatingAppearance = () => {
@@ -396,6 +415,36 @@ export default function DiscoverScreen() {
     star5Animation.value = 0;
     reviewInputAnimation.value = 0;
     reviewInputHeight.value = 0;
+  };
+
+  const loadUserData = async () => {
+    if (!user?.id) return;
+
+    try {
+      // Single query to get all user ratings data
+      const { data: ratings, error } = await supabase
+        .from('user_ratings')
+        .select('id, track_id')
+        .eq('profile_id', user.id);
+
+      if (error) throw error;
+
+      // Use the same data for all three purposes
+      const totalTracksRated = ratings?.length || 0;
+      const isFirstTimeUser = totalTracksRated === 0;
+      const ratedTrackIds = ratings?.map(r => r.track_id) || [];
+
+      // Update state
+      setTotalTracksRated(totalTracksRated);
+      if (isFirstTimeUser) {
+        setShowWelcomeTip(true);
+      }
+
+      // Store rated track IDs for use in loadNextTrack
+      setRatedTrackIds(ratedTrackIds);
+    } catch (error) {
+      console.error('Error loading user data:', error);
+    }
   };
 
   const loadUserPreferences = async () => {
@@ -430,43 +479,6 @@ export default function DiscoverScreen() {
     }
   };
 
-  const loadUserStats = async () => {
-    if (!user?.id) return;
-
-    try {
-      const { data, error } = await supabase
-        .from('user_ratings')
-        .select('id')
-        .eq('profile_id', user.id);
-
-      if (error) throw error;
-
-      setTotalTracksRated(data?.length || 0);
-    } catch (error) {
-      console.error('Error loading user stats:', error);
-    }
-  };
-
-  const checkFirstTimeUser = async () => {
-    if (!user?.id) return;
-
-    try {
-      const { data, error } = await supabase
-        .from('user_ratings')
-        .select('id')
-        .eq('profile_id', user.id)
-        .limit(1);
-
-      if (error) throw error;
-
-      if (!data || data.length === 0) {
-        setShowWelcomeTip(true);
-      }
-    } catch (error) {
-      console.error('Error checking first time user:', error);
-    }
-  };
-
   const handleMoodSelection = async (mood: string | null) => {
     setSelectedSessionMood(mood);
     
@@ -489,7 +501,7 @@ export default function DiscoverScreen() {
     }, 200);
   };
 
-  const loadNextTrack = async (isBackgroundLoad = false, sessionMood: string | null = null, broadenSearch = false) => {
+  const loadNextTrack = async (isBackgroundLoad = false, sessionMood: string | null = null, broadenSearch = false, autoPlay = true) => {
     try {
       if (!isBackgroundLoad && state !== 'no_tracks_in_preferences' && state !== 'no_tracks_at_all') {
         setIsLoading(true);
@@ -497,25 +509,30 @@ export default function DiscoverScreen() {
         setState('loading');
       }
       
-      if (sound) {
-        await sound.unloadAsync();
+      // Only unload sound if it exists and we're not in a background load
+      // (background loads should have already unloaded the sound)
+      if (sound && !isBackgroundLoad) {
+        try {
+          const status = await sound.getStatusAsync();
+          if (status.isLoaded) {
+            await sound.stopAsync();
+          }
+        } catch (error) {
+          console.warn('Error stopping sound in loadNextTrack:', error);
+        }
+        try {
+          await sound.unloadAsync();
+        } catch (error) {
+          console.warn('Error unloading sound in loadNextTrack:', error);
+        }
         setSound(null);
       }
 
       // Reset auto-play trigger
       autoPlayTriggeredRef.current = false;
 
-      // Get tracks that user hasn't rated yet
-      const { data: ratedTrackIds, error: ratedError } = await supabase
-        .from('user_ratings')
-        .select('track_id')
-        .eq('profile_id', user?.id || '');
-
-      if (ratedError && ratedError.code !== 'PGRST116') {
-        throw ratedError;
-      }
-
-      const excludeIds = ratedTrackIds?.map(r => r.track_id) || [];
+      // Use stored rated track IDs instead of making another query
+      const excludeIds = ratedTrackIds || [];
 
       // Build query based on user preferences and session mood
       let query = supabase
@@ -604,6 +621,10 @@ export default function DiscoverScreen() {
       setShowReviewInput(false);
       setIsReviewFocused(false);
       setState('playing');
+      setShouldAutoPlay(autoPlay);
+
+      // Reset auto-play trigger when auto-play setting changes
+      autoPlayTriggeredRef.current = false;
 
       // Reset animations
       resetRatingAnimations();
@@ -611,10 +632,6 @@ export default function DiscoverScreen() {
       // Reset mood selection animations for next time
       moodSelectionOpacity.value = 1;
       moodSelectionScale.value = 1;
-
-      if (!isBackgroundLoad) {
-        setShowThankYou(false);
-      }
 
     } catch (error) {
       console.error('Error loading track:', error);
@@ -627,8 +644,15 @@ export default function DiscoverScreen() {
   };
 
   const loadNextTrackInBackground = async () => {
-    // Maintain the current broadened search state when loading next track
-    await loadNextTrack(true, selectedSessionMood, isBroadenedSearch);
+    try {
+      // Add a small delay to ensure previous audio operations are complete
+      await new Promise(resolve => setTimeout(resolve, 300));
+      // Use the existing loadNextTrack function but disable auto-play
+      await loadNextTrack(true, selectedSessionMood, isBroadenedSearch, false);
+    } catch (error) {
+      console.error('Error loading next track in background:', error);
+      // Don't set error state here as it's background loading
+    }
   };
 
   const fadeAudioAndTransition = async (callback: () => void) => {
@@ -637,9 +661,12 @@ export default function DiscoverScreen() {
     // Fade out audio volume over 0.2 seconds
     if (sound) {
       try {
-        await sound.setVolumeAsync(0);
+        const status = await sound.getStatusAsync();
+        if (status.isLoaded && status.isPlaying) {
+          await sound.setVolumeAsync(0);
+        }
       } catch (error) {
-        console.error('Error fading audio:', error);
+        console.warn('Error fading audio:', error);
       }
     }
     
@@ -666,7 +693,12 @@ export default function DiscoverScreen() {
     setShowThankYou(true);
     thankYouOpacity.value = withTiming(1, { duration: 300 });
     
-    loadNextTrackInBackground();
+    // Immediately reset UI state to hide rating interface
+    setShowRating(false);
+    setRating(0);
+    setReview('');
+    setShowReviewInput(false);
+    setIsReviewFocused(false);
     
     setTimeout(() => {
       thankYouOpacity.value = withTiming(0, { duration: 300 }, () => {
@@ -675,45 +707,86 @@ export default function DiscoverScreen() {
     }, 3000);
   };
 
-  const playPauseAudio = async () => {
+  const playPauseAudio = async (autoPlay = true) => {
+    // Prevent multiple simultaneous audio operations
+    if (audioOperationInProgressRef.current) {
+      console.warn('Audio operation in progress, skipping');
+      return;
+    }
+    
+    audioOperationInProgressRef.current = true;
+    
     try {
       if (!currentTrack?.audio_url) {
-        throw new Error('No audio URL available');
+        console.warn('No current track or audio URL available');
+        return;
+      }
+
+      // Additional safety check - ensure track is properly loaded
+      if (!currentTrack.id || !currentTrack.title) {
+        console.warn('Track not fully loaded yet');
+        return;
       }
 
       // Get web-compatible audio URL
       const audioUrl = getWebCompatibleAudioUrl(currentTrack.audio_url);
+      
+      if (!audioUrl) {
+        console.warn('Invalid audio URL');
+        return;
+      }
 
+      // Play/pause existing sound
       if (sound) {
-        const status = await sound.getStatusAsync();
-        if (status.isLoaded) {
+        try {
+          const status = await sound.getStatusAsync();
+          
+          // Check if sound is loaded and ready
+          if (!status.isLoaded) {
+            console.warn('Sound not loaded, cannot play');
+            return;
+          }
+          
           if (isPlaying) {
-            // Fade out volume over 0.2 seconds when pausing
-            await sound.setVolumeAsync(0);
             await sound.pauseAsync();
             setIsPlaying(false);
           } else {
-            // Restore volume and play
-            await sound.setVolumeAsync(1);
             await sound.playAsync();
             setIsPlaying(true);
           }
+        } catch (error) {
+          console.error('Error playing/pausing audio:', error);
+          // If there's an error, try to recreate the sound
+          try {
+            await sound.unloadAsync();
+          } catch (unloadError) {
+            console.warn('Error unloading sound:', unloadError);
+          }
+          setSound(null);
+          setIsPlaying(false);
         }
-      } else {
+        return;
+      }
+      
+      // Create new sound if needed
+      if (!sound) {
+        // Add a small delay to prevent race conditions after unloading
+        await new Promise(resolve => setTimeout(resolve, 200));
+        
         // Check if the audio URL is web-compatible before attempting to load
         if (Platform.OS === 'web' && !isWebCompatibleAudio(currentTrack.audio_url)) {
           console.warn('Audio file may not be web-compatible:', currentTrack.audio_url);
-          setError('Audio format not supported in web browser. Please use MP3, WAV, or OGG format.');
+          setError('Audio format not supported in web browser. Please ensure the audio file is in MP3, WAV, or OGG format and served with proper CORS headers.');
           return;
         }
 
         const { sound: newSound } = await Audio.Sound.createAsync(
           { uri: audioUrl },
-          { shouldPlay: true },
+          { shouldPlay: autoPlay },
           onPlaybackStatusUpdate
         );
         setSound(newSound);
-        setIsPlaying(true);
+        setIsPlaying(autoPlay);
       }
     } catch (error) {
       console.error('Error playing audio:', error);
@@ -731,6 +804,8 @@ export default function DiscoverScreen() {
       } else {
         setError('Failed to play audio. Please try again.');
       }
+    } finally {
+      audioOperationInProgressRef.current = false;
     }
   };
 
@@ -744,39 +819,6 @@ export default function DiscoverScreen() {
 
   const skipTrack = async () => {
     if (!canSkip || !currentTrack || !user?.id) return;
-    
-    // Calculate gamification rewards for skipping
-    const listenPercentage = duration > 0 ? position / duration : 0;
-    
-    try {
-      // Call gamification RPC function for skip
-      const { data: gamificationData, error: gamificationError } = await supabase.rpc('calculate_gamification_rewards', {
-        p_user_id: user.id,
-        p_rating_data: {
-          track_id: currentTrack.id,
-          is_skip: true,
-          listen_percentage: listenPercentage,
-        },
-      });
-
-      if (gamificationError) {
-        console.error('Error calculating gamification rewards for skip:', gamificationError);
-      } else if (gamificationData && gamificationData.xp_earned > 0) {
-        setGamificationReward(gamificationData);
-        setShowGamificationReward(true);
-        
-        // Refresh user data to update XP
-        refreshUser();
-        
-        // Hide gamification reward after 3 seconds
-        setTimeout(() => {
-          setShowGamificationReward(false);
-          setGamificationReward(null);
-        }, 3000);
-      }
-    } catch (error) {
-      console.error('Error processing skip gamification:', error);
-    }
     
     fadeAudioAndTransition(() => {
       // Maintain the current broadened search state when skipping
@@ -836,28 +878,30 @@ export default function DiscoverScreen() {
         throw ratingError;
       }
 
-      // Call gamification RPC function
-      const { data: gamificationData, error: gamificationError } = await supabase.rpc('calculate_gamification_rewards', {
-        p_user_id: user.id,
-        p_rating_data: {
-          track_id: currentTrack.id,
-          rating: stars,
-          review_text: review.trim() || null,
-          is_blind_rating: isBlindRating,
-          is_outside_preference: isOutsidePreference,
-          listen_percentage: listenPercentage,
-        },
-      });
+      // Call gamification RPC function only for good ratings
+      let gamificationData = null;
+      if (stars >= 4) {
+        const { data: gamificationResult, error: gamificationError } = await supabase.rpc('calculate_gamification_rewards', {
+          p_user_id: user.id,
+          p_rating_data: {
+            track_id: currentTrack.id,
+            rating: stars,
+            review_text: review.trim() || null,
+            is_blind_rating: isBlindRating,
+            is_outside_preference: isOutsidePreference,
+            listen_percentage: listenPercentage,
+          },
+        });
 
-      if (gamificationError) {
-        console.error('Error calculating gamification rewards:', gamificationError);
-      } else if (gamificationData) {
-        setGamificationReward(gamificationData);
-        console.log('XP Earned:', gamificationData.xp_earned);
-        console.log('New Badges:', gamificationData.new_badges);
-        
-        // Refresh user data to update XP
-        refreshUser();
+        if (gamificationError) {
+          console.error('Error calculating gamification rewards:', gamificationError);
+        } else if (gamificationResult) {
+          gamificationData = gamificationResult;
+          setGamificationReward(gamificationResult);
+          
+          // Refresh user data to update XP
+          refreshUser();
+        }
       }
 
       // Update user stats (legacy)
@@ -893,27 +937,11 @@ export default function DiscoverScreen() {
         // Show gamification reward immediately when track is revealed
         if (gamificationData) {
           setShowGamificationReward(true);
-          
-          // Hide gamification reward after 3 seconds
-          setTimeout(() => {
-            setShowGamificationReward(false);
-            setGamificationReward(null);
-          }, 3000);
         }
       } else {
-        // Show gamification reward for low ratings too
-        if (gamificationData) {
-          setShowGamificationReward(true);
-          
-          // Hide gamification reward after 3 seconds, then show thank you
-          setTimeout(() => {
-            setShowGamificationReward(false);
-            setGamificationReward(null);
-            showThankYouMessage();
-          }, 3000);
-        } else {
-          showThankYouMessage();
-        }
+        showThankYouMessage();
+        // For low ratings, just immediately load next track without thank you message
+        loadNextTrack(false, selectedSessionMood, isBroadenedSearch, true);
       }
     } catch (error) {
       console.error('Error submitting rating:', error);
@@ -951,14 +979,18 @@ export default function DiscoverScreen() {
     });
   };
 
-  const handleNewSession = () => {
+  const handleNewSession = async () => {
     setState('mood_selection');
     setSelectedSessionMood(null);
     setCurrentTrack(null);
     // Reset broadened search state when starting new session
     setIsBroadenedSearch(false);
     if (sound) {
-      sound.unloadAsync();
+      try {
+        await sound.unloadAsync();
+      } catch (error) {
+        console.warn('Error unloading sound in handleNewSession:', error);
+      }
       setSound(null);
     }
     setIsPlaying(false);
@@ -967,7 +999,7 @@ export default function DiscoverScreen() {
     resetRatingAnimations();
     
     // Refresh available moods for new session
-    loadUserPreferences();
+    await loadUserPreferences();
   };
 
   const handleBroadenSearch = () => {
@@ -1190,6 +1222,15 @@ export default function DiscoverScreen() {
 
               <ThankYouOverlay
                 visible={showThankYou}
+              />
+
+              <GamificationRewardDisplay
+                reward={gamificationReward}
+                visible={showGamificationReward}
+                onDismiss={() => {
+                  setShowGamificationReward(false);
+                  setGamificationReward(null);
+                }}
               />
 
               <TransitionOverlay

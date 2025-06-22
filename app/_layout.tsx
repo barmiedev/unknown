@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useFrameworkReady } from '@/hooks/useFrameworkReady';
@@ -13,25 +13,30 @@ SplashScreen.preventAutoHideAsync();
 
 function RootLayoutNav() {
   const { user, loading } = useAuth();
+  const hasRedirected = useRef(false);
 
   useEffect(() => {
-    if (!loading) {
+    if (!loading && !hasRedirected.current) {
       if (!user) {
         // User is not authenticated, show welcome screen
         router.replace('/welcome');
+        hasRedirected.current = true;
       } else if (!user.profile?.onboarding_complete) {
         // User is authenticated but hasn't completed onboarding
         // Check if they just registered (no profile data) or returning user
         if (!user.profile?.username) {
           // New user, start onboarding
           router.replace('/onboarding/genres');
+          hasRedirected.current = true;
         } else {
           // Returning user with incomplete onboarding, ask if they want to complete it
           router.replace('/onboarding-decision');
+          hasRedirected.current = true;
         }
       } else {
         // User is authenticated and onboarding is complete
         router.replace('/(tabs)');
+        hasRedirected.current = true;
       }
     }
   }, [user, loading]);

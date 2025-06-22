@@ -10,3 +10,4 @@ export { TransitionOverlay } from './TransitionOverlay';
 export { ErrorState } from './ErrorState';
 export { NoTracksInPreferencesState } from './NoTracksInPreferencesState';
 export { NoTracksAtAllState } from './NoTracksAtAllState';
+export { GamificationRewardDisplay } from './GamificationRewardDisplay';

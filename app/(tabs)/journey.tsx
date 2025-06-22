@@ -51,14 +51,8 @@ export default function JourneyScreen() {
         loadUserStats();
         refreshUser(); // Refresh user profile data including total_xp
       }
-    }, [user])
+    }, [user?.id]) // Only depend on user.id, not the entire user object
   );
-
-  useEffect(() => {
-    if (user?.id) {
-      loadUserStats();
-    }
-  }, [user]);
 
   const loadUserStats = async () => {
     if (!user?.id) return;
@@ -67,7 +61,13 @@ export default function JourneyScreen() {
       // Load user ratings for average calculation
       const { data: ratings, error: ratingsError } = await supabase
         .from('user_ratings')
-        .select('rating, tracks(genre, mood)')
+        .select(`
+          rating,
+          tracks!inner (
+            genre,
+            mood
+          )
+        `)
         .eq('profile_id', user.id);
 
       if (ratingsError) throw ratingsError;
@@ -133,11 +133,12 @@ export default function JourneyScreen() {
       const genreSkips: Record<string, number> = {};
 
       ratings?.forEach(rating => {
-        if (rating.tracks?.genre) {
-          genreCounts[rating.tracks.genre] = (genreCounts[rating.tracks.genre] || 0) + 1;
+        const track = Array.isArray(rating.tracks) ? rating.tracks[0] : rating.tracks;
+        if (track?.genre) {
+          genreCounts[track.genre] = (genreCounts[track.genre] || 0) + 1;
         }
-        if (rating.tracks?.mood) {
-          moodCounts[rating.tracks.mood] = (moodCounts[rating.tracks.mood] || 0) + 1;
+        if (track?.mood) {
+          moodCounts[track.mood] = (moodCounts[track.mood] || 0) + 1;
         }
       });
 
