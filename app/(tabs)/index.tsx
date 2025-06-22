@@ -26,7 +26,7 @@ import { Heading } from '@/components/typography';
 import { Text } from '@/components/typography/Text';
 import { Logo } from '@/components/typography/Logo';
 import ArtistUnveilView from '@/components/ArtistUnveilView';
-import { Track, UserPreferences, DiscoverState, AnimationBackgroundProps } from '@/types';
+import { Track, UserPreferences, DiscoverState, AnimationBackgroundProps, GamificationReward } from '@/types';
 import {
   MoodSelector,
   LoadingState,
@@ -123,6 +123,10 @@ export default function DiscoverScreen() {
   const [totalTracksRated, setTotalTracksRated] = useState(0);
   // Track if we're in broadened search mode (Surprise me or broadened search)
   const [isBroadenedSearch, setIsBroadenedSearch] = useState(false);
+  
+  // Gamification state
+  const [gamificationReward, setGamificationReward] = useState<GamificationReward | null>(null);
+  const [showGamificationReward, setShowGamificationReward] = useState(false);
 
   // Ref hooks - always called in the same order
   const reviewInputRef = useRef<TextInput>(null);
@@ -739,7 +743,37 @@ export default function DiscoverScreen() {
   };
 
   const skipTrack = async () => {
-    if (!canSkip) return;
+    if (!canSkip || !currentTrack || !user?.id) return;
+    
+    // Calculate gamification rewards for skipping
+    const listenPercentage = duration > 0 ? position / duration : 0;
+    
+    try {
+      // Call gamification RPC function for skip
+      const { data: gamificationData, error: gamificationError } = await supabase.rpc('calculate_gamification_rewards', {
+        p_user_id: user.id,
+        p_rating_data: {
+          track_id: currentTrack.id,
+          is_skip: true,
+          listen_percentage: listenPercentage,
+        },
+      });
+
+      if (gamificationError) {
+        console.error('Error calculating gamification rewards for skip:', gamificationError);
+      } else if (gamificationData.xp_earned > 0) {
+        setGamificationReward(gamificationData);
+        setShowGamificationReward(true);
+        
+        // Hide gamification reward after 3 seconds
+        setTimeout(() => {
+          setShowGamificationReward(false);
+          setGamificationReward(null);
+        }, 3000);
+      }
+    } catch (error) {
+      console.error('Error processing skip gamification:', error);
+    }
     
     fadeAudioAndTransition(() => {
       // Maintain the current broadened search state when skipping
@@ -753,30 +787,77 @@ export default function DiscoverScreen() {
     setRating(stars);
     
     try {
-      const { error } = await supabase
+      // Determine gamification flags
+      const isBlindRating = !trackRevealed; // If track was not revealed before rating
+      
+      // Determine if rating is outside user preferences
+      let isOutsidePreference = false;
+      if (userPreferences && currentTrack) {
+        const preferredGenres = userPreferences.preferred_genres || [];
+        const preferredMoods = userPreferences.preferred_moods || [];
+        
+        const isGenrePreferred = preferredGenres.includes(currentTrack.genre);
+        const isMoodPreferred = preferredMoods.includes(currentTrack.mood);
+        
+        // Consider it "outside preference" if either genre or mood is not preferred
+        // and the user has preferences set for that category, and the rating is positive (4-5 stars)
+        if (stars >= 4 && (
+          (preferredGenres.length > 0 && !isGenrePreferred) ||
+          (preferredMoods.length > 0 && !isMoodPreferred)
+        )) {
+          isOutsidePreference = true;
+        }
+      }
+
+      const listenPercentage = duration > 0 ? position / duration : 0;
+
+      // Insert user rating
+      const { error: ratingError } = await supabase
         .from('user_ratings')
         .insert({
           track_id: currentTrack.id,
           rating: stars,
           review_text: review.trim() || null,
           profile_id: user.id,
-          user_id: user.id,
+          user_id: user.id, // Keep for backward compatibility
+          is_blind_rating: isBlindRating,
+          is_outside_preference: isOutsidePreference,
+          listen_percentage: listenPercentage,
         });
 
-      if (error) {
-        if (error.code !== '23505') {
-          throw error;
-        }
+      if (ratingError && ratingError.code !== '23505') {
+        throw ratingError;
       }
 
-      // Update user stats
+      // Call gamification RPC function
+      const { data: gamificationData, error: gamificationError } = await supabase.rpc('calculate_gamification_rewards', {
+        p_user_id: user.id,
+        p_rating_data: {
+          track_id: currentTrack.id,
+          rating: stars,
+          review_text: review.trim() || null,
+          is_blind_rating: isBlindRating,
+          is_outside_preference: isOutsidePreference,
+          listen_percentage: listenPercentage,
+        },
+      });
+
+      if (gamificationError) {
+        console.error('Error calculating gamification rewards:', gamificationError);
+      } else {
+        setGamificationReward(gamificationData);
+        console.log('XP Earned:', gamificationData.xp_earned);
+        console.log('New Badges:', gamificationData.new_badges);
+      }
+
+      // Update user stats (legacy)
       try {
         const { error: statsError } = await supabase
           .from('user_stats')
           .upsert({
             profile_id: user.id,
             user_id: user.id,
-            total_tracks_rated: 1,
+            total_tracks_rated_count: 1,
             updated_at: new Date().toISOString(),
           }, {
             onConflict: 'user_id'
@@ -1044,6 +1125,12 @@ export default function DiscoverScreen() {
             onDiscoverNext={handleDiscoverNext}
             userRating={rating}
             userReview={review}
+            gamificationReward={gamificationReward}
+            showGamificationReward={showGamificationReward}
+            onGamificationRewardDismiss={() => {
+              setShowGamificationReward(false);
+              setGamificationReward(null);
+            }}
             withoutBottomSafeArea
           />
         </Animated.View>

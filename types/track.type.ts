@@ -9,6 +9,10 @@ export interface Track {
   spotify_streams: number;
   artwork_url?: string;
   spotify_url?: string;
+  total_ratings_count?: number; // Added for gamification
+  average_rating?: number; // Added for gamification
+  last_rated_at?: string; // Added for gamification
+  first_rated_by?: string; // Added for gamification
 }
 
 export interface HistoryTrack {

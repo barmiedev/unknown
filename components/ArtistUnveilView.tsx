@@ -9,8 +9,11 @@ import {
   SkipForward,
   X,
   ArrowLeft,
-  ExternalLink
+  ExternalLink,
+  Trophy,
+  Zap
 } from 'lucide-react-native';
+import Animated, { FadeIn, FadeOut, SlideInUp, SlideOutDown } from 'react-native-reanimated';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/contexts/AuthContext';
 import { Screen } from '@/components/layout/Screen';
@@ -26,7 +29,7 @@ import {
   DEFAULT_STREAMING_PLATFORM 
 } from '@/lib/platforms';
 import SocialIcon from '@/components/media/SocialIcon';
-import { Artist, SocialLink, StreamingLink, TrackDisplay } from '@/types';
+import { Artist, SocialLink, StreamingLink, TrackDisplay, GamificationReward, Badge } from '@/types';
 import { FloatingBackButton } from '@/components/navigation';
 
 interface ArtistUnveilViewProps {
@@ -38,6 +41,86 @@ interface ArtistUnveilViewProps {
   userReview?: string | null;
   onPlayInApp?: () => void;
   withoutBottomSafeArea?: boolean;
+  gamificationReward?: GamificationReward | null;
+  showGamificationReward?: boolean;
+  onGamificationRewardDismiss?: () => void;
+}
+
+// Gamification Reward Component
+function GamificationRewardDisplay({ 
+  reward, 
+  visible, 
+  onDismiss 
+}: { 
+  reward: GamificationReward | null; 
+  visible: boolean; 
+  onDismiss: () => void; 
+}) {
+  if (!reward || !visible) return null;
+
+  return (
+    <Animated.View 
+      entering={SlideInUp.duration(400)} 
+      exiting={SlideOutDown.duration(300)}
+      style={styles.gamificationOverlay}
+    >
+      <View style={styles.gamificationCard}>
+        <View style={styles.gamificationHeader}>
+          <Zap size={24} color={colors.primary} strokeWidth={2} />
+          <Heading variant="h4" color="primary" style={styles.gamificationTitle}>
+            Rewards Earned!
+          </Heading>
+          <TouchableOpacity onPress={onDismiss} style={styles.gamificationClose}>
+            <X size={20} color={colors.text.secondary} strokeWidth={2} />
+          </TouchableOpacity>
+        </View>
+
+        <View style={styles.gamificationContent}>
+          {/* XP Earned */}
+          <View style={styles.xpContainer}>
+            <Text style={styles.xpAmount}>+{reward.xp_earned}</Text>
+            <Text variant="caption" color="secondary">XP Earned</Text>
+          </View>
+
+          {/* XP Breakdown */}
+          {(reward.daily_streak_xp || reward.consecutive_bonus_xp) && (
+            <View style={styles.xpBreakdown}>
+              {reward.daily_streak_xp && reward.daily_streak_xp > 0 && (
+                <Text variant="caption" color="secondary" style={styles.xpBreakdownItem}>
+                  Daily Streak: +{reward.daily_streak_xp} XP
+                </Text>
+              )}
+              {reward.consecutive_bonus_xp && reward.consecutive_bonus_xp > 0 && (
+                <Text variant="caption" color="secondary" style={styles.xpBreakdownItem}>
+                  Listen Streak: +{reward.consecutive_bonus_xp} XP
+                </Text>
+              )}
+            </View>
+          )}
+
+          {/* New Badges */}
+          {reward.new_badges && reward.new_badges.length > 0 && (
+            <View style={styles.badgesContainer}>
+              <View style={styles.badgeHeader}>
+                <Trophy size={16} color={colors.primary} strokeWidth={2} />
+                <Text variant="body" color="primary" style={styles.badgeTitle}>
+                  New Badges Unlocked!
+                </Text>
+              </View>
+              {reward.new_badges.map((badgeId) => (
+                <View key={badgeId} style={styles.badgeItem}>
+                  <Text style={styles.badgeEmoji}>🏆</Text>
+                  <Text variant="caption" color="primary" style={styles.badgeName}>
+                    {badgeId.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                  </Text>
+                </View>
+              ))}
+            </View>
+          )}
+        </View>
+      </View>
+    </Animated.View>
+  );
 }
 
 export default function ArtistUnveilView({ 
@@ -49,6 +132,9 @@ export default function ArtistUnveilView({
   userReview,
   onPlayInApp,
   withoutBottomSafeArea = false,
+  gamificationReward,
+  showGamificationReward = false,
+  onGamificationRewardDismiss,
 }: ArtistUnveilViewProps) {
   const { user } = useAuth();
   const [artist, setArtist] = useState<Artist | null>(null);
@@ -242,6 +328,13 @@ export default function ArtistUnveilView({
       {onContinueListening && (
         <FloatingBackButton onPress={onContinueListening} />
       )}
+
+      {/* Gamification Reward Overlay */}
+      <GamificationRewardDisplay
+        reward={gamificationReward}
+        visible={showGamificationReward}
+        onDismiss={onGamificationRewardDismiss || (() => {})}
+      />
 
       <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
         <View style={{ paddingHorizontal: spacing.lg }}>
@@ -739,5 +832,91 @@ const styles = StyleSheet.create({
   },
   modalPlatformButtonText: {
     fontSize: 16,
+  },
+  // Gamification Styles
+  gamificationOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0, 0, 0, 0.8)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 1000,
+    paddingHorizontal: spacing.lg,
+  },
+  gamificationCard: {
+    backgroundColor: colors.background,
+    borderRadius: 20,
+    padding: spacing.lg,
+    width: '100%',
+    maxWidth: 350,
+    borderWidth: 2,
+    borderColor: colors.primary,
+  },
+  gamificationHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: spacing.md,
+  },
+  gamificationTitle: {
+    fontSize: 18,
+    flex: 1,
+    marginLeft: spacing.sm,
+  },
+  gamificationClose: {
+    padding: spacing.xs,
+  },
+  gamificationContent: {
+    alignItems: 'center',
+  },
+  xpContainer: {
+    alignItems: 'center',
+    marginBottom: spacing.md,
+  },
+  xpAmount: {
+    fontSize: 32,
+    fontWeight: 'bold',
+    color: colors.primary,
+    marginBottom: spacing.xs,
+  },
+  xpBreakdown: {
+    alignItems: 'center',
+    marginBottom: spacing.md,
+  },
+  xpBreakdownItem: {
+    fontSize: 12,
+    marginBottom: spacing.xs,
+  },
+  badgesContainer: {
+    width: '100%',
+    alignItems: 'center',
+  },
+  badgeHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: spacing.sm,
+    gap: spacing.sm,
+  },
+  badgeTitle: {
+    fontSize: 14,
+  },
+  badgeItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.surface,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    borderRadius: borderRadius.md,
+    marginBottom: spacing.sm,
+    gap: spacing.sm,
+  },
+  badgeEmoji: {
+    fontSize: 16,
+  },
+  badgeName: {
+    fontSize: 12,
   },
 });
