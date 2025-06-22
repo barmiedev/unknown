@@ -24,9 +24,6 @@ export default function TabLayout() {
           fontSize: 12,
           fontFamily: 'Chillax-Regular',
         },
-        // Smooth transitions between tabs
-        animation: 'fade',
-        animationDuration: 300,
       }}>
       <Tabs.Screen
         name="index"
