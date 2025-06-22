@@ -825,7 +825,11 @@ export default function DiscoverScreen() {
           listen_percentage: listenPercentage,
         });
 
-      if (ratingError && ratingError.code !== '23505') {
+      // Handle duplicate rating error gracefully
+      if (ratingError && ratingError.code === '23505') {
+        console.warn('Attempted to re-rate an already rated track. Skipping update.');
+        return;
+      } else if (ratingError) {
         throw ratingError;
       }
 
