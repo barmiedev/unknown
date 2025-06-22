@@ -95,7 +95,7 @@ const getWebCompatibleAudioUrl = (originalUrl: string): string => {
 
 export default function DiscoverScreen() {
   // All hooks must be called at the top level in the same order every time
-  const { user } = useAuth();
+  const { user, refreshUser } = useAuth();
   
   // State hooks - always called in the same order
   const [currentTrack, setCurrentTrack] = useState<Track | null>(null);
@@ -765,6 +765,9 @@ export default function DiscoverScreen() {
         setGamificationReward(gamificationData);
         setShowGamificationReward(true);
         
+        // Refresh user data to update XP
+        refreshUser();
+        
         // Hide gamification reward after 3 seconds
         setTimeout(() => {
           setShowGamificationReward(false);
@@ -852,6 +855,9 @@ export default function DiscoverScreen() {
         setGamificationReward(gamificationData);
         console.log('XP Earned:', gamificationData.xp_earned);
         console.log('New Badges:', gamificationData.new_badges);
+        
+        // Refresh user data to update XP
+        refreshUser();
       }
 
       // Update user stats (legacy)
@@ -883,8 +889,31 @@ export default function DiscoverScreen() {
         setShowThankYou(false);
         setIsTransitioning(false);
         setShowWelcomeTip(false);
+        
+        // Show gamification reward immediately when track is revealed
+        if (gamificationData) {
+          setShowGamificationReward(true);
+          
+          // Hide gamification reward after 3 seconds
+          setTimeout(() => {
+            setShowGamificationReward(false);
+            setGamificationReward(null);
+          }, 3000);
+        }
       } else {
-        showThankYouMessage();
+        // Show gamification reward for low ratings too
+        if (gamificationData) {
+          setShowGamificationReward(true);
+          
+          // Hide gamification reward after 3 seconds, then show thank you
+          setTimeout(() => {
+            setShowGamificationReward(false);
+            setGamificationReward(null);
+            showThankYouMessage();
+          }, 3000);
+        } else {
+          showThankYouMessage();
+        }
       }
     } catch (error) {
       console.error('Error submitting rating:', error);

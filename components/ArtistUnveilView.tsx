@@ -11,9 +11,10 @@ import {
   ArrowLeft,
   ExternalLink,
   Trophy,
-  Zap
+  Zap,
+  Star
 } from 'lucide-react-native';
-import Animated, { FadeIn, FadeOut, SlideInUp, SlideOutDown } from 'react-native-reanimated';
+import Animated, { FadeIn, FadeOut, SlideInUp, SlideOutDown, withSpring, useSharedValue, useAnimatedStyle } from 'react-native-reanimated';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/contexts/AuthContext';
 import { Screen } from '@/components/layout/Screen';
@@ -46,7 +47,7 @@ interface ArtistUnveilViewProps {
   onGamificationRewardDismiss?: () => void;
 }
 
-// Gamification Reward Component
+// Gamification Reward Component with Duolingo-style animations
 function GamificationRewardDisplay({ 
   reward, 
   visible, 
@@ -56,69 +57,122 @@ function GamificationRewardDisplay({
   visible: boolean; 
   onDismiss: () => void; 
 }) {
+  const scale = useSharedValue(0);
+  const opacity = useSharedValue(0);
+
+  React.useEffect(() => {
+    if (visible) {
+      opacity.value = withSpring(1, { damping: 15, stiffness: 150 });
+      scale.value = withSpring(1, { damping: 12, stiffness: 100 });
+    } else {
+      opacity.value = withSpring(0, { damping: 15, stiffness: 150 });
+      scale.value = withSpring(0.8, { damping: 15, stiffness: 150 });
+    }
+  }, [visible]);
+
+  const animatedStyle = useAnimatedStyle(() => ({
+    opacity: opacity.value,
+    transform: [{ scale: scale.value }],
+  }));
+
   if (!reward || !visible) return null;
 
   return (
-    <Animated.View 
-      entering={SlideInUp.duration(400)} 
-      exiting={SlideOutDown.duration(300)}
-      style={styles.gamificationOverlay}
-    >
-      <View style={styles.gamificationCard}>
-        <View style={styles.gamificationHeader}>
-          <Zap size={24} color={colors.primary} strokeWidth={2} />
-          <Heading variant="h4" color="primary" style={styles.gamificationTitle}>
-            Rewards Earned!
+    <Animated.View style={styles.gamificationOverlay}>
+      <Animated.View style={[styles.gamificationCard, animatedStyle]}>
+        {/* Celebration Header */}
+        <View style={styles.celebrationHeader}>
+          <View style={styles.celebrationIcon}>
+            <Zap size={32} color={colors.primary} strokeWidth={2} />
+          </View>
+          <Heading variant="h3" color="primary" style={styles.celebrationTitle}>
+            Great Job!
           </Heading>
           <TouchableOpacity onPress={onDismiss} style={styles.gamificationClose}>
             <X size={20} color={colors.text.secondary} strokeWidth={2} />
           </TouchableOpacity>
         </View>
 
-        <View style={styles.gamificationContent}>
-          {/* XP Earned */}
-          <View style={styles.xpContainer}>
+        {/* XP Display */}
+        <View style={styles.xpDisplay}>
+          <View style={styles.xpBadge}>
             <Text style={styles.xpAmount}>+{reward.xp_earned}</Text>
-            <Text variant="caption" color="secondary">XP Earned</Text>
+            <Text variant="caption" color="secondary" style={styles.xpLabel}>XP</Text>
+          </View>
+        </View>
+
+        {/* XP Breakdown */}
+        <View style={styles.xpBreakdown}>
+          <Text variant="body" color="primary" style={styles.breakdownTitle}>
+            XP Breakdown:
+          </Text>
+          
+          {/* Base XP */}
+          <View style={styles.breakdownItem}>
+            <Star size={16} color={colors.primary} strokeWidth={2} />
+            <Text variant="caption" color="secondary" style={styles.breakdownText}>
+              {reward.action_type === 'rating' ? 'Rating' : 'Listening'}: +{reward.action_type === 'rating' ? '10' : '1'} XP
+            </Text>
           </View>
 
-          {/* XP Breakdown */}
-          {(reward.daily_streak_xp || reward.consecutive_bonus_xp) && (
-            <View style={styles.xpBreakdown}>
-              {reward.daily_streak_xp && reward.daily_streak_xp > 0 && (
-                <Text variant="caption" color="secondary" style={styles.xpBreakdownItem}>
-                  Daily Streak: +{reward.daily_streak_xp} XP
-                </Text>
-              )}
-              {reward.consecutive_bonus_xp && reward.consecutive_bonus_xp > 0 && (
-                <Text variant="caption" color="secondary" style={styles.xpBreakdownItem}>
-                  Listen Streak: +{reward.consecutive_bonus_xp} XP
-                </Text>
-              )}
+          {/* Daily Streak XP */}
+          {reward.daily_streak_xp && reward.daily_streak_xp > 0 && (
+            <View style={styles.breakdownItem}>
+              <Text style={styles.streakEmoji}>🔥</Text>
+              <Text variant="caption" color="secondary" style={styles.breakdownText}>
+                Daily Streak: +{reward.daily_streak_xp} XP
+              </Text>
             </View>
           )}
 
-          {/* New Badges */}
-          {reward.new_badges && reward.new_badges.length > 0 && (
-            <View style={styles.badgesContainer}>
-              <View style={styles.badgeHeader}>
-                <Trophy size={16} color={colors.primary} strokeWidth={2} />
-                <Text variant="body" color="primary" style={styles.badgeTitle}>
-                  New Badges Unlocked!
-                </Text>
-              </View>
-              {reward.new_badges.map((badgeId) => (
-                <View key={badgeId} style={styles.badgeItem}>
+          {/* Consecutive Bonus XP */}
+          {reward.consecutive_bonus_xp && reward.consecutive_bonus_xp > 0 && (
+            <View style={styles.breakdownItem}>
+              <Text style={styles.streakEmoji}>⚡</Text>
+              <Text variant="caption" color="secondary" style={styles.breakdownText}>
+                Listen Streak: +{reward.consecutive_bonus_xp} XP
+              </Text>
+            </View>
+          )}
+        </View>
+
+        {/* New Badges */}
+        {reward.new_badges && reward.new_badges.length > 0 && (
+          <View style={styles.badgesSection}>
+            <View style={styles.badgeHeader}>
+              <Trophy size={20} color={colors.primary} strokeWidth={2} />
+              <Text variant="body" color="primary" style={styles.badgeTitle}>
+                New Badge{reward.new_badges.length > 1 ? 's' : ''} Unlocked!
+              </Text>
+            </View>
+            
+            <View style={styles.badgesList}>
+              {reward.new_badges.map((badgeId, index) => (
+                <Animated.View 
+                  key={badgeId} 
+                  entering={SlideInUp.delay(300 + index * 100).springify()}
+                  style={styles.badgeItem}
+                >
                   <Text style={styles.badgeEmoji}>🏆</Text>
                   <Text variant="caption" color="primary" style={styles.badgeName}>
                     {badgeId.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
                   </Text>
-                </View>
+                </Animated.View>
               ))}
             </View>
-          )}
-        </View>
-      </View>
+          </View>
+        )}
+
+        {/* Continue Button */}
+        <Button
+          variant="primary"
+          size="large"
+          onPress={onDismiss}
+          style={styles.continueButton}
+        >
+          Continue
+        </Button>
+      </Animated.View>
     </Animated.View>
   );
 }
@@ -329,7 +383,7 @@ export default function ArtistUnveilView({
         <FloatingBackButton onPress={onContinueListening} />
       )}
 
-      {/* Gamification Reward Overlay */}
+      {/* Gamification Reward Overlay - Show FIRST before other content */}
       <GamificationRewardDisplay
         reward={gamificationReward}
         visible={showGamificationReward}
@@ -833,14 +887,14 @@ const styles = StyleSheet.create({
   modalPlatformButtonText: {
     fontSize: 16,
   },
-  // Gamification Styles
+  // Gamification Styles - Duolingo-inspired
   gamificationOverlay: {
     position: 'absolute',
     top: 0,
     left: 0,
     right: 0,
     bottom: 0,
-    backgroundColor: 'rgba(0, 0, 0, 0.8)',
+    backgroundColor: 'rgba(0, 0, 0, 0.9)',
     justifyContent: 'center',
     alignItems: 'center',
     zIndex: 1000,
@@ -848,75 +902,139 @@ const styles = StyleSheet.create({
   },
   gamificationCard: {
     backgroundColor: colors.background,
-    borderRadius: 20,
-    padding: spacing.lg,
+    borderRadius: 24,
+    padding: spacing.xl,
     width: '100%',
-    maxWidth: 350,
-    borderWidth: 2,
+    maxWidth: 380,
+    borderWidth: 3,
     borderColor: colors.primary,
+    shadowColor: colors.primary,
+    shadowOffset: { width: 0, height: 12 },
+    shadowOpacity: 0.3,
+    shadowRadius: 20,
+    elevation: 12,
   },
-  gamificationHeader: {
-    flexDirection: 'row',
+  celebrationHeader: {
     alignItems: 'center',
-    justifyContent: 'space-between',
+    marginBottom: spacing.xl,
+    position: 'relative',
+  },
+  celebrationIcon: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: 'rgba(69, 36, 81, 0.2)',
+    alignItems: 'center',
+    justifyContent: 'center',
     marginBottom: spacing.md,
   },
-  gamificationTitle: {
-    fontSize: 18,
-    flex: 1,
-    marginLeft: spacing.sm,
+  celebrationTitle: {
+    fontSize: 28,
+    textAlign: 'center',
   },
   gamificationClose: {
-    padding: spacing.xs,
+    position: 'absolute',
+    top: -10,
+    right: -10,
+    padding: spacing.sm,
+    backgroundColor: colors.surface,
+    borderRadius: 20,
   },
-  gamificationContent: {
+  xpDisplay: {
     alignItems: 'center',
+    marginBottom: spacing.xl,
   },
-  xpContainer: {
+  xpBadge: {
+    backgroundColor: colors.primary,
+    borderRadius: 50,
+    paddingHorizontal: spacing.xl,
+    paddingVertical: spacing.lg,
     alignItems: 'center',
-    marginBottom: spacing.md,
+    shadowColor: colors.primary,
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.4,
+    shadowRadius: 12,
+    elevation: 8,
   },
   xpAmount: {
-    fontSize: 32,
+    fontSize: 48,
     fontWeight: 'bold',
-    color: colors.primary,
+    color: colors.text.primary,
     marginBottom: spacing.xs,
+  },
+  xpLabel: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: colors.text.primary,
   },
   xpBreakdown: {
-    alignItems: 'center',
-    marginBottom: spacing.md,
+    backgroundColor: colors.surface,
+    borderRadius: borderRadius.lg,
+    padding: spacing.md,
+    marginBottom: spacing.lg,
   },
-  xpBreakdownItem: {
-    fontSize: 12,
+  breakdownTitle: {
+    fontSize: 16,
+    marginBottom: spacing.sm,
+    textAlign: 'center',
+  },
+  breakdownItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
     marginBottom: spacing.xs,
+    gap: spacing.sm,
   },
-  badgesContainer: {
-    width: '100%',
-    alignItems: 'center',
+  breakdownText: {
+    fontSize: 14,
+    flex: 1,
+  },
+  streakEmoji: {
+    fontSize: 16,
+    width: 20,
+    textAlign: 'center',
+  },
+  badgesSection: {
+    marginBottom: spacing.lg,
   },
   badgeHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: spacing.sm,
+    justifyContent: 'center',
+    marginBottom: spacing.md,
     gap: spacing.sm,
   },
   badgeTitle: {
-    fontSize: 14,
+    fontSize: 18,
+    fontWeight: 'bold',
+  },
+  badgesList: {
+    gap: spacing.sm,
   },
   badgeItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: colors.surface,
+    backgroundColor: 'rgba(69, 36, 81, 0.2)',
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.sm,
-    borderRadius: borderRadius.md,
-    marginBottom: spacing.sm,
+    borderRadius: borderRadius.lg,
     gap: spacing.sm,
+    borderWidth: 2,
+    borderColor: colors.primary,
   },
   badgeEmoji: {
-    fontSize: 16,
+    fontSize: 20,
   },
   badgeName: {
-    fontSize: 12,
+    fontSize: 14,
+    fontWeight: 'bold',
+    flex: 1,
+  },
+  continueButton: {
+    backgroundColor: colors.primary,
+    shadowColor: colors.primary,
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.4,
+    shadowRadius: 12,
+    elevation: 8,
   },
 });
