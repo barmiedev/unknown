@@ -12,7 +12,6 @@ import { Text } from '@/components/typography/Text';
 import { TabBar } from '@/components/navigation/TabBar';
 import { colors } from '@/utils/colors';
 import { spacing, borderRadius } from '@/utils/spacing';
-import { formatDate } from '@/utils/formatting';
 import ArtistUnveilView from '@/components/ArtistUnveilView';
 import ArtistDetailView from '@/components/ArtistDetailView';
 import { HistoryTrack, SubscribedArtist, TabType, TrackDisplay } from '@/types';
@@ -380,7 +379,7 @@ export default function HistoryScreen() {
 
   if (loading) {
     return (
-      <Animated.View entering={FadeIn.duration(300)} style={{ flex: 1, backgroundColor: colors.background }}>
+      <Animated.View style={{ flex: 1, backgroundColor: colors.background }}>
         <Screen withoutBottomSafeArea>
           <View style={styles.loadingContainer}>
             <Text variant="body" color="primary">Loading your discoveries...</Text>
@@ -391,7 +390,7 @@ export default function HistoryScreen() {
   }
 
   return (
-    <Animated.View entering={FadeIn.duration(300)} style={{ flex: 1, backgroundColor: colors.background }}>
+    <View style={{ flex: 1, backgroundColor: colors.background }}>
       <Screen paddingHorizontal={24} withoutBottomSafeArea>
         {/* Fixed Header Section */}
         <View style={styles.fixedHeader}>
@@ -505,7 +504,7 @@ export default function HistoryScreen() {
           </ScrollView>
         </Animated.View>
       </Screen>
-    </Animated.View>
+    </View>
   );
 }
 

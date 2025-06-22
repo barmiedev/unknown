@@ -42,7 +42,6 @@ export function FullListeningMode({
       style={styles.container}
       contentContainerStyle={{ 
         paddingBottom,
-        paddingHorizontal: spacing.lg,
         alignItems: 'center',
         paddingTop: spacing.md
       }}
@@ -105,12 +104,19 @@ export function FullListeningMode({
       </View>
 
       {/* Rating Display */}
-      <View style={styles.ratingDisplay}>
+      <TouchableOpacity style={styles.ratingDisplay} onPress={() => {}}>
         <Text variant="body" color="primary" style={styles.ratingTitle}>
           Your Rating
         </Text>
         <StarRating rating={userRating} readonly style={styles.starRating} />
-      </View>
+        {userReview && userReview.trim() ? (
+          <View style={styles.reviewContainer}>
+            <Text variant="body" color="secondary" style={styles.reviewText}>
+              {userReview.trim()}
+            </Text>
+          </View>
+        ) : null}
+      </TouchableOpacity>
     </ScrollView>
   );
 }
@@ -208,11 +214,9 @@ const styles = StyleSheet.create({
   },
   ratingDisplay: {
     width: '100%',
-    backgroundColor: colors.background,
-    borderRadius: borderRadius.lg,
-    padding: spacing.md,
     alignItems: 'center',
     marginBottom: spacing.md,
+    marginTop: spacing.md
   },
   ratingTitle: {
     fontSize: 16,

@@ -138,168 +138,8 @@ export default function DiscoverScreen() {
   const moodSelectionOpacity = useSharedValue(1);
   const moodSelectionScale = useSharedValue(1);
 
-  // Animated styles - always called in the same order
-  const pulseStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: pulseAnimation.value }],
-  }));
-
-  const progressStyle = useAnimatedStyle(() => ({
-    width: `${(position / duration) * 100}%`,
-  }));
-
-  const thankYouStyle = useAnimatedStyle(() => ({
-    opacity: thankYouOpacity.value,
-  }));
-
   const fadeStyle = useAnimatedStyle(() => ({
     opacity: fadeOpacity.value,
-  }));
-
-  const transitionTextStyle = useAnimatedStyle(() => ({
-    opacity: transitionTextOpacity.value,
-  }));
-
-  const ratingContainerStyle = useAnimatedStyle(() => ({
-    opacity: ratingContainerOpacity.value,
-    transform: [{ scale: ratingContainerScale.value }],
-  }));
-
-  const star1Style = useAnimatedStyle(() => ({
-    opacity: star1Animation.value,
-    transform: [
-      { 
-        scale: interpolate(
-          star1Animation.value,
-          [0, 1],
-          [0.3, 1],
-          Extrapolate.CLAMP
-        )
-      },
-      {
-        translateY: interpolate(
-          star1Animation.value,
-          [0, 1],
-          [20, 0],
-          Extrapolate.CLAMP
-        )
-      }
-    ],
-  }));
-
-  const star2Style = useAnimatedStyle(() => ({
-    opacity: star2Animation.value,
-    transform: [
-      { 
-        scale: interpolate(
-          star2Animation.value,
-          [0, 1],
-          [0.3, 1],
-          Extrapolate.CLAMP
-        )
-      },
-      {
-        translateY: interpolate(
-          star2Animation.value,
-          [0, 1],
-          [20, 0],
-          Extrapolate.CLAMP
-        )
-      }
-    ],
-  }));
-
-  const star3Style = useAnimatedStyle(() => ({
-    opacity: star3Animation.value,
-    transform: [
-      { 
-        scale: interpolate(
-          star3Animation.value,
-          [0, 1],
-          [0.3, 1],
-          Extrapolate.CLAMP
-        )
-      },
-      {
-        translateY: interpolate(
-          star3Animation.value,
-          [0, 1],
-          [20, 0],
-          Extrapolate.CLAMP
-        )
-      }
-    ],
-  }));
-
-  const star4Style = useAnimatedStyle(() => ({
-    opacity: star4Animation.value,
-    transform: [
-      { 
-        scale: interpolate(
-          star4Animation.value,
-          [0, 1],
-          [0.3, 1],
-          Extrapolate.CLAMP
-        )
-      },
-      {
-        translateY: interpolate(
-          star4Animation.value,
-          [0, 1],
-          [20, 0],
-          Extrapolate.CLAMP
-        )
-      }
-    ],
-  }));
-
-  const star5Style = useAnimatedStyle(() => ({
-    opacity: star5Animation.value,
-    transform: [
-      { 
-        scale: interpolate(
-          star5Animation.value,
-          [0, 1],
-          [0.3, 1],
-          Extrapolate.CLAMP
-        )
-      },
-      {
-        translateY: interpolate(
-          star5Animation.value,
-          [0, 1],
-          [20, 0],
-          Extrapolate.CLAMP
-        )
-      }
-    ],
-  }));
-
-  const reviewInputStyle = useAnimatedStyle(() => ({
-    opacity: reviewInputAnimation.value,
-    transform: [
-      {
-        translateY: interpolate(
-          reviewInputAnimation.value,
-          [0, 1],
-          [30, 0],
-          Extrapolate.CLAMP
-        )
-      }
-    ],
-  }));
-
-  const reviewInputContainerStyle = useAnimatedStyle(() => ({
-    maxHeight: interpolate(
-      reviewInputHeight.value,
-      [0, 1],
-      [0, 200],
-      Extrapolate.CLAMP
-    ),
-  }));
-
-  const moodSelectionStyle = useAnimatedStyle(() => ({
-    opacity: moodSelectionOpacity.value,
-    transform: [{ scale: moodSelectionScale.value }],
   }));
 
   // Effect hooks - always called in the same order
@@ -566,18 +406,6 @@ export default function DiscoverScreen() {
       if (!isBackgroundLoad) {
         setIsLoading(false);
       }
-    }
-  };
-
-  const loadNextTrackInBackground = async () => {
-    try {
-      // Add a small delay to ensure previous audio operations are complete
-      await new Promise(resolve => setTimeout(resolve, 300));
-      // Use the existing loadNextTrack function but disable auto-play
-      await loadNextTrack(true, selectedSessionMood, isBroadenedSearch, false);
-    } catch (error) {
-      console.error('Error loading next track in background:', error);
-      // Don't set error state here as it's background loading
     }
   };
 
@@ -894,7 +722,7 @@ export default function DiscoverScreen() {
                   top: spacing.md,
                   zIndex: 10 
                 }}>
-                  <Text variant="button" color="primary" style={{ fontSize: 20 }}>
+                  <Text variant="button" color="primary" style={{ fontSize: 24 }}>
                     unknown
                   </Text>
                 </View>
