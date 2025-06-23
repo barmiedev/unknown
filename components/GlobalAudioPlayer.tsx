@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, memo } from 'react';
 import { View, TouchableOpacity, StyleSheet } from 'react-native';
 import { Play, Pause, SkipForward } from 'lucide-react-native';
 import Animated, { 
@@ -24,7 +24,7 @@ interface GlobalAudioPlayerProps {
   hideTrackInfo?: boolean;
 }
 
-export default function GlobalAudioPlayer({ onPress, onSkip, hidden, hideTrackInfo }: GlobalAudioPlayerProps) {
+const GlobalAudioPlayer = memo(function GlobalAudioPlayer({ onPress, onSkip, hidden, hideTrackInfo }: GlobalAudioPlayerProps) {
   const { 
     currentTrack, 
     isPlaying, 
@@ -162,7 +162,9 @@ export default function GlobalAudioPlayer({ onPress, onSkip, hidden, hideTrackIn
       </View>
     </Animated.View>
   );
-}
+});
+
+export default GlobalAudioPlayer;
 
 const styles = StyleSheet.create({
   container: {

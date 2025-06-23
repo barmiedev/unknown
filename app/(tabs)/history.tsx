@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { View, TouchableOpacity, RefreshControl, StyleSheet, ScrollView, Image } from 'react-native';
 import { Users, Music } from 'lucide-react-native';
 import { supabase } from '@/lib/supabase';
@@ -23,9 +23,7 @@ export default function HistoryScreen() {
   const { paddingBottom } = useAudioPlayerPadding();
   const [activeTab, setActiveTab] = useState<TabType>('tracks');
   const [tracks, setTracks] = useState<HistoryTrack[]>([]);
-  const [filteredTracks, setFilteredTracks] = useState<HistoryTrack[]>([]);
   const [artists, setArtists] = useState<SubscribedArtist[]>([]);
-  const [filteredArtists, setFilteredArtists] = useState<SubscribedArtist[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [selectedTrack, setSelectedTrack] = useState<HistoryTrack | null>(null);
@@ -50,7 +48,8 @@ export default function HistoryScreen() {
   const [scrollPosition, setScrollPosition] = useState(0);
   const shouldRestoreScrollRef = useRef(false);
 
-  const tabs = [
+  // Memoize tabs to prevent unnecessary re-renders
+  const tabs = useMemo(() => [
     {
       key: 'tracks',
       label: 'Tracks',
@@ -61,7 +60,7 @@ export default function HistoryScreen() {
       label: 'Artists',
       icon: <Users size={16} color={(activeTab) === 'artists' ? colors.text.primary : colors.text.secondary} strokeWidth={2} />
     }
-  ];
+  ], [activeTab]);
 
   // Reload history when screen comes into focus
   useFocusEffect(
@@ -91,7 +90,7 @@ export default function HistoryScreen() {
   }, [selectedTrack, selectedArtist]);
 
   // Filter and sort tracks when filters change
-  useEffect(() => {
+  const filteredTracks = useMemo(() => {
     let filtered = [...tracks];
 
     // Apply genre filter
@@ -124,11 +123,11 @@ export default function HistoryScreen() {
       }
     });
 
-    setFilteredTracks(filtered);
+    return filtered;
   }, [tracks, selectedGenre, selectedMood, selectedSort]);
 
   // Filter and sort artists when filters change
-  useEffect(() => {
+  const filteredArtists = useMemo(() => {
     let filtered = [...artists];
 
     // Apply genre filter
@@ -154,7 +153,7 @@ export default function HistoryScreen() {
       }
     });
 
-    setFilteredArtists(filtered);
+    return filtered;
   }, [artists, selectedArtistGenre, selectedArtistSort]);
 
   const loadHistory = async () => {

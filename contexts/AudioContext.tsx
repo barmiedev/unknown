@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useRef, useCallback, useEffect } from 'react';
+import React, { createContext, useContext, useState, useRef, useCallback, useEffect, useMemo } from 'react';
 import { Audio, AVPlaybackStatus } from 'expo-av';
 import { Platform } from 'react-native';
 import { Track } from '@/types';
@@ -274,7 +274,16 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
     setIsTrackUnveiled(false);
   }, []);
 
-  const value: AudioContextType = {
+  const showGlobalPlayer = useCallback(() => {
+    setIsGlobalPlayerVisible(true);
+  }, []);
+
+  const hideGlobalPlayer = useCallback(() => {
+    setIsGlobalPlayerVisible(false);
+  }, []);
+
+  // Memoize the context value to prevent unnecessary re-renders
+  const value = useMemo<AudioContextType>(() => ({
     currentTrack,
     isPlaying,
     position,
@@ -296,12 +305,32 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
     getProgress,
     formatTime,
     isGlobalPlayerVisible,
-    showGlobalPlayer: () => setIsGlobalPlayerVisible(true),
-    hideGlobalPlayer: () => setIsGlobalPlayerVisible(false),
+    showGlobalPlayer,
+    hideGlobalPlayer,
     isTrackUnveiled,
     unveilTrack,
     hideTrack,
-  };
+  }), [
+    currentTrack,
+    isPlaying,
+    position,
+    duration,
+    loadTrack,
+    playPause,
+    stop,
+    seekTo,
+    skipCallback,
+    isLoading,
+    error,
+    getProgress,
+    formatTime,
+    isGlobalPlayerVisible,
+    showGlobalPlayer,
+    hideGlobalPlayer,
+    isTrackUnveiled,
+    unveilTrack,
+    hideTrack,
+  ]);
 
   return (
     <AudioContext.Provider value={value}>

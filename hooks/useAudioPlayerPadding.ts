@@ -1,5 +1,6 @@
 import { useAudio } from '@/contexts/AudioContext';
 import { spacing } from '@/utils/spacing';
+import { useMemo } from 'react';
 
 /**
  * Hook to get the necessary bottom padding for screens when the global audio player is visible
@@ -12,8 +13,8 @@ export function useAudioPlayerPadding() {
   const playerHeight = 80; // Approximate height of the global player
   const spacing = 16; // Additional spacing
   
-  return {
+  return useMemo(() => ({
     paddingBottom: isGlobalPlayerVisible ? playerHeight + spacing : 0,
     isPlayerVisible: isGlobalPlayerVisible,
-  };
+  }), [isGlobalPlayerVisible]);
 } 

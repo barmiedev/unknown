@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, memo } from 'react';
 import { View, StyleSheet, Modal, TouchableOpacity, ScrollView, Text as RNText } from 'react-native';
 import { X, ChevronDown, RotateCcw } from 'lucide-react-native';
 import { SelectionChip } from '@/components/selection/SelectionChip';
@@ -41,7 +41,7 @@ const ARTIST_SORT_OPTIONS: { value: SortOption; label: string }[] = [
   { value: 'name_desc', label: 'Name Z-A' },
 ];
 
-export function FilterBar({
+export const FilterBar = memo(function FilterBar({
   selectedGenre,
   selectedMood,
   selectedSort,
@@ -307,7 +307,7 @@ export function FilterBar({
       </FilterModal>
     </View>
   );
-}
+});
 
 const styles = StyleSheet.create({
   container: {
