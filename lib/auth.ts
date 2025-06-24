@@ -130,7 +130,7 @@ export class AuthService {
       .upsert({
         profile_id: user.id,
         user_id: user.id, // Keep for backward compatibility
-        total_tracks_rated: 0,
+        total_tracks_rated_count: 0,
         current_streak_days: 0,
         longest_streak_days: 0,
         total_points: 0,
