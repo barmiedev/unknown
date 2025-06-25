@@ -20,7 +20,7 @@ interface ArtistListItemProps {
   showSeparator?: boolean;
 }
 
-export function ArtistListItem({ artist, onPress, showSeparator = true }: ArtistListItemProps) {
+export const ArtistListItem = React.memo(function ArtistListItem({ artist, onPress, showSeparator = true }: ArtistListItemProps) {
   const renderGenreTags = () => {
     if (!artist.genres || artist.genres.length === 0) return null;
 
@@ -84,7 +84,7 @@ export function ArtistListItem({ artist, onPress, showSeparator = true }: Artist
       {showSeparator && <View style={styles.separator} />}
     </View>
   );
-}
+});
 
 const styles = StyleSheet.create({
   artistCard: {

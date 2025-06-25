@@ -249,18 +249,18 @@ export default function ArtistUnveilView({
       paddingHorizontal={0}
     >
       {/* Floating Back Button */}
-      {onContinueListening && (
+      {onContinueListening ? (
         <FloatingBackButton onPress={onContinueListening} />
-      )}
+      ) : null}
 
       {/* Gamification Reward Overlay - Show FIRST before other content */}
-      {showGamificationReward && gamificationReward && (
+      {showGamificationReward && gamificationReward ? (
         <GamificationRewardDisplay
           reward={gamificationReward}
           visible={showGamificationReward}
           onDismiss={onGamificationRewardDismiss || (() => {})}
         />
-      )}
+      ) : null}
 
       <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom }}>
         <View style={{ paddingHorizontal: spacing.lg }}>
@@ -296,7 +296,7 @@ export default function ArtistUnveilView({
           </View>
 
           {/* User Rating Display */}
-          {userRating && (
+          {userRating ? (
             <View style={styles.section}>
               <View style={styles.userRatingContainer}>
                 <Heading variant="h4" color="primary" style={styles.userRatingTitle}>
@@ -314,10 +314,10 @@ export default function ArtistUnveilView({
                 ) : null}
               </View>
             </View>
-          )}
+          ) : null}
 
           {/* Streaming Links */}
-          {streamingLinks.length > 0 && (
+          {streamingLinks.length > 0 ? (
             <View style={styles.section}>
               <Heading variant="h4" color="primary" style={styles.sectionTitle}>
                 Listen Now
@@ -375,10 +375,10 @@ export default function ArtistUnveilView({
                 </View>
               </View>
             </View>
-          )}
+          ) : null}
 
           {/* Artist Info */}
-          {artist && (
+          {artist ? (
             <>
               {/* Connect with Artist Section */}
               <View style={styles.section}>
@@ -463,10 +463,10 @@ export default function ArtistUnveilView({
                 )}
               </View>
             </>
-          )}
+          ) : null}
 
           {/* Playback Controls */}
-          {showPlaybackControls && (
+          {showPlaybackControls ? (
             <View style={[styles.section, styles.lastSection]}>
               <View style={styles.playbackControls}>
                 {onContinueListening && (
@@ -494,7 +494,7 @@ export default function ArtistUnveilView({
                 )}
               </View>
             </View>
-          )}
+          ) : null}
         </View>
       </ScrollView>
 

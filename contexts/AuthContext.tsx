@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, { createContext, useContext, useEffect, useState, useMemo } from 'react';
 import { AuthService } from '@/lib/auth';
 import { AuthUser } from '@/types';
 
@@ -80,19 +80,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setUser(updatedUser);
   };
 
+  // Memoize the context value to prevent unnecessary re-renders
+  const value = useMemo<AuthContextType>(() => ({
+    user,
+    loading,
+    signIn,
+    signUp,
+    signOut,
+    updateProfile,
+    completeOnboarding,
+    refreshUser,
+  }), [user, loading]);
+
   return (
-    <AuthContext.Provider
-      value={{
-        user,
-        loading,
-        signIn,
-        signUp,
-        signOut,
-        updateProfile,
-        completeOnboarding,
-        refreshUser,
-      }}
-    >
+    <AuthContext.Provider value={value}>
       {children}
     </AuthContext.Provider>
   );

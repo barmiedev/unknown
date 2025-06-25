@@ -24,7 +24,7 @@ interface TrackListItemProps {
   showSeparator?: boolean;
 }
 
-export function TrackListItem({ track, onPress, showSeparator = true }: TrackListItemProps) {
+export const TrackListItem = React.memo(function TrackListItem({ track, onPress, showSeparator = true }: TrackListItemProps) {
   const extractCityFromLocation = (location: string | undefined): string => {
     if (!location) return '';
     // Extract city name (first part before comma)
@@ -108,7 +108,7 @@ export function TrackListItem({ track, onPress, showSeparator = true }: TrackLis
       {showSeparator && <View style={styles.separator} />}
     </View>
   );
-}
+});
 
 const styles = StyleSheet.create({
   trackCard: {

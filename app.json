@@ -4,17 +4,23 @@
     "slug": "unknown-band",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/images/icon.png",
+    "icon": "./assets/images/dark-icon.png",
     "scheme": "unknown",
     "userInterfaceStyle": "dark",
     "newArchEnabled": true,
     "ios": {
       "supportsTablet": false
     },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/images/dark-icon.png",
+        "backgroundColor": "#19161a"
+      }
+    },
     "web": {
       "bundler": "metro",
       "output": "single",
-      "favicon": "./assets/images/icon.png"
+      "favicon": "./assets/images/dark-icon.png"
     },
     "plugins": [
       "expo-router",
