@@ -20,7 +20,7 @@ import {
   DEFAULT_STREAMING_PLATFORM 
 } from '@/lib/platforms';
 import { GENRES, MOODS } from '@/utils/constants';
-import { router } from 'expo-router';
+import { useAudio } from '@/contexts/AudioContext';
 
 const STREAMING_PLATFORMS = Object.entries(PLATFORM_NAMES).map(([id, name]) => ({
   id,
@@ -30,6 +30,7 @@ const STREAMING_PLATFORMS = Object.entries(PLATFORM_NAMES).map(([id, name]) => (
 
 export default function ProfileScreen() {
   const { user, signOut, updateProfile } = useAuth();
+  const { stop } = useAudio();
   const { paddingBottom } = useAudioPlayerPadding();
   const [selectedGenres, setSelectedGenres] = useState<string[]>([]);
   const [selectedMoods, setSelectedMoods] = useState<string[]>([]);
@@ -192,7 +193,7 @@ export default function ProfileScreen() {
 
   const handleSignOut = async () => {
     try {
-      await signOut();
+      await signOut(() => stop());
     } catch (error) {
       console.error('Error signing out:', error);
     }
