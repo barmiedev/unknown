@@ -1,6 +1,7 @@
 import React, { useState, memo } from 'react';
 import { View, TouchableOpacity, StyleSheet } from 'react-native';
 import { Play, Pause, SkipForward } from 'lucide-react-native';
+import { usePathname, router } from 'expo-router';
 import Animated, { 
   useAnimatedStyle, 
   useSharedValue, 
@@ -11,11 +12,10 @@ import Animated, {
   FadeOut,
 } from 'react-native-reanimated';
 import { useAudio } from '@/contexts/AudioContext';
-import { Text } from '@/components/typography/Text';
 import { colors } from '@/utils/colors';
 import { spacing } from '@/utils/spacing';
 import { fonts } from '@/lib/fonts';
-import { router, usePathname } from 'expo-router';
+import { Text } from '@/components/typography/Text';
 
 interface GlobalAudioPlayerProps {
   onPress?: () => void;

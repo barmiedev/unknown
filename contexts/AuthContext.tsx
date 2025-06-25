@@ -7,7 +7,7 @@ interface AuthContextType {
   loading: boolean;
   signIn: (email: string, password: string) => Promise<{ success: boolean; error: any | null }>;
   signUp: (email: string, password: string) => Promise<void>;
-  signOut: () => Promise<void>;
+  signOut: (callback?: () => void) => Promise<void>;
   updateProfile: (updates: any) => Promise<void>;
   completeOnboarding: (data: any) => Promise<void>;
   refreshUser: () => Promise<void>; // Add refresh function
@@ -61,8 +61,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     await AuthService.signUp(email, password);
   };
 
-  const signOut = async () => {
+  const signOut = async (callback?: () => void) => {
     await AuthService.signOut();
+    callback?.();
     setUser(null);
   };
 
@@ -80,20 +81,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setUser(updatedUser);
   };
 
-  // Memoize the context value to prevent unnecessary re-renders
-  const value = useMemo<AuthContextType>(() => ({
-    user,
-    loading,
-    signIn,
-    signUp,
-    signOut,
-    updateProfile,
-    completeOnboarding,
-    refreshUser,
-  }), [user, loading]);
-
   return (
-    <AuthContext.Provider value={value}>
+    <AuthContext.Provider
+      value={{
+        user,
+        loading,
+        signIn,
+        signUp,
+        signOut,
+        updateProfile,
+        completeOnboarding,
+        refreshUser,
+      }}
+    >
       {children}
     </AuthContext.Provider>
   );

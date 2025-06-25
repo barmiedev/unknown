@@ -16,7 +16,7 @@ import { fonts } from '@/lib/fonts';
 import { useAudioPlayerPadding } from '@/hooks/useAudioPlayerPadding';
 
 export default function JourneyScreen() {
-  const { user, refreshUser } = useAuth();
+  const { user } = useAuth();
   const { paddingBottom } = useAudioPlayerPadding();
   const [stats, setStats] = useState<UserStats>({
     totalTracksRatedCount: 0,
@@ -42,7 +42,6 @@ export default function JourneyScreen() {
   const [leaderboardData, setLeaderboardData] = useState<LeaderboardData | null>(null);
   const [favoriteGenre, setFavoriteGenre] = useState<string>('');
   const [favoriteMood, setFavoriteMood] = useState<string>('');
-  const [leastFavoriteGenre, setLeastFavoriteGenre] = useState<string>('');
   const [loading, setLoading] = useState(true);
   const [showBadgesModal, setShowBadgesModal] = useState(false);
   const [showLeaderboardModal, setShowLeaderboardModal] = useState(false);
@@ -52,7 +51,6 @@ export default function JourneyScreen() {
     React.useCallback(() => {
       if (user?.id) {
         loadUserStats();
-        refreshUser(); // Refresh user profile data including total_xp
       }
     }, [user?.id]) // Only depend on user.id, not the entire user object
   );

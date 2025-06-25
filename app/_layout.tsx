@@ -17,6 +17,11 @@ function RootLayoutNav() {
   const hasRedirected = useRef(false);
 
   useEffect(() => {
+    // Reset hasRedirected when user state changes
+    hasRedirected.current = false;
+  }, [user]);
+
+  useEffect(() => {
     if (!loading && !hasRedirected.current) {
       if (!user) {
         // User is not authenticated, show welcome screen

@@ -193,9 +193,6 @@ export default function ProfileScreen() {
   const handleSignOut = async () => {
     try {
       await signOut();
-      router.push({
-        pathname: '/welcome',
-      });
     } catch (error) {
       console.error('Error signing out:', error);
     }
