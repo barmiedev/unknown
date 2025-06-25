@@ -6,6 +6,13 @@
   "scripts": {
     "dev": "EXPO_NO_TELEMETRY=1 expo start",
     "build:web": "expo export --platform web",
+    "build:ios": "eas build --platform ios",
+    "build:android": "eas build --platform android",
+    "build:all": "eas build --platform all",
+    "build:ios:preview": "eas build --platform ios --profile preview",
+    "build:android:preview": "eas build --platform android --profile preview",
+    "build:ios:production": "eas build --platform ios --profile production",
+    "build:android:production": "eas build --platform android --profile production",
     "lint": "expo lint"
   },
   "dependencies": {

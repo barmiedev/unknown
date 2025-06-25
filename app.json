@@ -1,7 +1,7 @@
 {
   "expo": {
     "name": "Unknown",
-    "slug": "unknown-band",
+    "slug": "unknown",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/dark-icon.png",
@@ -9,13 +9,31 @@
     "userInterfaceStyle": "dark",
     "newArchEnabled": true,
     "ios": {
-      "supportsTablet": false
+      "supportsTablet": false,
+      "bundleIdentifier": "com.unknown.band",
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false,
+        "UIBackgroundModes": ["audio"],
+        "NSMicrophoneUsageDescription": "This app uses audio playback features"
+      }
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/dark-icon.png",
         "backgroundColor": "#19161a"
-      }
+      },
+      "package": "com.unknown.band",
+      "permissions": [
+        "android.permission.MODIFY_AUDIO_SETTINGS",
+        "android.permission.WAKE_LOCK",
+        "android.permission.FOREGROUND_SERVICE"
+      ],
+      "intentFilters": [
+        {
+          "action": "android.media.action.MEDIA_BUTTON",
+          "category": ["android.intent.category.DEFAULT"]
+        }
+      ]
     },
     "web": {
       "bundler": "metro",
@@ -30,6 +48,12 @@
     ],
     "experiments": {
       "typedRoutes": true
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "a721615a-bdf2-41a9-8df7-3efb21fb5eb9"
+      }
     }
   }
 }

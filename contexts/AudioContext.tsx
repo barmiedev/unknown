@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useRef, useCallback, useEffect, useMemo } from 'react';
-import { Audio, AVPlaybackStatus } from 'expo-av';
+import { Audio, AVPlaybackStatus, InterruptionModeIOS, InterruptionModeAndroid } from 'expo-av';
 import { Platform } from 'react-native';
 import { Track } from '@/types';
 
@@ -72,6 +72,34 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
   const [skipCallback, setSkipCallback] = useState<(() => void) | null>(null);
   
   const audioOperationInProgressRef = useRef(false);
+
+  // Configure audio session for background playback
+  // This enables:
+  // - Audio continues playing when app is in background
+  // - Audio continues when screen is turned off
+  // - Audio plays even when device is in silent mode (iOS)
+  // - Audio ducks (lowers volume) when other apps play audio (Android)
+  // - Audio doesn't mix with other apps' audio
+  // - Lock screen controls and track information
+  useEffect(() => {
+    const configureAudioSession = async () => {
+      try {
+        await Audio.setAudioModeAsync({
+          allowsRecordingIOS: false,
+          staysActiveInBackground: true,
+          playsInSilentModeIOS: true,
+          shouldDuckAndroid: true,
+          playThroughEarpieceAndroid: false,
+          interruptionModeIOS: InterruptionModeIOS.DoNotMix,
+          interruptionModeAndroid: InterruptionModeAndroid.DoNotMix,
+        });
+      } catch (error) {
+        console.warn('Error configuring audio session:', error);
+      }
+    };
+
+    configureAudioSession();
+  }, []);
 
   // Cleanup on unmount
   useEffect(() => {
@@ -164,7 +192,6 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
       
       // Reset track unveil state for new track
       setIsTrackUnveiled(false);
-
     } catch (error) {
       console.error('Error loading track:', error);
       const errorMessage = error instanceof Error ? error.message : 'Failed to load audio';
