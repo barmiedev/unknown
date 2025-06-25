@@ -38,6 +38,10 @@ export class AuthService {
     try {
       const { data: { user }, error: authError } = await supabase.auth.getUser();
       
+      if (!user) {
+        return null;
+      }
+
       // If there's an authentication error (like invalid refresh token), clear the session
       if (authError) {
         console.warn('Authentication error detected, clearing session:', authError.message);
@@ -46,9 +50,6 @@ export class AuthService {
         return null;
       }
 
-      if (!user) {
-        return null;
-      }
 
       // Get user profile
       const { data: profile, error } = await supabase
