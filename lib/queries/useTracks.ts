@@ -1,4 +1,4 @@
-import { useQuery, useInfiniteQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase';
 import { Track, UserPreferences } from '@/types';
 
@@ -15,9 +15,7 @@ export const useRandomTrack = (filters: TrackFilters) => {
     queryFn: async (): Promise<Track | null> => {
       let query = supabase
         .from('tracks')
-        .select('*')
-        .gt('in_app_streams_count', 0) // Only tracks that have been played (underground criteria)
-        .lt('in_app_streams_count', 5000); // Keep underground threshold with in-app streams
+        .select('*');
 
       // Exclude already rated tracks
       if (filters.excludeIds && filters.excludeIds.length > 0) {
@@ -58,81 +56,6 @@ export const useRandomTrack = (filters: TrackFilters) => {
     },
     enabled: false, // Only fetch when explicitly called
     retry: 1,
-  });
-};
-
-export const useRatedTrackIds = (userId?: string) => {
-  return useQuery({
-    queryKey: ['ratedTrackIds', userId],
-    queryFn: async (): Promise<string[]> => {
-      if (!userId) return [];
-
-      const { data: ratings, error } = await supabase
-        .from('user_ratings')
-        .select('track_id')
-        .eq('profile_id', userId);
-
-      if (error) throw error;
-      return ratings?.map(r => r.track_id) || [];
-    },
-    enabled: !!userId,
-    staleTime: 1 * 60 * 1000, // 1 minute - keep fresh for discovery
-  });
-};
-
-export const useTrackAvailabilityCheck = (filters: TrackFilters) => {
-  return useQuery({
-    queryKey: ['trackAvailability', filters],
-    queryFn: async (): Promise<{ hasTracksInPreferences: boolean; hasTracksAtAll: boolean }> => {
-      const excludeIds = filters.excludeIds || [];
-
-      // Check if there are any tracks available at all (broadened search)
-      const { count: allTracksCount, error: allTracksError } = await supabase
-        .from('tracks')
-        .select('id', { count: 'exact', head: true })
-        .gt('in_app_streams_count', 0) // Use in-app streams instead of spotify_streams
-        .lt('in_app_streams_count', 5000)
-        .not('id', 'in', excludeIds.length > 0 ? `(${excludeIds.join(',')})` : '()');
-
-      if (allTracksError) throw allTracksError;
-
-      const hasTracksAtAll = (allTracksCount || 0) > 0;
-
-      if (!hasTracksAtAll) {
-        return { hasTracksInPreferences: false, hasTracksAtAll };
-      }
-
-      // Check if there are tracks matching preferences
-      let query = supabase
-        .from('tracks')
-        .select('id', { count: 'exact', head: true })
-        .gt('in_app_streams_count', 0)
-        .lt('in_app_streams_count', 5000)
-        .not('id', 'in', excludeIds.length > 0 ? `(${excludeIds.join(',')})` : '()');
-
-      // Apply session mood filter if selected
-      if (filters.sessionMood) {
-        query = query.eq('mood', filters.sessionMood);
-      }
-
-      // Apply user preferences if available and no specific session mood
-      if (filters.userPreferences && !filters.sessionMood) {
-        if (filters.userPreferences.preferred_genres && filters.userPreferences.preferred_genres.length > 0) {
-          query = query.in('genre', filters.userPreferences.preferred_genres);
-        }
-
-        if (filters.userPreferences.preferred_moods && filters.userPreferences.preferred_moods.length > 0) {
-          query = query.in('mood', filters.userPreferences.preferred_moods);
-        }
-      }
-
-      const { count: preferencesCount, error: preferencesError } = await query;
-      if (preferencesError) throw preferencesError;
-
-      const hasTracksInPreferences = (preferencesCount || 0) > 0;
-      return { hasTracksInPreferences, hasTracksAtAll };
-    },
-    enabled: false, // Only fetch when explicitly called
   });
 };
 

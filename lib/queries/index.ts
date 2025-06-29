@@ -5,4 +5,6 @@ export * from './useArtistSubscriptions';
 export * from './useTracks';
 export * from './useLeaderboard';
 export * from './useBadges';
+export * from './useRatedTrackIds';
+export * from './useTrackAvailabilityCheck';
 export * from './mutations';
