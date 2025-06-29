@@ -297,6 +297,7 @@ export default function DiscoverScreen() {
     try {
       setState('loading');
       setError(null);
+      setPlayingFromFinds(false);
 
       // Check track availability first
       const availability = await getUserHasTracksAvailable({
