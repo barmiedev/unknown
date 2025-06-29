@@ -1,8 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { View, Alert, TextInput, Keyboard, TouchableWithoutFeedback, Platform, KeyboardAvoidingView } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
-import { useFocusEffect } from '@react-navigation/native';
 import { Shuffle } from 'lucide-react-native';
 import Animated, { 
   useAnimatedStyle, 
@@ -12,8 +10,6 @@ import Animated, {
   withSequence,
   withDelay,
   runOnJS,
-  interpolate,
-  Extrapolate,
   FadeIn,
   FadeOut,
 } from 'react-native-reanimated';
@@ -25,14 +21,11 @@ import { useAudioPlayerPadding } from '@/hooks/useAudioPlayerPadding';
 import { Button } from '@/components/buttons';
 import { Heading } from '@/components/typography';
 import { Text } from '@/components/typography/Text';
-import { Logo } from '@/components/typography/Logo';
 import ArtistUnveilView from '@/components/ArtistUnveilView';
-import { Track, UserPreferences, DiscoverState, AnimationBackgroundProps, GamificationReward } from '@/types';
+import { Track, DiscoverState, AnimationBackgroundProps, GamificationReward } from '@/types';
 import {
-  MoodSelector,
   LoadingState,
   SessionHeader,
-  WelcomeTip,
   PlaybackControls,
   RatingInterface,
   FullListeningMode,
@@ -106,7 +99,6 @@ export default function DiscoverScreen() {
   const [showRating, setShowRating] = useState(false);
   const [trackRevealed, setTrackRevealed] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [showWelcomeTip, setShowWelcomeTip] = useState(false);
   const [showThankYou, setShowThankYou] = useState(false);
   const [ratingThreshold] = useState(0.05); // 5% of track length
   const [canSkip, setCanSkip] = useState(true);
@@ -125,7 +117,6 @@ export default function DiscoverScreen() {
 
   // Animation shared values - always called in the same order
   const pulseAnimation = useSharedValue(1);
-  const progressAnimation = useSharedValue(0);
   const thankYouOpacity = useSharedValue(0);
   const fadeOpacity = useSharedValue(1);
   const transitionTextOpacity = useSharedValue(0);
@@ -224,20 +215,10 @@ export default function DiscoverScreen() {
     reviewInputHeight.value = 0;
   };
 
-  // Load user data when user changes
-  useEffect(() => {
-    if (user?.id && discoveryStats) {
-      const isFirstTimeUser = discoveryStats.totalTracks === 0;
-      if (isFirstTimeUser) {
-        setShowWelcomeTip(true);
-      }
-    }
-  }, [user, discoveryStats]);
-
   // Set available moods using the utility function
   useEffect(() => {
     if (userPreferences) {
-      const moodsForSession = getMoodsForSession(userPreferences.preferred_moods || [], 3);
+      const moodsForSession = getMoodsForSession(userPreferences.preferred_moods as Mood[] || [], 3);
       setAvailableMoods(moodsForSession);
     } else {
       // Fallback to 3 random moods
@@ -309,7 +290,6 @@ export default function DiscoverScreen() {
       setReview('');
       setShowRating(false);
       setTrackRevealed(false);
-      setShowWelcomeTip(false);
       setCanSkip(true);
       setShowReviewInput(false);
       setIsReviewFocused(false);
@@ -429,7 +409,6 @@ export default function DiscoverScreen() {
         setState('revealed');
         setShowThankYou(false);
         setIsTransitioning(false);
-        setShowWelcomeTip(false);
         
         // Unveil track in global audio player for high ratings
         unveilTrack();
@@ -706,10 +685,6 @@ export default function DiscoverScreen() {
                   onNewSession={handleNewSession}
                 />
               </View>
-
-              {showWelcomeTip && (
-                <WelcomeTip />
-              )}
 
               <ThankYouOverlay
                 visible={showThankYou}
