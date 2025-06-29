@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { View, StyleSheet, ScrollView, Image, TouchableOpacity, Linking, Alert } from 'react-native';
+import { View, StyleSheet, ScrollView, TouchableOpacity, Linking, Alert } from 'react-native';
 import { Users, UserMinus, UserPlus } from 'lucide-react-native';
 import { Screen } from '@/components/layout/Screen';
 import { Heading } from '@/components/typography/Heading';
 import { Text } from '@/components/typography/Text';
 import { FloatingBackButton } from '@/components/navigation';
 import { Button } from '@/components/buttons';
+import { OptimizedImage } from '@/components/media/OptimizedImage';
 import { colors } from '@/utils/colors';
 import { spacing, borderRadius } from '@/utils/spacing';
 import { formatDate } from '@/utils/formatting';
@@ -81,7 +82,10 @@ export default function ArtistDetailView({
           <View style={styles.artistHeader}>
             <View style={styles.artistAvatarContainer}>
               {artist.avatar_url ? (
-                <Image source={{ uri: artist.avatar_url }} style={styles.artistAvatar} />
+                <OptimizedImage 
+                  source={{ uri: artist.avatar_url }} 
+                  style={styles.artistAvatar} 
+                />
               ) : (
                 <View style={styles.artistAvatarPlaceholder}>
                   <Users size={40} color={colors.text.secondary} strokeWidth={1.5} />
@@ -304,4 +308,4 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     flex: 1,
   },
-}); 
+});

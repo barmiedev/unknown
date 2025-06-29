@@ -1,8 +1,9 @@
 import React from 'react';
-import { View, TouchableOpacity, Image, StyleSheet } from 'react-native';
+import { View, TouchableOpacity, StyleSheet } from 'react-native';
 import { Users } from 'lucide-react-native';
 import { Heading } from '@/components/typography/Heading';
 import { Text } from '@/components/typography/Text';
+import { OptimizedImage } from '@/components/media/OptimizedImage';
 import { colors } from '@/utils/colors';
 import { spacing } from '@/utils/spacing';
 import { formatDate } from '@/utils/formatting';
@@ -47,7 +48,7 @@ export const ArtistListItem = React.memo(function ArtistListItem({ artist, onPre
           {/* Artist Avatar */}
           <View style={styles.artistAvatarContainer}>
             {artist.avatar_url ? (
-              <Image
+              <OptimizedImage
                 source={{ uri: artist.avatar_url }}
                 style={styles.artistAvatar}
                 resizeMode="cover"

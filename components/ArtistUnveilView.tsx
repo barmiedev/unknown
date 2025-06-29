@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { View, ScrollView, TouchableOpacity, Image, StyleSheet, Linking, Alert, Modal } from 'react-native';
+import { View, ScrollView, TouchableOpacity, StyleSheet, Linking, Alert, Modal } from 'react-native';
 import { 
   Heart,
   HeartHandshake,
@@ -19,6 +19,7 @@ import { Heading } from '@/components/typography/Heading';
 import { Text } from '@/components/typography/Text';
 import { Button } from '@/components/buttons/Button';
 import { StarRating } from '@/components/rating/StarRating';
+import { OptimizedImage } from '@/components/media/OptimizedImage';
 import { colors } from '@/utils/colors';
 import { spacing, borderRadius } from '@/utils/spacing';
 import {
@@ -268,7 +269,7 @@ export default function ArtistUnveilView({
           <View style={styles.artworkContainer}>
             <View style={styles.artworkWrapper}>
               {track.artwork_url ? (
-                <Image
+                <OptimizedImage
                   source={{ uri: track.artwork_url }}
                   style={styles.artwork}
                   resizeMode="cover"
@@ -426,7 +427,7 @@ export default function ArtistUnveilView({
                 <View style={styles.artistDetailsContainer}>
                   {artist.avatar_url && (
                     <View style={styles.artistAvatarContainer}>
-                      <Image
+                      <OptimizedImage
                         source={{ uri: artist.avatar_url }}
                         style={styles.artistAvatar}
                         resizeMode="cover"
