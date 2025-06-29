@@ -1,4 +1,4 @@
-import { useQuery, useInfiniteQuery } from '@tanstack/react-query';
+import { useQuery, useInfiniteQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase';
 import { Track, UserPreferences } from '@/types';
 
@@ -16,7 +16,8 @@ export const useRandomTrack = (filters: TrackFilters) => {
       let query = supabase
         .from('tracks')
         .select('*')
-        .lt('spotify_streams', 5000); // Only underground tracks
+        .gt('in_app_streams_count', 0) // Only tracks that have been played (underground criteria)
+        .lt('in_app_streams_count', 5000); // Keep underground threshold with in-app streams
 
       // Exclude already rated tracks
       if (filters.excludeIds && filters.excludeIds.length > 0) {
@@ -89,7 +90,8 @@ export const useTrackAvailabilityCheck = (filters: TrackFilters) => {
       const { count: allTracksCount, error: allTracksError } = await supabase
         .from('tracks')
         .select('id', { count: 'exact', head: true })
-        .lt('spotify_streams', 5000)
+        .gt('in_app_streams_count', 0) // Use in-app streams instead of spotify_streams
+        .lt('in_app_streams_count', 5000)
         .not('id', 'in', excludeIds.length > 0 ? `(${excludeIds.join(',')})` : '()');
 
       if (allTracksError) throw allTracksError;
@@ -104,7 +106,8 @@ export const useTrackAvailabilityCheck = (filters: TrackFilters) => {
       let query = supabase
         .from('tracks')
         .select('id', { count: 'exact', head: true })
-        .lt('spotify_streams', 5000)
+        .gt('in_app_streams_count', 0)
+        .lt('in_app_streams_count', 5000)
         .not('id', 'in', excludeIds.length > 0 ? `(${excludeIds.join(',')})` : '()');
 
       // Apply session mood filter if selected
@@ -130,5 +133,24 @@ export const useTrackAvailabilityCheck = (filters: TrackFilters) => {
       return { hasTracksInPreferences, hasTracksAtAll };
     },
     enabled: false, // Only fetch when explicitly called
+  });
+};
+
+// New mutation to increment track streams when a track is played
+export const useIncrementTrackStreams = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (trackId: string) => {
+      const { error } = await supabase.rpc('increment_track_streams', {
+        track_id_param: trackId
+      });
+
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      // Optionally invalidate track-related queries if needed
+      // queryClient.invalidateQueries({ queryKey: ['tracks'] });
+    },
   });
 };

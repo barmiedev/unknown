@@ -2,6 +2,7 @@ import React, { createContext, useContext, useState, useRef, useCallback, useEff
 import { Audio, AVPlaybackStatus, InterruptionModeIOS, InterruptionModeAndroid } from 'expo-av';
 import { Platform } from 'react-native';
 import { Track } from '@/types';
+import { supabase } from '@/lib/supabase';
 
 interface AudioContextType {
   // Current track and playback state
@@ -70,17 +71,11 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
   const [isGlobalPlayerVisible, setIsGlobalPlayerVisible] = useState(false);
   const [isTrackUnveiled, setIsTrackUnveiled] = useState(false);
   const [skipCallback, setSkipCallback] = useState<(() => void) | null>(null);
+  const [hasIncrementedStreams, setHasIncrementedStreams] = useState(false);
   
   const audioOperationInProgressRef = useRef(false);
 
   // Configure audio session for background playback
-  // This enables:
-  // - Audio continues playing when app is in background
-  // - Audio continues when screen is turned off
-  // - Audio plays even when device is in silent mode (iOS)
-  // - Audio ducks (lowers volume) when other apps play audio (Android)
-  // - Audio doesn't mix with other apps' audio
-  // - Lock screen controls and track information
   useEffect(() => {
     const configureAudioSession = async () => {
       try {
@@ -123,8 +118,24 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
       setPosition(status.positionMillis || 0);
       setDuration(status.durationMillis || 0);
       setIsPlaying(status.isPlaying || false);
+      
+      // Increment stream count when track reaches 30 seconds of playback
+      if (currentTrack && !hasIncrementedStreams && (status.positionMillis || 0) >= 30000) {
+        incrementTrackStreams(currentTrack.id);
+        setHasIncrementedStreams(true);
+      }
     }
-  }, []);
+  }, [currentTrack, hasIncrementedStreams]);
+
+  const incrementTrackStreams = async (trackId: string) => {
+    try {
+      await supabase.rpc('increment_track_streams', {
+        track_id_param: trackId
+      });
+    } catch (error) {
+      console.warn('Error incrementing track streams:', error);
+    }
+  };
 
   const loadTrack = useCallback(async (track: Track, autoPlay = true) => {
     if (audioOperationInProgressRef.current) {
@@ -135,6 +146,7 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
     audioOperationInProgressRef.current = true;
     setIsLoading(true);
     setError(null);
+    setHasIncrementedStreams(false); // Reset stream increment flag for new track
 
     try {
       // Unload existing sound if any
@@ -254,6 +266,7 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
         await sound.stopAsync();
         setIsPlaying(false);
         setPosition(0);
+        setHasIncrementedStreams(false); // Reset stream increment flag
       }
     } catch (error) {
       console.error('Error stopping audio:', error);
@@ -372,4 +385,4 @@ export function useAudio() {
     throw new Error('useAudio must be used within an AudioProvider');
   }
   return context;
-} 
+}

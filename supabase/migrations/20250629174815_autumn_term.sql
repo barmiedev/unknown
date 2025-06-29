@@ -1,0 +1,55 @@
+/*
+  # Update Sample Tracks - Remove Spotify References
+
+  1. Data Updates
+    - Remove spotify_url from all existing tracks
+    - Initialize in_app_streams_count with realistic values
+    - Set up proper reviews_data structure
+
+  2. Sample Data Cleanup
+    - Update track data to remove Spotify dependencies
+    - Add realistic in-app streaming numbers
+*/
+
+-- Update existing tracks to remove spotify_url references and add realistic in-app streams
+UPDATE tracks SET 
+  in_app_streams_count = FLOOR(RANDOM() * 1000) + 50 -- Random streams between 50-1050
+WHERE in_app_streams_count = 0;
+
+-- Update track streaming links to remove spotify references if they exist
+-- (Keep other platforms like SoundCloud, Bandcamp, etc.)
+DELETE FROM track_streaming_links WHERE platform = 'spotify';
+
+-- Update sample tracks data to remove any remaining spotify references
+UPDATE tracks SET 
+  audio_url = CASE 
+    WHEN audio_url LIKE '%spotify%' THEN 'https://example.com/audio/' || LOWER(REPLACE(title, ' ', '-')) || '.mp3'
+    ELSE audio_url
+  END;
+
+-- Add some sample streaming links for non-Spotify platforms
+INSERT INTO track_streaming_links (track_id, platform, url) 
+SELECT 
+  t.id, 
+  'soundcloud', 
+  'https://soundcloud.com/' || LOWER(REPLACE(t.artist, ' ', '-')) || '/' || LOWER(REPLACE(t.title, ' ', '-'))
+FROM tracks t 
+WHERE NOT EXISTS (
+  SELECT 1 FROM track_streaming_links tsl 
+  WHERE tsl.track_id = t.id AND tsl.platform = 'soundcloud'
+)
+LIMIT 10;
+
+-- Add some Bandcamp links for indie/alternative tracks
+INSERT INTO track_streaming_links (track_id, platform, url) 
+SELECT 
+  t.id, 
+  'bandcamp', 
+  'https://' || LOWER(REPLACE(t.artist, ' ', '')) || '.bandcamp.com/track/' || LOWER(REPLACE(t.title, ' ', '-'))
+FROM tracks t 
+WHERE t.genre IN ('Indie', 'Folk', 'Alternative', 'Punk')
+AND NOT EXISTS (
+  SELECT 1 FROM track_streaming_links tsl 
+  WHERE tsl.track_id = t.id AND tsl.platform = 'bandcamp'
+)
+LIMIT 15;

@@ -137,11 +137,12 @@ export default function ArtistUnveilView({
         }
       }
 
-      // Get streaming links
+      // Get streaming links (excluding spotify since we removed it)
       const { data: streamingData, error: streamingError } = await supabase
         .from('track_streaming_links')
         .select('platform, url')
-        .eq('track_id', track.id);
+        .eq('track_id', track.id)
+        .neq('platform', 'spotify'); // Exclude spotify links
 
       if (streamingError) throw streamingError;
       if (isMountedRef.current) {
@@ -622,9 +623,7 @@ const styles = StyleSheet.create({
     marginBottom: spacing.md,
   },
   userRatingContainer: {
-    // backgroundColor: 'rgba(222, 215, 224, 0.1)',
     borderRadius: borderRadius.lg,
-    // padding: spacing.md,
     alignItems: 'flex-start',
     width: '100%',
   },
