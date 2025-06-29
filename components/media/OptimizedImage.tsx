@@ -60,16 +60,17 @@ export function OptimizedImage({
 
   return (
     <View style={[styles.container, style]}>
+      {/* Only hide image when there's an error, not when loading */}
       <Image
         source={source}
-        style={[styles.image, { opacity: isLoading || hasError ? 0 : 1 }]}
+        style={[styles.image, { opacity: hasError ? 0 : 1 }]}
         onLoadStart={handleLoadStart}
         onLoadEnd={handleLoadEnd}
         onError={handleError}
         {...imageProps}
       />
       
-      {/* Loading state */}
+      {/* Loading state - only show when loading and no error */}
       {isLoading && !hasError && (
         <View style={[styles.placeholder, { backgroundColor: placeholderBackgroundColor }]}>
           <ActivityIndicator 
@@ -79,7 +80,7 @@ export function OptimizedImage({
         </View>
       )}
       
-      {/* Error state */}
+      {/* Error state - only show when there's an error */}
       {hasError && (
         <View style={[styles.placeholder, { backgroundColor: placeholderBackgroundColor }]}>
           {fallbackComponent || (
