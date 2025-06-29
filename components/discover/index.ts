@@ -4,7 +4,6 @@ export { SessionHeader } from './SessionHeader';
 export { PlaybackControls } from './PlaybackControls';
 export { RatingInterface } from './RatingInterface';
 export { FullListeningMode } from './FullListeningMode';
-export { ThankYouOverlay } from './ThankYouOverlay';
 export { TransitionOverlay } from './TransitionOverlay';
 export { ErrorState } from './ErrorState';
 export { NoTracksInPreferencesState } from './NoTracksInPreferencesState';

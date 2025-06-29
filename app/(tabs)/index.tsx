@@ -29,7 +29,6 @@ import {
   PlaybackControls,
   RatingInterface,
   FullListeningMode,
-  ThankYouOverlay,
   TransitionOverlay,
   ErrorState,
   NoTracksInPreferencesState,
@@ -43,10 +42,10 @@ import { Screen } from '@/components/layout/Screen';
 import { 
   useUserPreferences, 
   useRandomTrack, 
-  useRatedTrackIds, 
-  useTrackAvailabilityCheck,
+  useRatedTrackIds,
   useSubmitRating,
-  useDiscoveryStats
+  useDiscoveryStats,
+  getUserHasTracksAvailable
 } from '@/lib/queries';
 
 // Animation Background Component - placeholder for future animation files
@@ -99,8 +98,6 @@ export default function DiscoverScreen() {
   const [showRating, setShowRating] = useState(false);
   const [trackRevealed, setTrackRevealed] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [showWelcomeTip, setShowWelcomeTip] = useState(false);
-  const [showThankYou, setShowThankYou] = useState(false);
   const [ratingThreshold] = useState(0.05); // 5% of track length
   const [canSkip, setCanSkip] = useState(true);
   const [isTransitioning, setIsTransitioning] = useState(false);
@@ -118,7 +115,6 @@ export default function DiscoverScreen() {
 
   // Animation shared values - always called in the same order
   const pulseAnimation = useSharedValue(1);
-  const thankYouOpacity = useSharedValue(0);
   const fadeOpacity = useSharedValue(1);
   const transitionTextOpacity = useSharedValue(0);
   const ratingContainerOpacity = useSharedValue(0);
@@ -147,18 +143,11 @@ export default function DiscoverScreen() {
     broadenSearch: isBroadenedSearch,
   });
 
-  const trackAvailabilityQuery = useTrackAvailabilityCheck({
-    sessionMood: selectedSessionMood,
-    userPreferences,
-    excludeIds: ratedTrackIds,
-  });
-
-  // Check for first-time user
   useEffect(() => {
-    if (discoveryStats && discoveryStats.totalTracks === 0) {
-      setShowWelcomeTip(true);
+    if (isBroadenedSearch) {
+      setSelectedSessionMood(null);
     }
-  }, [discoveryStats]);
+  }, [isBroadenedSearch])
 
   const fadeStyle = useAnimatedStyle(() => ({
     opacity: fadeOpacity.value,
@@ -251,25 +240,28 @@ export default function DiscoverScreen() {
     
     // Wait for animation to complete, then load track
     setTimeout(async () => {
-      await loadNextTrack(mood, shouldBroadenSearch);
+      await loadNextTrack({autoPlay: true});
     }, 200);
   };
 
-  const loadNextTrack = async (sessionMood: string | null = null, broadenSearch = false, autoPlay = true) => {
+  const loadNextTrack = async ({autoPlay}: {autoPlay: boolean}) => {
     try {
       setState('loading');
       setError(null);
 
       // Check track availability first
-      const availabilityResult = await trackAvailabilityQuery.refetch();
-      const availability = availabilityResult.data;
+      const availability = await getUserHasTracksAvailable({
+        sessionMood: selectedSessionMood,
+        userPreferences,
+        excludeIds: ratedTrackIds,
+      });
 
       if (!availability?.hasTracksAtAll) {
         setState('no_tracks_at_all');
         return;
       }
 
-      if (!availability.hasTracksInPreferences && !broadenSearch) {
+      if (!availability.hasTracksInPreferences && !isBroadenedSearch) {
         setState('no_tracks_in_preferences');
         return;
       }
@@ -279,7 +271,7 @@ export default function DiscoverScreen() {
       const randomTrack = trackResult.data;
 
       if (!randomTrack) {
-        if (!broadenSearch) {
+        if (!isBroadenedSearch) {
           setState('no_tracks_in_preferences');
         } else {
           setState('no_tracks_at_all');
@@ -297,7 +289,6 @@ export default function DiscoverScreen() {
       setReview('');
       setShowRating(false);
       setTrackRevealed(false);
-      setShowWelcomeTip(false);
       setCanSkip(true);
       setShowReviewInput(false);
       setIsReviewFocused(false);
@@ -339,30 +330,12 @@ export default function DiscoverScreen() {
     }, 2000);
   }, [fadeOpacity, transitionTextOpacity]);
 
-  const showThankYouMessage = () => {
-    setShowThankYou(true);
-    thankYouOpacity.value = withTiming(1, { duration: 300 });
-    
-    // Immediately reset UI state to hide rating interface
-    setShowRating(false);
-    setRating(0);
-    setReview('');
-    setShowReviewInput(false);
-    setIsReviewFocused(false);
-    
-    setTimeout(() => {
-      thankYouOpacity.value = withTiming(0, { duration: 300 }, () => {
-        runOnJS(setShowThankYou)(false);
-      });
-    }, 3000);
-  };
-
   const skipTrack = async () => {
     if (!canSkip || !currentTrack || !user?.id) return;
     
     fadeAudioAndTransition(() => {
       // Maintain the current broadened search state when skipping
-      loadNextTrack(selectedSessionMood, isBroadenedSearch);
+      loadNextTrack({autoPlay: true});
     });
   };
 
@@ -415,7 +388,6 @@ export default function DiscoverScreen() {
       if (stars >= 4) {
         setTrackRevealed(true);
         setState('revealed');
-        setShowThankYou(false);
         setIsTransitioning(false);
         
         // Unveil track in global audio player for high ratings
@@ -426,9 +398,8 @@ export default function DiscoverScreen() {
           setShowGamificationReward(true);
         }
       } else {
-        showThankYouMessage();
-        // For low ratings, just immediately load next track without thank you message
-        loadNextTrack(selectedSessionMood, isBroadenedSearch, true);
+        // For low ratings, just immediately load next track
+        skipTrack();
       }
     } catch (error) {
       console.error('Error submitting rating:', error);
@@ -462,7 +433,7 @@ export default function DiscoverScreen() {
   const handleDiscoverNext = () => {
     fadeAudioAndTransition(() => {
       // Maintain the current broadened search state when discovering next
-      loadNextTrack(selectedSessionMood, isBroadenedSearch);
+      loadNextTrack({autoPlay: true});
     });
   };
 
@@ -472,10 +443,6 @@ export default function DiscoverScreen() {
     setCurrentTrack(null);
     // Reset broadened search state when starting new session
     setIsBroadenedSearch(false);
-    
-    // Stop audio using global context
-    await stop();
-    
     resetRatingAnimations();
   };
 
@@ -483,7 +450,9 @@ export default function DiscoverScreen() {
     setState('loading');
     // Set broadened search mode when user explicitly chooses to broaden
     setIsBroadenedSearch(true);
-    loadNextTrack(selectedSessionMood, true);
+    setTimeout(() => {
+      loadNextTrack({autoPlay: true});
+    }, 200);
   };
 
   const handleChooseDifferentMood = async () => {
@@ -693,25 +662,6 @@ export default function DiscoverScreen() {
                   onNewSession={handleNewSession}
                 />
               </View>
-
-              {showWelcomeTip && (
-                <View style={{ 
-                  paddingHorizontal: spacing.lg, 
-                  paddingVertical: spacing.md,
-                  backgroundColor: 'rgba(69, 36, 81, 0.2)',
-                  marginHorizontal: spacing.lg,
-                  borderRadius: 12,
-                  marginBottom: spacing.md
-                }}>
-                  <Text variant="body" color="primary" align="center">
-                    Welcome! Listen to discover new music, then rate what you hear.
-                  </Text>
-                </View>
-              )}
-
-              <ThankYouOverlay
-                visible={showThankYou}
-              />
 
               <GamificationRewardDisplay
                 reward={gamificationReward}
