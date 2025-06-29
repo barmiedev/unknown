@@ -154,9 +154,6 @@ export const TrackListItem = React.memo(function TrackListItem({
 
         {/* Listen Now Section */}
         <View style={styles.listenNowSection}>
-          <Text variant="body" color="primary" style={styles.listenNowTitle}>
-            Listen Now
-          </Text>
           <Button
             variant="primary"
             size="small"
@@ -167,7 +164,7 @@ export const TrackListItem = React.memo(function TrackListItem({
             iconPosition="left"
             style={styles.listenButton}
           >
-            unknown
+            Listen Now
           </Button>
         </View>
       </TouchableOpacity>
@@ -237,10 +234,7 @@ const styles = StyleSheet.create({
     fontStyle: 'italic',
   },
   listenNowSection: {
-    marginTop: spacing.sm,
     paddingTop: spacing.sm,
-    borderTopWidth: 1,
-    borderTopColor: colors.surface,
   },
   listenNowTitle: {
     fontSize: 16,

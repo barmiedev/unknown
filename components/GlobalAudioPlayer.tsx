@@ -143,6 +143,7 @@ const GlobalAudioPlayer = memo(function GlobalAudioPlayer({
 
   const handleDiscoverNew = () => {
     setPlayerExpanded(false);
+
     // Navigate to discover tab
     router.push('/(tabs)');
   };

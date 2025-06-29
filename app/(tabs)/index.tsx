@@ -1,10 +1,18 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { View, Alert, TextInput, Keyboard, TouchableWithoutFeedback, Platform, KeyboardAvoidingView } from 'react-native';
+import {
+  View,
+  Alert,
+  TextInput,
+  Keyboard,
+  TouchableWithoutFeedback,
+  Platform,
+  KeyboardAvoidingView,
+} from 'react-native';
 import { router } from 'expo-router';
 import { Shuffle } from 'lucide-react-native';
-import Animated, { 
-  useAnimatedStyle, 
-  useSharedValue, 
+import Animated, {
+  useAnimatedStyle,
+  useSharedValue,
   withTiming,
   withRepeat,
   withSequence,
@@ -22,7 +30,12 @@ import { Button } from '@/components/buttons';
 import { Heading } from '@/components/typography';
 import { Text } from '@/components/typography/Text';
 import ArtistUnveilView from '@/components/ArtistUnveilView';
-import { Track, DiscoverState, AnimationBackgroundProps, GamificationReward } from '@/types';
+import {
+  Track,
+  DiscoverState,
+  AnimationBackgroundProps,
+  GamificationReward,
+} from '@/types';
 import {
   LoadingState,
   SessionHeader,
@@ -39,31 +52,42 @@ import { getMoodsForSession } from '@/utils/music';
 import { type Mood } from '@/utils/constants';
 import { MoodButtons } from '@/components/selection';
 import { Screen } from '@/components/layout/Screen';
-import { 
-  useUserPreferences, 
-  useRandomTrack, 
+import {
+  useUserPreferences,
+  useRandomTrack,
   useRatedTrackIds,
   useSubmitRating,
   useDiscoveryStats,
-  getUserHasTracksAvailable
+  getUserHasTracksAvailable,
 } from '@/lib/queries';
 
 // Animation Background Component - placeholder for future animation files
-function AnimationBackground({ animationUrl, children }: AnimationBackgroundProps) {
+function AnimationBackground({
+  animationUrl,
+  children,
+}: AnimationBackgroundProps) {
   return (
-    <View style={{ flex: 1, position: 'relative', backgroundColor: colors.background }}>
+    <View
+      style={{
+        flex: 1,
+        position: 'relative',
+        backgroundColor: colors.background,
+      }}
+    >
       {/* Placeholder for future animation - transparent background */}
-      <View style={{ 
-        position: 'absolute', 
-        top: 0, 
-        left: 0, 
-        right: 0, 
-        bottom: 0,
-        backgroundColor: colors.background
-      }}>
+      <View
+        style={{
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundColor: colors.background,
+        }}
+      >
         {/* Future animation will be rendered here based on animationUrl prop */}
       </View>
-      
+
       {/* Content overlay */}
       <View style={{ flex: 1, zIndex: 1, backgroundColor: colors.background }}>
         {children}
@@ -75,23 +99,27 @@ function AnimationBackground({ animationUrl, children }: AnimationBackgroundProp
 export default function DiscoverScreen() {
   // All hooks must be called at the top level in the same order every time
   const { user, refreshUser } = useAuth();
-  const { 
-    currentTrack: globalCurrentTrack, 
-    isPlaying, 
-    position, 
-    duration, 
-    loadTrack, 
-    playPause, 
-    stop, 
+  const {
+    currentTrack: globalCurrentTrack,
+    isPlaying,
+    position,
+    duration,
+    loadTrack,
+    playPause,
+    stop,
     error: audioError,
-    unveilTrack
+    unveilTrack,
+    isPlayingFromFinds,
+    setPlayingFromFinds,
   } = useAudio();
   const { paddingBottom } = useAudioPlayerPadding();
-  
+
   // State hooks - always called in the same order
   const [currentTrack, setCurrentTrack] = useState<Track | null>(null);
   const [state, setState] = useState<DiscoverState>('mood_selection');
-  const [selectedSessionMood, setSelectedSessionMood] = useState<string | null>(null);
+  const [selectedSessionMood, setSelectedSessionMood] = useState<string | null>(
+    null,
+  );
   const [availableMoods, setAvailableMoods] = useState<Mood[]>([]);
   const [rating, setRating] = useState(0);
   const [review, setReview] = useState('');
@@ -105,9 +133,10 @@ export default function DiscoverScreen() {
   const [isReviewFocused, setIsReviewFocused] = useState(false);
   // Track if we're in broadened search mode (Surprise me or broadened search)
   const [isBroadenedSearch, setIsBroadenedSearch] = useState(false);
-  
+
   // Gamification state
-  const [gamificationReward, setGamificationReward] = useState<GamificationReward | null>(null);
+  const [gamificationReward, setGamificationReward] =
+    useState<GamificationReward | null>(null);
   const [showGamificationReward, setShowGamificationReward] = useState(false);
 
   // Ref hooks - always called in the same order
@@ -143,11 +172,28 @@ export default function DiscoverScreen() {
     broadenSearch: isBroadenedSearch,
   });
 
+  const resetState = () => {
+    setState('mood_selection');
+    setSelectedSessionMood(null);
+    setIsBroadenedSearch(false);
+    setCurrentTrack(null);
+    setRating(0);
+    setReview('');
+    setShowRating(false);
+  };
+
+  useEffect(() => {
+    // reseting state of the discover screen when playing from finds
+    if (isPlayingFromFinds) {
+      resetState();
+    }
+  }, [isPlayingFromFinds]);
+
   useEffect(() => {
     if (isBroadenedSearch) {
       setSelectedSessionMood(null);
     }
-  }, [isBroadenedSearch])
+  }, [isBroadenedSearch]);
 
   const fadeStyle = useAnimatedStyle(() => ({
     opacity: fadeOpacity.value,
@@ -159,9 +205,9 @@ export default function DiscoverScreen() {
       pulseAnimation.value = withRepeat(
         withSequence(
           withTiming(1.1, { duration: 800 }),
-          withTiming(1, { duration: 800 })
+          withTiming(1, { duration: 800 }),
         ),
-        -1
+        -1,
       );
     } else {
       pulseAnimation.value = withTiming(1);
@@ -215,7 +261,10 @@ export default function DiscoverScreen() {
   // Set available moods using the utility function
   useEffect(() => {
     if (userPreferences) {
-      const moodsForSession = getMoodsForSession(userPreferences.preferred_moods as Mood[] || [], 3);
+      const moodsForSession = getMoodsForSession(
+        (userPreferences.preferred_moods as Mood[]) || [],
+        3,
+      );
       setAvailableMoods(moodsForSession);
     } else {
       // Fallback to 3 random moods
@@ -226,25 +275,25 @@ export default function DiscoverScreen() {
 
   const handleMoodSelection = async (mood: string | null) => {
     setSelectedSessionMood(mood);
-    
+
     // Set broadened search mode if "Surprise me" is selected
     const shouldBroadenSearch = mood === null;
     setIsBroadenedSearch(shouldBroadenSearch);
-    
+
     // Animate mood selection fade out
     moodSelectionOpacity.value = withTiming(0, { duration: 200 });
     moodSelectionScale.value = withTiming(0.95, { duration: 200 });
-    
+
     // Start loading track
     setState('loading');
-    
+
     // Wait for animation to complete, then load track
     setTimeout(async () => {
-      await loadNextTrack({autoPlay: true});
+      await loadNextTrack({ autoPlay: true });
     }, 200);
   };
 
-  const loadNextTrack = async ({autoPlay}: {autoPlay: boolean}) => {
+  const loadNextTrack = async ({ autoPlay }: { autoPlay: boolean }) => {
     try {
       setState('loading');
       setError(null);
@@ -296,11 +345,10 @@ export default function DiscoverScreen() {
 
       // Reset animations
       resetRatingAnimations();
-      
+
       // Reset mood selection animations for next time
       moodSelectionOpacity.value = 1;
       moodSelectionScale.value = 1;
-
     } catch (error) {
       console.error('Error loading track:', error);
       setError('Failed to load track. Please try again.');
@@ -308,34 +356,37 @@ export default function DiscoverScreen() {
     }
   };
 
-  const fadeAudioAndTransition = useCallback(async (callback: () => void) => {
-    setIsTransitioning(true);
-    
-    // Fade out current content
-    fadeOpacity.value = withTiming(0, { duration: 300 });
-    
-    // Show transition message
-    transitionTextOpacity.value = withTiming(1, { duration: 300 });
-    
-    // Wait for transition
-    setTimeout(() => {
-      runOnJS(callback)();
-      
-      // Fade back in
+  const fadeAudioAndTransition = useCallback(
+    async (callback: () => void) => {
+      setIsTransitioning(true);
+
+      // Fade out current content
+      fadeOpacity.value = withTiming(0, { duration: 300 });
+
+      // Show transition message
+      transitionTextOpacity.value = withTiming(1, { duration: 300 });
+
+      // Wait for transition
       setTimeout(() => {
-        transitionTextOpacity.value = withTiming(0, { duration: 300 });
-        fadeOpacity.value = withTiming(1, { duration: 300 });
-        setIsTransitioning(false);
-      }, 1000);
-    }, 2000);
-  }, [fadeOpacity, transitionTextOpacity]);
+        runOnJS(callback)();
+
+        // Fade back in
+        setTimeout(() => {
+          transitionTextOpacity.value = withTiming(0, { duration: 300 });
+          fadeOpacity.value = withTiming(1, { duration: 300 });
+          setIsTransitioning(false);
+        }, 1000);
+      }, 2000);
+    },
+    [fadeOpacity, transitionTextOpacity],
+  );
 
   const skipTrack = async () => {
     if (!canSkip || !currentTrack || !user?.id) return;
-    
+
     fadeAudioAndTransition(() => {
       // Maintain the current broadened search state when skipping
-      loadNextTrack({autoPlay: true});
+      loadNextTrack({ autoPlay: true });
     });
   };
 
@@ -343,32 +394,33 @@ export default function DiscoverScreen() {
   const skipWithRating = async () => {
     if (!canSkip || !currentTrack || !user?.id) return;
     submitRating(3);
-  }
+  };
 
   const submitRating = async (stars: number) => {
     if (!currentTrack || !user?.id) return;
 
     setRating(stars);
-    
+
     try {
       // Determine gamification flags
       const isBlindRating = !trackRevealed; // If track was not revealed before rating
-      
+
       // Determine if rating is outside user preferences
       let isOutsidePreference = false;
       if (userPreferences && currentTrack) {
         const preferredGenres = userPreferences.preferred_genres || [];
         const preferredMoods = userPreferences.preferred_moods || [];
-        
+
         const isGenrePreferred = preferredGenres.includes(currentTrack.genre);
         const isMoodPreferred = preferredMoods.includes(currentTrack.mood);
-        
+
         // Consider it "outside preference" if either genre or mood is not preferred
         // and the user has preferences set for that category, and the rating is positive (4-5 stars)
-        if (stars >= 4 && (
-          (preferredGenres.length > 0 && !isGenrePreferred) ||
-          (preferredMoods.length > 0 && !isMoodPreferred)
-        )) {
+        if (
+          stars >= 4 &&
+          ((preferredGenres.length > 0 && !isGenrePreferred) ||
+            (preferredMoods.length > 0 && !isMoodPreferred))
+        ) {
           isOutsidePreference = true;
         }
       }
@@ -395,10 +447,10 @@ export default function DiscoverScreen() {
         setTrackRevealed(true);
         setState('revealed');
         setIsTransitioning(false);
-        
+
         // Unveil track in global audio player for high ratings
         unveilTrack();
-        
+
         // Show gamification reward immediately when track is revealed
         if (result?.gamificationData) {
           setShowGamificationReward(true);
@@ -439,7 +491,7 @@ export default function DiscoverScreen() {
   const handleDiscoverNext = () => {
     fadeAudioAndTransition(() => {
       // Maintain the current broadened search state when discovering next
-      loadNextTrack({autoPlay: true});
+      loadNextTrack({ autoPlay: true });
     });
   };
 
@@ -457,7 +509,7 @@ export default function DiscoverScreen() {
     // Set broadened search mode when user explicitly chooses to broaden
     setIsBroadenedSearch(true);
     setTimeout(() => {
-      loadNextTrack({autoPlay: true});
+      loadNextTrack({ autoPlay: true });
     }, 500);
   };
 
@@ -467,10 +519,10 @@ export default function DiscoverScreen() {
     setCurrentTrack(null);
     // Reset broadened search state when choosing different mood
     setIsBroadenedSearch(false);
-    
+
     // Stop audio using global context
     await stop();
-    
+
     resetRatingAnimations();
   };
 
@@ -487,9 +539,19 @@ export default function DiscoverScreen() {
   if (state === 'no_tracks_in_preferences') {
     return (
       <View style={{ flex: 1, backgroundColor: colors.background }}>
-        <Animated.View entering={FadeIn.duration(300)} exiting={FadeOut.duration(300)} style={{ flex: 1 }}>
-          <Screen backgroundColor={colors.background} withoutBottomSafeArea paddingHorizontal={0}>
-            <View style={{ flex: 1, paddingHorizontal: spacing.lg, paddingBottom }}>
+        <Animated.View
+          entering={FadeIn.duration(300)}
+          exiting={FadeOut.duration(300)}
+          style={{ flex: 1 }}
+        >
+          <Screen
+            backgroundColor={colors.background}
+            withoutBottomSafeArea
+            paddingHorizontal={0}
+          >
+            <View
+              style={{ flex: 1, paddingHorizontal: spacing.lg, paddingBottom }}
+            >
               <SessionHeader
                 selectedMood={selectedSessionMood}
                 onNewSession={handleNewSession}
@@ -510,9 +572,19 @@ export default function DiscoverScreen() {
   if (state === 'no_tracks_at_all') {
     return (
       <View style={{ flex: 1, backgroundColor: colors.background }}>
-        <Animated.View entering={FadeIn.duration(300)} exiting={FadeOut.duration(300)} style={{ flex: 1 }}>
-          <Screen backgroundColor={colors.background} withoutBottomSafeArea paddingHorizontal={0}>
-            <View style={{ flex: 1, paddingHorizontal: spacing.lg, paddingBottom }}>
+        <Animated.View
+          entering={FadeIn.duration(300)}
+          exiting={FadeOut.duration(300)}
+          style={{ flex: 1 }}
+        >
+          <Screen
+            backgroundColor={colors.background}
+            withoutBottomSafeArea
+            paddingHorizontal={0}
+          >
+            <View
+              style={{ flex: 1, paddingHorizontal: spacing.lg, paddingBottom }}
+            >
               <SessionHeader
                 selectedMood={selectedSessionMood}
                 onNewSession={handleNewSession}
@@ -532,24 +604,55 @@ export default function DiscoverScreen() {
   if (state === 'mood_selection') {
     return (
       <View style={{ flex: 1, backgroundColor: colors.background }}>
-        <Animated.View entering={FadeIn.duration(300)} exiting={FadeOut.duration(300)} style={{ flex: 1 }}>
+        <Animated.View
+          entering={FadeIn.duration(300)}
+          exiting={FadeOut.duration(300)}
+          style={{ flex: 1 }}
+        >
           <Screen backgroundColor={colors.background} withoutBottomSafeArea>
             <AnimationBackground>
-              <View style={{ flex: 1, paddingHorizontal: spacing.lg, paddingBottom }}>
+              <View
+                style={{
+                  flex: 1,
+                  paddingHorizontal: spacing.lg,
+                  paddingBottom: paddingBottom - 40,
+                }}
+              >
                 {/* Logo at top left */}
-                <View style={{ 
-                  position: 'absolute', 
-                  top: spacing.md,
-                  zIndex: 10 
-                }}>
-                  <Text variant="button" color="primary" style={{ fontSize: 24 }}>
+                <View
+                  style={{
+                    position: 'absolute',
+                    top: spacing.md,
+                    zIndex: 10,
+                  }}
+                >
+                  <Text
+                    variant="button"
+                    color="primary"
+                    style={{ fontSize: 24 }}
+                  >
                     unknown
                   </Text>
                 </View>
 
                 {/* Header with more space */}
-                <View style={{ alignItems: 'center', paddingTop: spacing.xxl, paddingBottom: spacing.xxl }}>
-                  <Heading variant="h3" color="primary" align="center" style={{ fontSize: 28, marginBottom: spacing.xl, marginTop: spacing.xxl }}>
+                <View
+                  style={{
+                    alignItems: 'center',
+                    paddingTop: spacing.xxl,
+                    paddingBottom: spacing.xxl,
+                  }}
+                >
+                  <Heading
+                    variant="h3"
+                    color="primary"
+                    align="center"
+                    style={{
+                      fontSize: 28,
+                      marginBottom: spacing.xl,
+                      marginTop: spacing.xxl,
+                    }}
+                  >
                     How do you feel today?
                   </Heading>
                 </View>
@@ -562,12 +665,20 @@ export default function DiscoverScreen() {
                 />
 
                 {/* Surprise Me Button */}
-                <View style={{ alignItems: 'center', paddingBottom: spacing.xxl }}>
+                <View
+                  style={{ alignItems: 'center', paddingBottom: spacing.xxl }}
+                >
                   <Button
                     variant="primary"
                     size="large"
                     onPress={() => handleMoodSelection(null)}
-                    icon={<Shuffle size={20} color={colors.text.primary} strokeWidth={2} />}
+                    icon={
+                      <Shuffle
+                        size={20}
+                        color={colors.text.primary}
+                        strokeWidth={2}
+                      />
+                    }
                     iconPosition="left"
                     style={{
                       shadowColor: colors.primary,
@@ -591,12 +702,14 @@ export default function DiscoverScreen() {
   if (state === 'loading' || randomTrackQuery.isFetching) {
     return (
       <View style={{ flex: 1, backgroundColor: colors.background }}>
-        <Animated.View entering={FadeIn.duration(300)} exiting={FadeOut.duration(300)} style={{ flex: 1 }}>
+        <Animated.View
+          entering={FadeIn.duration(300)}
+          exiting={FadeOut.duration(300)}
+          style={{ flex: 1 }}
+        >
           <Screen backgroundColor={colors.background} withoutBottomSafeArea>
             <View style={{ flex: 1, paddingBottom }}>
-              <LoadingState
-                selectedMood={selectedSessionMood}
-              />
+              <LoadingState selectedMood={selectedSessionMood} />
             </View>
           </Screen>
         </Animated.View>
@@ -607,11 +720,19 @@ export default function DiscoverScreen() {
   if (error || randomTrackQuery.error) {
     return (
       <View style={{ flex: 1, backgroundColor: colors.background }}>
-        <Animated.View entering={FadeIn.duration(300)} exiting={FadeOut.duration(300)} style={{ flex: 1 }}>
+        <Animated.View
+          entering={FadeIn.duration(300)}
+          exiting={FadeOut.duration(300)}
+          style={{ flex: 1 }}
+        >
           <Screen backgroundColor={colors.background} withoutBottomSafeArea>
             <View style={{ flex: 1, paddingBottom }}>
               <ErrorState
-                error={error || randomTrackQuery.error?.message || 'An error occurred'}
+                error={
+                  error ||
+                  randomTrackQuery.error?.message ||
+                  'An error occurred'
+                }
                 onRetry={() => {
                   setError(null);
                   randomTrackQuery.refetch();
@@ -630,12 +751,16 @@ export default function DiscoverScreen() {
     // Ensure artwork_url is provided for ArtistUnveilView
     const trackWithRequiredArtwork: Track & { artwork_url: string } = {
       ...currentTrack,
-      artwork_url: currentTrack.artwork_url || ''
+      artwork_url: currentTrack.artwork_url || '',
     };
-    
+
     return (
       <View style={{ flex: 1, backgroundColor: colors.background }}>
-        <Animated.View entering={FadeIn.duration(300)} exiting={FadeOut.duration(300)} style={{ flex: 1 }}>
+        <Animated.View
+          entering={FadeIn.duration(300)}
+          exiting={FadeOut.duration(300)}
+          style={{ flex: 1 }}
+        >
           <ArtistUnveilView
             track={trackWithRequiredArtwork}
             onContinueListening={handleContinueListening}
@@ -659,8 +784,16 @@ export default function DiscoverScreen() {
   return (
     <TouchableWithoutFeedback onPress={dismissKeyboard}>
       <View style={{ flex: 1, backgroundColor: colors.background }}>
-        <Animated.View entering={FadeIn.duration(300)} exiting={FadeOut.duration(300)} style={{ flex: 1 }}>
-          <Screen backgroundColor={colors.background} withoutBottomSafeArea paddingHorizontal={0}>
+        <Animated.View
+          entering={FadeIn.duration(300)}
+          exiting={FadeOut.duration(300)}
+          style={{ flex: 1 }}
+        >
+          <Screen
+            backgroundColor={colors.background}
+            withoutBottomSafeArea
+            paddingHorizontal={0}
+          >
             <AnimationBackground>
               <View style={{ paddingHorizontal: spacing.lg }}>
                 <SessionHeader
@@ -678,16 +811,25 @@ export default function DiscoverScreen() {
                 }}
               />
 
-              <TransitionOverlay
-                visible={isTransitioning}
-              />
+              <TransitionOverlay visible={isTransitioning} />
 
               {/* Main Player Area */}
-              <KeyboardAvoidingView 
+              <KeyboardAvoidingView
                 style={{ flex: 1 }}
                 behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
               >
-                <Animated.View style={[fadeStyle, { height: '100%', width: '100%', alignItems: 'center', paddingHorizontal: spacing.lg, paddingBottom }]}>
+                <Animated.View
+                  style={[
+                    fadeStyle,
+                    {
+                      height: '100%',
+                      width: '100%',
+                      alignItems: 'center',
+                      paddingHorizontal: spacing.lg,
+                      paddingBottom,
+                    },
+                  ]}
+                >
                   {state === 'full_listening' && currentTrack ? (
                     <FullListeningMode
                       track={currentTrack}
