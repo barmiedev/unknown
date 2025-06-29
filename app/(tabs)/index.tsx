@@ -339,6 +339,12 @@ export default function DiscoverScreen() {
     });
   };
 
+  // Skip track with rating 3 (neutral)
+  const skipWithRating = async () => {
+    if (!canSkip || !currentTrack || !user?.id) return;
+    submitRating(3);
+  }
+
   const submitRating = async (stars: number) => {
     if (!currentTrack || !user?.id) return;
 
@@ -452,7 +458,7 @@ export default function DiscoverScreen() {
     setIsBroadenedSearch(true);
     setTimeout(() => {
       loadNextTrack({autoPlay: true});
-    }, 200);
+    }, 500);
   };
 
   const handleChooseDifferentMood = async () => {
@@ -701,7 +707,7 @@ export default function DiscoverScreen() {
                       position={position}
                       duration={duration}
                       canSkip={canSkip}
-                      onSkip={skipTrack}
+                      onSkip={skipWithRating}
                     />
                   ) : (
                     <RatingInterface
