@@ -98,17 +98,16 @@ export function GamificationRewardDisplay({
             </View>
             
             <View style={styles.badgesList}>
-              {reward.new_badges.map((badgeId, index) => (
-                <Animated.View 
-                  key={badgeId} 
-                  entering={SlideInUp.delay(300 + index * 100).springify()}
+              {reward.new_badges.map((badgeId) => (
+                <View 
+                  key={badgeId}
                   style={styles.badgeItem}
                 >
                   <Text style={styles.badgeEmoji}>🏆</Text>
                   <Text variant="caption" color="primary" style={styles.badgeName}>
                     {badgeId.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
                   </Text>
-                </Animated.View>
+                </View>
               ))}
             </View>
           </View>
