@@ -29,6 +29,7 @@ export interface HistoryTrack {
   id: string;
   title: string;
   artist: string;
+  audio_url: string;
   genre: string;
   mood: string;
   rating: number;
