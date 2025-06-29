@@ -99,6 +99,7 @@ export default function DiscoverScreen() {
   const [showRating, setShowRating] = useState(false);
   const [trackRevealed, setTrackRevealed] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [showWelcomeTip, setShowWelcomeTip] = useState(false);
   const [showThankYou, setShowThankYou] = useState(false);
   const [ratingThreshold] = useState(0.05); // 5% of track length
   const [canSkip, setCanSkip] = useState(true);
@@ -151,6 +152,13 @@ export default function DiscoverScreen() {
     userPreferences,
     excludeIds: ratedTrackIds,
   });
+
+  // Check for first-time user
+  useEffect(() => {
+    if (discoveryStats && discoveryStats.totalTracks === 0) {
+      setShowWelcomeTip(true);
+    }
+  }, [discoveryStats]);
 
   const fadeStyle = useAnimatedStyle(() => ({
     opacity: fadeOpacity.value,
@@ -266,6 +274,14 @@ export default function DiscoverScreen() {
         return;
       }
 
+      // Update query parameters for the random track
+      randomTrackQuery.queryKey[1] = {
+        sessionMood,
+        userPreferences,
+        excludeIds: ratedTrackIds,
+        broadenSearch,
+      };
+
       // Fetch a random track
       const trackResult = await randomTrackQuery.refetch();
       const randomTrack = trackResult.data;
@@ -273,11 +289,10 @@ export default function DiscoverScreen() {
       if (!randomTrack) {
         if (!broadenSearch) {
           setState('no_tracks_in_preferences');
-          return;
         } else {
           setState('no_tracks_at_all');
-          return;
         }
+        return;
       }
 
       setCurrentTrack(randomTrack);
@@ -290,6 +305,7 @@ export default function DiscoverScreen() {
       setReview('');
       setShowRating(false);
       setTrackRevealed(false);
+      setShowWelcomeTip(false);
       setCanSkip(true);
       setShowReviewInput(false);
       setIsReviewFocused(false);
@@ -685,6 +701,21 @@ export default function DiscoverScreen() {
                   onNewSession={handleNewSession}
                 />
               </View>
+
+              {showWelcomeTip && (
+                <View style={{ 
+                  paddingHorizontal: spacing.lg, 
+                  paddingVertical: spacing.md,
+                  backgroundColor: 'rgba(69, 36, 81, 0.2)',
+                  marginHorizontal: spacing.lg,
+                  borderRadius: 12,
+                  marginBottom: spacing.md
+                }}>
+                  <Text variant="body" color="primary" align="center">
+                    Welcome! Listen to discover new music, then rate what you hear.
+                  </Text>
+                </View>
+              )}
 
               <ThankYouOverlay
                 visible={showThankYou}
