@@ -102,7 +102,7 @@ export default function TabLayout() {
 const styles = StyleSheet.create({
   floatingBadgeContainer: {
     position: 'absolute',
-    top: 50, // Positioned from top of screen (below status bar)
+    top: 65, // Positioned from top of screen (below status bar)
     right: 20, // Positioned from right edge
     zIndex: 1000, // Ensure it's above other content
     backgroundColor: 'transparent',
