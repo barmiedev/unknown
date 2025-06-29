@@ -10,7 +10,7 @@ import { spacing, borderRadius } from '@/utils/spacing';
 import { formatDate } from '@/utils/formatting';
 import { fonts } from '@/lib/fonts';
 import { useAudio } from '@/contexts/AudioContext';
-import { Track } from '@/types';
+import { Track } from '@/types/track.type';
 
 interface TrackListItemProps {
   track: {
@@ -24,13 +24,20 @@ interface TrackListItemProps {
     created_at: string;
     artist_location?: string;
     artwork_url?: string;
+    audio_url?: string;
+    duration?: number;
   };
   onPress: () => void;
   showSeparator?: boolean;
 }
 
-export const TrackListItem = React.memo(function TrackListItem({ track, onPress, showSeparator = true }: TrackListItemProps) {
-  const { loadTrack, unveilTrack, showGlobalPlayer, setPlayingFromFinds } = useAudio();
+export const TrackListItem = React.memo(function TrackListItem({
+  track,
+  onPress,
+  showSeparator = true,
+}: TrackListItemProps) {
+  const { loadTrack, unveilTrack, showGlobalPlayer, setPlayingFromFinds } =
+    useAudio();
 
   const extractCityFromLocation = (location: string | undefined): string => {
     if (!location) return '';
@@ -41,6 +48,11 @@ export const TrackListItem = React.memo(function TrackListItem({ track, onPress,
 
   const handleListenNow = async () => {
     try {
+      if (!track.audio_url) {
+        console.warn('Track missing required audio properties');
+        return;
+      }
+
       // Create a Track object from the track data
       const trackToPlay: Track = {
         id: track.id,
@@ -48,20 +60,19 @@ export const TrackListItem = React.memo(function TrackListItem({ track, onPress,
         artist: track.artist,
         genre: track.genre,
         mood: track.mood,
-        audio_url: `https://example.com/audio/${track.title.toLowerCase().replace(/\s+/g, '-')}.mp3`, // Placeholder URL
-        duration: 180, // Placeholder duration
+        audio_url: track.audio_url,
         artwork_url: track.artwork_url,
       };
 
       // Load and play the track
       await loadTrack(trackToPlay, true);
-      
+
       // Mark track as unveiled since it's from user's finds
       unveilTrack();
-      
+
       // Show the global player
       showGlobalPlayer();
-      
+
       // Mark as playing from finds to enable expansion
       setPlayingFromFinds(true);
     } catch (error) {
@@ -71,18 +82,18 @@ export const TrackListItem = React.memo(function TrackListItem({ track, onPress,
 
   const renderTrackTags = () => {
     const tags = [];
-    
+
     // Add genre
     if (track.genre) {
       tags.push({ text: track.genre, bold: false });
     }
-    
+
     // Add city (medium weight)
     const city = extractCityFromLocation(track.artist_location);
     if (city) {
       tags.push({ text: city, bold: true });
     }
-    
+
     // Add mood
     if (track.mood) {
       tags.push({ text: track.mood, bold: false });
@@ -118,7 +129,7 @@ export const TrackListItem = React.memo(function TrackListItem({ track, onPress,
               {track.artist}
             </Text>
           </View>
-          
+
           <Text variant="caption" color="secondary" style={styles.trackDate}>
             {formatDate(track.created_at)}
           </Text>
@@ -150,7 +161,9 @@ export const TrackListItem = React.memo(function TrackListItem({ track, onPress,
             variant="primary"
             size="small"
             onPress={handleListenNow}
-            icon={<Play size={16} color={colors.text.primary} strokeWidth={2} />}
+            icon={
+              <Play size={16} color={colors.text.primary} strokeWidth={2} />
+            }
             iconPosition="left"
             style={styles.listenButton}
           >
@@ -158,7 +171,7 @@ export const TrackListItem = React.memo(function TrackListItem({ track, onPress,
           </Button>
         </View>
       </TouchableOpacity>
-      
+
       {showSeparator && <View style={styles.separator} />}
     </View>
   );

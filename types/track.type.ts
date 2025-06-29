@@ -5,7 +5,7 @@ export interface Track {
   audio_url: string;
   genre: string;
   mood: string;
-  duration: number;
+  duration?: number;
   artwork_url?: string;
   total_ratings_count?: number; // Added for gamification
   average_rating?: number; // Added for gamification
@@ -37,6 +37,7 @@ export interface HistoryTrack {
   artwork_url?: string;
   created_at: string;
   artist_location?: string;
+  duration: number;
 }
 
 export interface TrackDisplay {
