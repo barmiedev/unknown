@@ -1,6 +1,6 @@
 import React, { useState, memo } from 'react';
-import { View, TouchableOpacity, StyleSheet } from 'react-native';
-import { Play, Pause, SkipForward } from 'lucide-react-native';
+import { View, TouchableOpacity, StyleSheet, Image } from 'react-native';
+import { Play, Pause, SkipForward, Music, ArrowLeft } from 'lucide-react-native';
 import { usePathname, router } from 'expo-router';
 import Animated, { 
   useAnimatedStyle, 
@@ -16,6 +16,7 @@ import { colors } from '@/utils/colors';
 import { spacing } from '@/utils/spacing';
 import { fonts } from '@/lib/fonts';
 import { Text } from '@/components/typography/Text';
+import { Button } from '@/components/buttons/Button';
 
 interface GlobalAudioPlayerProps {
   onPress?: () => void;
@@ -35,11 +36,14 @@ const GlobalAudioPlayer = memo(function GlobalAudioPlayer({ onPress, onSkip, hid
     isGlobalPlayerVisible,
     showGlobalPlayer,
     hideGlobalPlayer,
-    isTrackUnveiled
+    isTrackUnveiled,
+    isPlayerExpanded,
+    setPlayerExpanded,
+    isPlayingFromFinds,
+    setPlayingFromFinds
   } = useAudio();
   
   const pathname = usePathname();
-  const [isExpanded, setIsExpanded] = useState(false);
   
   // Animation values
   const progressAnimation = useSharedValue(0);
@@ -49,6 +53,11 @@ const GlobalAudioPlayer = memo(function GlobalAudioPlayer({ onPress, onSkip, hid
   React.useEffect(() => {
     progressAnimation.value = withTiming(getProgress(), { duration: 100 });
   }, [position, duration]);
+
+  // Expand animation
+  React.useEffect(() => {
+    expandAnimation.value = withTiming(isPlayerExpanded ? 1 : 0, { duration: 300 });
+  }, [isPlayerExpanded]);
 
   // Auto-show/hide global player based on track availability
   React.useEffect(() => {
@@ -67,7 +76,7 @@ const GlobalAudioPlayer = memo(function GlobalAudioPlayer({ onPress, onSkip, hid
     height: interpolate(
       expandAnimation.value,
       [0, 1],
-      [80, 120],
+      [80, 320],
       Extrapolate.CLAMP
     ),
   }));
@@ -86,9 +95,9 @@ const GlobalAudioPlayer = memo(function GlobalAudioPlayer({ onPress, onSkip, hid
       if (!isOnDiscoverPage) {
         router.push('/(tabs)');
       }
-    } else {
-      setIsExpanded(!isExpanded);
-      expandAnimation.value = withTiming(isExpanded ? 0 : 1, { duration: 300 });
+    } else if (isPlayingFromFinds) {
+      // Only allow expansion when playing from finds
+      setPlayerExpanded(!isPlayerExpanded);
     }
   };
 
@@ -100,6 +109,18 @@ const GlobalAudioPlayer = memo(function GlobalAudioPlayer({ onPress, onSkip, hid
     if (onSkip) {
       onSkip();
     }
+  };
+
+  const handleDiscoverNew = () => {
+    // Reset playing from finds state and collapse player
+    setPlayingFromFinds(false);
+    setPlayerExpanded(false);
+    // Navigate to discover tab
+    router.push('/(tabs)');
+  };
+
+  const handleCollapse = () => {
+    setPlayerExpanded(false);
   };
 
   // Determine if track info should be hidden
@@ -116,50 +137,124 @@ const GlobalAudioPlayer = memo(function GlobalAudioPlayer({ onPress, onSkip, hid
         <Animated.View style={[styles.progressBar, progressStyle]} />
       </View>
 
-      {/* Main player content */}
-      <View style={styles.content}>
-        {/* Track info */}
-        <TouchableOpacity onPress={handlePress} style={styles.trackInfo}>
-          <Text 
-            variant="body" 
-            color="primary" 
-            style={styles.trackTitle}
-          >
-            {shouldHideTrackInfo ? 'unknown' : currentTrack.title}
-          </Text>
-          <Text 
-            variant="caption" 
-            color="secondary" 
-            style={styles.trackArtist}
-          >
-            {shouldHideTrackInfo ? 'unknown artist' : currentTrack.artist}
-          </Text>
-        </TouchableOpacity>
+      {/* Expanded view */}
+      {isPlayerExpanded && isPlayingFromFinds && (
+        <Animated.View style={styles.expandedContent}>
+          {/* Header with collapse button */}
+          <View style={styles.expandedHeader}>
+            <TouchableOpacity onPress={handleCollapse} style={styles.collapseButton}>
+              <ArrowLeft size={24} color={colors.text.primary} strokeWidth={2} />
+            </TouchableOpacity>
+          </View>
 
-        {/* Controls */}
-        <View style={styles.controls}>
-          <TouchableOpacity 
-            onPress={handlePlayPause} 
-            style={styles.playButton}
-            disabled={!currentTrack}
-          >
-            {isPlaying ? (
-              <Pause size={24} color={colors.text.primary} strokeWidth={2} />
+          {/* Artwork */}
+          <View style={styles.expandedArtworkContainer}>
+            {currentTrack.artwork_url ? (
+              <Image
+                source={{ uri: currentTrack.artwork_url }}
+                style={styles.expandedArtwork}
+                resizeMode="cover"
+              />
             ) : (
-              <Play size={24} color={colors.text.primary} strokeWidth={2} />
+              <View style={styles.expandedPlaceholderArtwork}>
+                <Music size={64} color={colors.text.secondary} strokeWidth={1.5} />
+              </View>
             )}
+          </View>
+
+          {/* Track info */}
+          <View style={styles.expandedTrackInfo}>
+            <Text 
+              variant="body" 
+              color="primary" 
+              style={styles.expandedTrackTitle}
+            >
+              {currentTrack.title}
+            </Text>
+            <Text 
+              variant="caption" 
+              color="secondary" 
+              style={styles.expandedTrackArtist}
+            >
+              {currentTrack.artist}
+            </Text>
+          </View>
+
+          {/* Controls */}
+          <View style={styles.expandedControls}>
+            <TouchableOpacity 
+              onPress={handlePlayPause} 
+              style={styles.expandedPlayButton}
+              disabled={!currentTrack}
+            >
+              {isPlaying ? (
+                <Pause size={32} color={colors.text.primary} strokeWidth={2} />
+              ) : (
+                <Play size={32} color={colors.text.primary} strokeWidth={2} />
+              )}
+            </TouchableOpacity>
+          </View>
+
+          {/* Discover new button */}
+          <View style={styles.discoverButtonContainer}>
+            <Button
+              variant="primary"
+              size="medium"
+              onPress={handleDiscoverNew}
+              style={styles.discoverButton}
+            >
+              Discover New Song
+            </Button>
+          </View>
+        </Animated.View>
+      )}
+
+      {/* Collapsed view */}
+      {!isPlayerExpanded && (
+        <View style={styles.content}>
+          {/* Track info */}
+          <TouchableOpacity onPress={handlePress} style={styles.trackInfo}>
+            <Text 
+              variant="body" 
+              color="primary" 
+              style={styles.trackTitle}
+            >
+              {shouldHideTrackInfo ? 'unknown' : currentTrack.title}
+            </Text>
+            <Text 
+              variant="caption" 
+              color="secondary" 
+              style={styles.trackArtist}
+            >
+              {shouldHideTrackInfo ? 'unknown artist' : currentTrack.artist}
+            </Text>
           </TouchableOpacity>
 
-          {onSkip && (
+          {/* Controls */}
+          <View style={styles.controls}>
             <TouchableOpacity 
-              onPress={handleSkip} 
-              style={styles.skipButton}
+              onPress={handlePlayPause} 
+              style={styles.playButton}
+              disabled={!currentTrack}
             >
-              <SkipForward size={20} color={colors.text.secondary} strokeWidth={2} />
+              {isPlaying ? (
+                <Pause size={24} color={colors.text.primary} strokeWidth={2} />
+              ) : (
+                <Play size={24} color={colors.text.primary} strokeWidth={2} />
+              )}
             </TouchableOpacity>
-          )}
+
+            {onSkip && (
+              <TouchableOpacity 
+                onPress={handleSkip} 
+                style={styles.skipButton}
+              >
+                <SkipForward size={20} color={colors.text.secondary} strokeWidth={2} />
+              </TouchableOpacity>
+            )}
+          </View>
         </View>
-      </View>
+      )}
     </Animated.View>
   );
 });
@@ -233,4 +328,71 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.text.secondary,
   },
-}); 
+  // Expanded view styles
+  expandedContent: {
+    flex: 1,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+  },
+  expandedHeader: {
+    flexDirection: 'row',
+    justifyContent: 'flex-start',
+    alignItems: 'center',
+    marginBottom: spacing.md,
+  },
+  collapseButton: {
+    padding: spacing.sm,
+  },
+  expandedArtworkContainer: {
+    alignItems: 'center',
+    marginBottom: spacing.md,
+  },
+  expandedArtwork: {
+    width: 120,
+    height: 120,
+    borderRadius: 12,
+  },
+  expandedPlaceholderArtwork: {
+    width: 120,
+    height: 120,
+    borderRadius: 12,
+    backgroundColor: colors.surface,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  expandedTrackInfo: {
+    alignItems: 'center',
+    marginBottom: spacing.md,
+  },
+  expandedTrackTitle: {
+    fontSize: 18,
+    fontFamily: fonts.chillax.bold,
+    textAlign: 'center',
+    marginBottom: spacing.xs,
+  },
+  expandedTrackArtist: {
+    fontSize: 14,
+    fontFamily: fonts.chillax.regular,
+    textAlign: 'center',
+  },
+  expandedControls: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: spacing.md,
+  },
+  expandedPlayButton: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    backgroundColor: colors.primary,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  discoverButtonContainer: {
+    alignItems: 'center',
+  },
+  discoverButton: {
+    paddingHorizontal: spacing.lg,
+  },
+});

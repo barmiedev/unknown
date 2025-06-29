@@ -36,6 +36,12 @@ interface AudioContextType {
   isTrackUnveiled: boolean;
   unveilTrack: () => void;
   hideTrack: () => void;
+  
+  // Player expansion for finds
+  isPlayerExpanded: boolean;
+  setPlayerExpanded: (expanded: boolean) => void;
+  isPlayingFromFinds: boolean;
+  setPlayingFromFinds: (fromFinds: boolean) => void;
 }
 
 const AudioContext = createContext<AudioContextType | undefined>(undefined);
@@ -72,6 +78,8 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
   const [isTrackUnveiled, setIsTrackUnveiled] = useState(false);
   const [skipCallback, setSkipCallback] = useState<(() => void) | null>(null);
   const [hasIncrementedStreams, setHasIncrementedStreams] = useState(false);
+  const [isPlayerExpanded, setIsPlayerExpanded] = useState(false);
+  const [isPlayingFromFinds, setIsPlayingFromFinds] = useState(false);
   
   const audioOperationInProgressRef = useRef(false);
 
@@ -322,6 +330,14 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
     setIsGlobalPlayerVisible(false);
   }, []);
 
+  const setPlayerExpanded = useCallback((expanded: boolean) => {
+    setIsPlayerExpanded(expanded);
+  }, []);
+
+  const setPlayingFromFinds = useCallback((fromFinds: boolean) => {
+    setIsPlayingFromFinds(fromFinds);
+  }, []);
+
   // Memoize the context value to prevent unnecessary re-renders
   const value = useMemo<AudioContextType>(() => ({
     currentTrack,
@@ -350,6 +366,10 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
     isTrackUnveiled,
     unveilTrack,
     hideTrack,
+    isPlayerExpanded,
+    setPlayerExpanded,
+    isPlayingFromFinds,
+    setPlayingFromFinds,
   }), [
     currentTrack,
     isPlaying,
@@ -370,6 +390,10 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
     isTrackUnveiled,
     unveilTrack,
     hideTrack,
+    isPlayerExpanded,
+    setPlayerExpanded,
+    isPlayingFromFinds,
+    setPlayingFromFinds,
   ]);
 
   return (
