@@ -86,26 +86,24 @@ export const useTrackAvailabilityCheck = (filters: TrackFilters) => {
       const excludeIds = filters.excludeIds || [];
 
       // Check if there are any tracks available at all (broadened search)
-      const { data: allTracks, error: allTracksError } = await supabase
+      const { count: allTracksCount, error: allTracksError } = await supabase
         .from('tracks')
-        .select('id')
-        .lt('spotify_streams', 5000)
-        .not('id', 'in', excludeIds.length > 0 ? `(${excludeIds.join(',')})` : '()')
-        .limit(1);
+        .select('id', { count: 'exact' })
+        .not('id', 'in', excludeIds.length > 0 ? `(${excludeIds.join(',')})` : '()');
 
       if (allTracksError) throw allTracksError;
 
-      const hasTracksAtAll = (allTracks && allTracks.length > 0);
+      const hasTracksAtAll = !!(allTracksCount && allTracksCount > 0);
+
+      if (!hasTracksAtAll) {
+        return { hasTracksInPreferences: false, hasTracksAtAll };
+      }
 
       // Check if there are tracks matching preferences
       let query = supabase
         .from('tracks')
         .select('id')
-        .lt('spotify_streams', 5000);
-
-      if (excludeIds.length > 0) {
-        query = query.not('id', 'in', `(${excludeIds.join(',')})`);
-      }
+        .not('id', 'in', excludeIds.length > 0 ? `(${excludeIds.join(',')})` : '()');
 
       // Apply session mood filter if selected
       if (filters.sessionMood) {
@@ -121,18 +119,12 @@ export const useTrackAvailabilityCheck = (filters: TrackFilters) => {
         if (filters.userPreferences.preferred_moods && filters.userPreferences.preferred_moods.length > 0) {
           query = query.in('mood', filters.userPreferences.preferred_moods);
         }
-
-        query = query
-          .gte('duration', filters.userPreferences.min_duration)
-          .lte('duration', filters.userPreferences.max_duration);
       }
 
       const { data: preferencesTracks, error: preferencesError } = await query.limit(1);
-
       if (preferencesError) throw preferencesError;
 
       const hasTracksInPreferences = (preferencesTracks && preferencesTracks.length > 0);
-
       return { hasTracksInPreferences, hasTracksAtAll };
     },
     enabled: false, // Only fetch when explicitly called
