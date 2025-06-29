@@ -90,7 +90,6 @@ export default function TabLayout() {
                   source={require('../../assets/images/black_circle_360x360.png')} 
                   style={styles.boltBadgeImage}
                   resizeMode="contain"
-                  className='opacity-70'
                 />
               </TouchableOpacity>
             ),
