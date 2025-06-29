@@ -274,15 +274,7 @@ export default function DiscoverScreen() {
         return;
       }
 
-      // Update query parameters for the random track
-      randomTrackQuery.queryKey[1] = {
-        sessionMood,
-        userPreferences,
-        excludeIds: ratedTrackIds,
-        broadenSearch,
-      };
-
-      // Fetch a random track
+      // Fetch a random track - the hook will automatically use the updated state values
       const trackResult = await randomTrackQuery.refetch();
       const randomTrack = trackResult.data;
 
