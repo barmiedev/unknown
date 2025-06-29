@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { View, StyleSheet, Modal, TouchableOpacity, ScrollView } from 'react-native';
 import { LogOut, ChevronRight, X, Music, Heart, Headphones, User, Save } from 'lucide-react-native';
-import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/contexts/AuthContext';
 import { useAudioPlayerPadding } from '@/hooks/useAudioPlayerPadding';
 import { Screen } from '@/components/layout/Screen';
@@ -21,6 +20,15 @@ import {
 } from '@/lib/platforms';
 import { GENRES, MOODS } from '@/utils/constants';
 import { useAudio } from '@/contexts/AudioContext';
+import { 
+  useUserPreferences, 
+  useUserStreamingPreferences, 
+  useUpdateUserPreferences, 
+  useUpdateStreamingPreferences,
+  useDiscoveryStats,
+  useUpdateProfile,
+  useUpdatePassword
+} from '@/lib/queries';
 
 const STREAMING_PLATFORMS = Object.entries(PLATFORM_NAMES).map(([id, name]) => ({
   id,
@@ -29,14 +37,12 @@ const STREAMING_PLATFORMS = Object.entries(PLATFORM_NAMES).map(([id, name]) => (
 }));
 
 export default function ProfileScreen() {
-  const { user, signOut, updateProfile } = useAuth();
+  const { user, signOut } = useAuth();
   const { stop } = useAudio();
   const { paddingBottom } = useAudioPlayerPadding();
   const [selectedGenres, setSelectedGenres] = useState<string[]>([]);
   const [selectedMoods, setSelectedMoods] = useState<string[]>([]);
   const [preferredPlatform, setPreferredPlatform] = useState<string>(DEFAULT_STREAMING_PLATFORM);
-  const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
   
   // Modal states
   const [showGenreModal, setShowGenreModal] = useState(false);
@@ -48,135 +54,81 @@ export default function ProfileScreen() {
   const [displayName, setDisplayName] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  const [accountSaving, setAccountSaving] = useState(false);
 
-  // Discovery stats
-  const [totalTracks, setTotalTracks] = useState(0);
-  const [averageRating, setAverageRating] = useState(0);
+  // Tanstack Query hooks
+  const { data: userPreferences, isLoading: preferencesLoading } = useUserPreferences(user?.id);
+  const { data: streamingPreferences } = useUserStreamingPreferences(user?.id);
+  const { data: discoveryStats } = useDiscoveryStats(user?.id);
+  
+  const updatePreferencesMutation = useUpdateUserPreferences();
+  const updateStreamingMutation = useUpdateStreamingPreferences();
+  const updateProfileMutation = useUpdateProfile();
+  const updatePasswordMutation = useUpdatePassword();
+
+  const loading = preferencesLoading;
 
   useEffect(() => {
-    if (user?.id) {
-      loadPreferences();
-      loadDiscoveryStats();
-      setDisplayName(user.profile?.display_name || '');
+    if (userPreferences) {
+      setSelectedGenres(userPreferences.preferred_genres || []);
+      setSelectedMoods(userPreferences.preferred_moods || []);
+    }
+  }, [userPreferences]);
+
+  useEffect(() => {
+    if (streamingPreferences) {
+      setPreferredPlatform(streamingPreferences.preferred_platform);
+    }
+  }, [streamingPreferences]);
+
+  useEffect(() => {
+    if (user?.profile?.display_name) {
+      setDisplayName(user.profile.display_name);
     }
   }, [user]);
-
-  const loadPreferences = async () => {
-    if (!user?.id) return;
-
-    try {
-      // Load music preferences
-      const { data: musicPrefs, error: musicError } = await supabase
-        .from('user_preferences')
-        .select('*')
-        .eq('profile_id', user.id)
-        .single();
-
-      if (musicPrefs) {
-        setSelectedGenres(musicPrefs.preferred_genres || []);
-        setSelectedMoods(musicPrefs.preferred_moods || []);
-      }
-
-      // Load streaming preferences
-      const { data: streamingPrefs, error: streamingError } = await supabase
-        .from('user_streaming_preferences')
-        .select('preferred_platform')
-        .eq('profile_id', user.id)
-        .maybeSingle();
-
-      if (streamingPrefs) {
-        setPreferredPlatform(streamingPrefs.preferred_platform);
-      }
-
-    } catch (error) {
-      console.error('Error loading preferences:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const loadDiscoveryStats = async () => {
-    if (!user?.id) return;
-
-    try {
-      const { data: ratings, error } = await supabase
-        .from('user_ratings')
-        .select('rating')
-        .eq('profile_id', user.id);
-
-      if (error) throw error;
-
-      const total = ratings?.length || 0;
-      const average = ratings?.length 
-        ? ratings.reduce((sum, r) => sum + r.rating, 0) / ratings.length 
-        : 0;
-
-      setTotalTracks(total);
-      setAverageRating(average);
-    } catch (error) {
-      console.error('Error loading discovery stats:', error);
-    }
-  };
 
   const savePreferences = async () => {
     if (!user?.id) return;
 
-    setSaving(true);
     try {
-      // Save music preferences
-      const { error: musicError } = await supabase
-        .from('user_preferences')
-        .upsert({
-          profile_id: user.id,
-          user_id: user.id,
+      await updatePreferencesMutation.mutateAsync({
+        userId: user.id,
+        preferences: {
           preferred_genres: selectedGenres,
           preferred_moods: selectedMoods,
           min_duration: 60,
           max_duration: 300,
-          updated_at: new Date().toISOString(),
-        }, {
-          onConflict: 'user_id'
-        });
-
-      if (musicError) throw musicError;
-
-      // Save streaming preferences
-      const { error: streamingError } = await supabase
-        .from('user_streaming_preferences')
-        .upsert({
-          profile_id: user.id,
-          preferred_platform: preferredPlatform,
-          updated_at: new Date().toISOString(),
-        }, {
-          onConflict: 'profile_id'
-        });
-
-      if (streamingError) throw streamingError;
-
+        },
+      });
     } catch (error) {
       console.error('Error saving preferences:', error);
-    } finally {
-      setSaving(false);
+    }
+  };
+
+  const saveStreamingPreferences = async () => {
+    if (!user?.id) return;
+
+    try {
+      await updateStreamingMutation.mutateAsync({
+        userId: user.id,
+        platform: preferredPlatform,
+      });
+    } catch (error) {
+      console.error('Error saving streaming preferences:', error);
     }
   };
 
   const saveAccountSettings = async () => {
     if (!user?.id) return;
 
-    setAccountSaving(true);
     try {
       // Update display name if changed
       if (displayName !== user.profile?.display_name) {
-        await updateProfile({ display_name: displayName });
+        await updateProfileMutation.mutateAsync({ display_name: displayName });
       }
 
       // Update password if provided
       if (newPassword && newPassword === confirmPassword) {
-        const { error } = await supabase.auth.updateUser({
-          password: newPassword
-        });
-        if (error) throw error;
+        await updatePasswordMutation.mutateAsync(newPassword);
         
         // Clear password fields
         setNewPassword('');
@@ -186,8 +138,6 @@ export default function ProfileScreen() {
       setShowAccountModal(false);
     } catch (error) {
       console.error('Error saving account settings:', error);
-    } finally {
-      setAccountSaving(false);
     }
   };
 
@@ -232,7 +182,7 @@ export default function ProfileScreen() {
   const handlePlatformModalClose = (save: boolean) => () => {
     setShowPlatformModal(false);
     if (save) {
-      savePreferences();
+      saveStreamingPreferences();
     }
   };
 
@@ -267,13 +217,13 @@ export default function ProfileScreen() {
         <View style={styles.statsGrid}>
           <View style={styles.statItem}>
             <Text variant="button" color="primary" style={styles.statValue}>
-              {totalTracks}
+              {discoveryStats?.totalTracks || 0}
             </Text>
             <Text variant="caption" color="secondary">Tracks Rated</Text>
           </View>
           <View style={styles.statItem}>
             <Text variant="button" color="primary" style={styles.statValue}>
-              {averageRating.toFixed(1)}
+              {discoveryStats?.averageRating.toFixed(1) || '0.0'}
             </Text>
             <Text variant="caption" color="secondary">Avg Rating</Text>
           </View>
@@ -426,7 +376,7 @@ export default function ProfileScreen() {
                 variant="primary"
                 size="medium"
                 onPress={handleGenreModalClose(true)}
-                loading={saving}
+                loading={updatePreferencesMutation.isPending}
                 icon={<Save size={20} color={colors.text.primary} strokeWidth={2} />}
                 iconPosition="left"
               >
@@ -475,7 +425,7 @@ export default function ProfileScreen() {
                 variant="primary"
                 size="medium"
                 onPress={handleMoodModalClose(true)}
-                loading={saving}
+                loading={updatePreferencesMutation.isPending}
                 icon={<Save size={20} color={colors.text.primary} strokeWidth={2} />}
                 iconPosition="left"
               >
@@ -524,7 +474,7 @@ export default function ProfileScreen() {
                 variant="primary"
                 size="medium"
                 onPress={handlePlatformModalClose(true)}
-                loading={saving}
+                loading={updateStreamingMutation.isPending}
                 icon={<Save size={20} color={colors.text.primary} strokeWidth={2} />}
                 iconPosition="left"
               >
@@ -591,7 +541,7 @@ export default function ProfileScreen() {
                 variant="primary"
                 size="medium"
                 onPress={saveAccountSettings}
-                loading={accountSaving}
+                loading={updateProfileMutation.isPending || updatePasswordMutation.isPending}
                 icon={<Save size={20} color={colors.text.primary} strokeWidth={2} />}
                 iconPosition="left"
               >

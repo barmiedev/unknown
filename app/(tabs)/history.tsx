@@ -1,8 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { View, TouchableOpacity, RefreshControl, StyleSheet, ScrollView, Image } from 'react-native';
 import { Users, Music } from 'lucide-react-native';
-import { supabase } from '@/lib/supabase';
-import { useAuth } from '@/contexts/AuthContext';
 import { useFocusEffect } from '@react-navigation/native';
 import { useAudioPlayerPadding } from '@/hooks/useAudioPlayerPadding';
 import Animated, { FadeIn, FadeOut, SlideInRight, SlideOutLeft, withTiming, useSharedValue, useAnimatedStyle } from 'react-native-reanimated';
@@ -17,15 +15,18 @@ import ArtistDetailView from '@/components/ArtistDetailView';
 import { HistoryTrack, SubscribedArtist, TabType, TrackDisplay } from '@/types';
 import { FloatingBackButton, TabHeader } from '@/components/navigation';
 import { TrackListItem, ArtistListItem, FilterBar, type SortOption } from '@/components/lists';
+import { useAuth } from '@/contexts/AuthContext';
+import { 
+  useUserHistory, 
+  useSubscribedArtists, 
+  useFollowArtist, 
+  useUnfollowArtist 
+} from '@/lib/queries';
 
 export default function HistoryScreen() {
   const { user } = useAuth();
   const { paddingBottom } = useAudioPlayerPadding();
   const [activeTab, setActiveTab] = useState<TabType>('tracks');
-  const [tracks, setTracks] = useState<HistoryTrack[]>([]);
-  const [artists, setArtists] = useState<SubscribedArtist[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
   const [selectedTrack, setSelectedTrack] = useState<HistoryTrack | null>(null);
   const [selectedArtist, setSelectedArtist] = useState<SubscribedArtist | null>(null);
   const [isFollowingArtist, setIsFollowingArtist] = useState(true);
@@ -48,6 +49,24 @@ export default function HistoryScreen() {
   const [scrollPosition, setScrollPosition] = useState(0);
   const shouldRestoreScrollRef = useRef(false);
 
+  // Tanstack Query hooks
+  const { 
+    data: tracks = [], 
+    isLoading: tracksLoading, 
+    refetch: refetchTracks 
+  } = useUserHistory(user?.id);
+  
+  const { 
+    data: artists = [], 
+    isLoading: artistsLoading, 
+    refetch: refetchArtists 
+  } = useSubscribedArtists(user?.id);
+
+  const followArtistMutation = useFollowArtist();
+  const unfollowArtistMutation = useUnfollowArtist();
+
+  const loading = tracksLoading || artistsLoading;
+
   // Memoize tabs to prevent unnecessary re-renders
   const tabs = useMemo(() => [
     {
@@ -62,18 +81,25 @@ export default function HistoryScreen() {
     }
   ], [activeTab]);
 
-  // Reload history when screen comes into focus
-  useFocusEffect(
-    useCallback(() => {
-      loadHistory();
-    }, [user])
-  );
-
+  // Extract unique genres and moods for filters
   useEffect(() => {
-    if (user?.id) {
-      loadHistory();
+    if (tracks.length > 0) {
+      const genres = [...new Set(tracks.map(track => track.genre))].sort();
+      const moods = [...new Set(tracks.map(track => track.mood))].sort();
+      setAvailableGenres(genres);
+      setAvailableMoods(moods);
     }
-  }, [user]);
+  }, [tracks]);
+
+  // Extract unique genres for artist filters
+  useEffect(() => {
+    if (artists.length > 0) {
+      const artistGenres = [...new Set(
+        artists.flatMap(artist => artist.genres || [])
+      )].sort();
+      setAvailableArtistGenres(artistGenres);
+    }
+  }, [artists]);
 
   // Restore scroll position when component re-renders after returning from detail view
   useEffect(() => {
@@ -156,111 +182,9 @@ export default function HistoryScreen() {
     return filtered;
   }, [artists, selectedArtistGenre, selectedArtistSort]);
 
-  const loadHistory = async () => {
-    if (!user?.id) return;
-
-    try {
-      // Load tracks with artist location
-      const { data: trackData, error: trackError } = await supabase
-        .from('user_ratings')
-        .select(`
-          rating,
-          review_text,
-          created_at,
-          tracks (
-            id,
-            title,
-            artist,
-            genre,
-            mood,
-            artwork_url,
-            spotify_url,
-            artists (
-              location
-            )
-          )
-        `)
-        .eq('profile_id', user.id)
-        .gte('rating', 4)
-        .order('created_at', { ascending: false });
-
-      if (trackError) throw trackError;
-
-      const formattedTracks = trackData.map((item: any) => ({
-        id: item.tracks.id,
-        title: item.tracks.title,
-        artist: item.tracks.artist,
-        genre: item.tracks.genre,
-        mood: item.tracks.mood,
-        rating: item.rating,
-        review_text: item.review_text,
-        artwork_url: item.tracks.artwork_url,
-        spotify_url: item.tracks.spotify_url,
-        created_at: item.created_at,
-        artist_location: item.tracks.artists?.location,
-      }));
-
-      setTracks(formattedTracks);
-
-      // Extract unique genres and moods for filters
-      const genres = [...new Set(formattedTracks.map(track => track.genre))].sort();
-      const moods = [...new Set(formattedTracks.map(track => track.mood))].sort();
-      setAvailableGenres(genres);
-      setAvailableMoods(moods);
-
-      // Load subscribed artists
-      const { data: artistData, error: artistError } = await supabase
-        .from('user_artist_subscriptions')
-        .select(`
-          subscribed_at,
-          artists (
-            id,
-            name,
-            bio,
-            location,
-            genres,
-            avatar_url
-          ),
-          tracks (
-            title
-          )
-        `)
-        .eq('profile_id', user.id)
-        .order('subscribed_at', { ascending: false });
-
-      if (artistError) throw artistError;
-
-      const formattedArtists = artistData.map((item: any) => ({
-        id: item.artists.id,
-        name: item.artists.name,
-        bio: item.artists.bio,
-        location: item.artists.location,
-        genres: item.artists.genres,
-        avatar_url: item.artists.avatar_url,
-        subscribed_at: item.subscribed_at,
-        discovered_track_title: item.tracks?.title,
-      }));
-
-      setArtists(formattedArtists);
-
-      // Extract unique genres for artist filters
-      const artistGenres = [...new Set(
-        formattedArtists.flatMap(artist => artist.genres || [])
-      )].sort();
-      setAvailableArtistGenres(artistGenres);
-
-    } catch (error) {
-      console.error('Error loading history:', error);
-    } finally {
-      setLoading(false);
-      setRefreshing(false);
-    }
-  };
-
-  const onRefresh = useCallback(() => {
-    setRefreshing(true);
-    loadHistory();
-  }, [user]);
+  const onRefresh = useCallback(async () => {
+    await Promise.all([refetchTracks(), refetchArtists()]);
+  }, [refetchTracks, refetchArtists]);
 
   const handleScroll = (event: any) => {
     const offsetY = event.nativeEvent.contentOffset.y;
@@ -292,17 +216,11 @@ export default function HistoryScreen() {
     if (!user?.id) return;
 
     try {
-      // Remove the artist subscription from the database
-      const { error } = await supabase
-        .from('user_artist_subscriptions')
-        .delete()
-        .eq('profile_id', user.id)
-        .eq('artist_id', artistId);
+      await unfollowArtistMutation.mutateAsync({
+        userId: user.id,
+        artistId: artistId,
+      });
 
-      if (error) throw error;
-
-      // Update local state
-      setArtists(prev => prev.filter(artist => artist.id !== artistId));
       // Don't go back to history, just update the artist state
       setSelectedArtist(prev => prev ? { ...prev, isFollowing: false } : null);
       setIsFollowingArtist(false);
@@ -315,19 +233,12 @@ export default function HistoryScreen() {
     if (!user?.id) return;
 
     try {
-      // Add the artist subscription to the database
-      const { error } = await supabase
-        .from('user_artist_subscriptions')
-        .insert({
-          profile_id: user.id,
-          artist_id: artistId,
-          subscribed_at: new Date().toISOString()
-        });
+      await followArtistMutation.mutateAsync({
+        userId: user.id,
+        artistId: artistId,
+      });
 
-      if (error) throw error;
-
-      // Update local state - add the artist back to the list
-      // For now, we'll just update the selected artist state
+      // Update local state
       setSelectedArtist(prev => prev ? { ...prev, isFollowing: true } : null);
       setIsFollowingArtist(true);
     } catch (error) {
@@ -450,7 +361,7 @@ export default function HistoryScreen() {
             onScroll={handleScroll}
             scrollEventThrottle={16}
             refreshControl={
-              <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+              <RefreshControl refreshing={false} onRefresh={onRefresh} />
             }
           >
             {activeTab === 'tracks' ? (

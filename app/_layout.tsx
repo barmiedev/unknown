@@ -1,12 +1,14 @@
 import { useEffect, useRef } from 'react';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { useFrameworkReady } from '@/hooks/useFrameworkReady';
 import { useFonts } from 'expo-font';
 import * as SplashScreen from 'expo-splash-screen';
 import { AuthProvider, useAuth } from '@/contexts/AuthContext';
 import { AudioProvider } from '@/contexts/AudioContext';
 import { router } from 'expo-router';
+import { queryClient } from '@/lib/queryClient';
 import '../global.css';
 
 // Prevent splash screen from auto-hiding
@@ -88,11 +90,13 @@ export default function RootLayout() {
   }
 
   return (
-    <AuthProvider>
-      <AudioProvider>
-        <RootLayoutNav />
-        <StatusBar style="light" backgroundColor="#19161a" />
-      </AudioProvider>
-    </AuthProvider>
+    <QueryClientProvider client={queryClient}>
+      <AuthProvider>
+        <AudioProvider>
+          <RootLayoutNav />
+          <StatusBar style="light" backgroundColor="#19161a" />
+        </AudioProvider>
+      </AuthProvider>
+    </QueryClientProvider>
   );
 }

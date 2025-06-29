@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useEffect, useState, useMemo } from 'react';
 import { AuthService } from '@/lib/auth';
 import { AuthUser } from '@/types';
+import { queryClient } from '@/lib/queryClient';
 
 interface AuthContextType {
   user: AuthUser | null;
@@ -65,6 +66,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     await AuthService.signOut();
     callback?.();
     setUser(null);
+    
+    // Clear all queries from the cache when signing out
+    queryClient.clear();
   };
 
   const updateProfile = async (updates: any) => {
