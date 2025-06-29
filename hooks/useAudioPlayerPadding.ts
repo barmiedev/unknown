@@ -8,13 +8,16 @@ import { useMemo } from 'react';
  */
 export function useAudioPlayerPadding() {
   const { isGlobalPlayerVisible } = useAudio();
-  
+
   // Global audio player height + some spacing
-  const playerHeight = 80; // Approximate height of the global player
+  const playerHeight = 160; // Approximate height of the global player
   const spacing = 16; // Additional spacing
-  
-  return useMemo(() => ({
-    paddingBottom: isGlobalPlayerVisible ? playerHeight + spacing : 0,
-    isPlayerVisible: isGlobalPlayerVisible,
-  }), [isGlobalPlayerVisible]);
-} 
+
+  return useMemo(
+    () => ({
+      paddingBottom: isGlobalPlayerVisible ? playerHeight + spacing : 0,
+      isPlayerVisible: isGlobalPlayerVisible,
+    }),
+    [isGlobalPlayerVisible],
+  );
+}

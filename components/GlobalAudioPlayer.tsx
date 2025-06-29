@@ -17,6 +17,7 @@ import Animated, {
   FadeIn,
   FadeOut,
 } from 'react-native-reanimated';
+import { BlurView } from 'expo-blur';
 import { useAudio } from '@/contexts/AudioContext';
 import { colors } from '@/utils/colors';
 import { spacing } from '@/utils/spacing';
@@ -91,7 +92,7 @@ const GlobalAudioPlayer = memo(function GlobalAudioPlayer({
     height: interpolate(
       expandAnimation.value,
       [0, 1],
-      [80, 200],
+      [80, 160],
       Extrapolate.CLAMP,
     ),
   }));
@@ -180,13 +181,18 @@ const GlobalAudioPlayer = memo(function GlobalAudioPlayer({
                 style={styles.backgroundArtwork}
                 resizeMode="cover"
               />
+              <BlurView intensity={50} tint="dark" style={styles.blurView} />
             </Animated.View>
           )}
 
-          <Animated.View style={styles.content}>
+          <View style={styles.content}>
             {/* Track info */}
             <View style={styles.trackInfo}>
-              <Text variant="body" color="primary" style={styles.trackTitle}>
+              <Text
+                variant="body"
+                color="primary"
+                style={styles.expandedTrackTitle}
+              >
                 {currentTrack.title}
               </Text>
               <Text
@@ -216,9 +222,7 @@ const GlobalAudioPlayer = memo(function GlobalAudioPlayer({
                 )}
               </TouchableOpacity>
             </View>
-
-            {/* Discover new button */}
-          </Animated.View>
+          </View>
           <View style={styles.discoverButtonContainer}>
             <Button
               style={styles.expandedButton}
@@ -334,9 +338,15 @@ const styles = StyleSheet.create({
   trackArtist: {
     fontFamily: fonts.chillax.regular,
   },
+  expandedTrackTitle: {
+    fontFamily: fonts.chillax.bold,
+    color: colors.text.primary,
+    textShadowColor: colors.background,
+  },
   expandedTrackArtist: {
     fontFamily: fonts.chillax.regular,
     color: colors.text.primary,
+    textShadowColor: colors.background,
   },
   controls: {
     flexDirection: 'row',
@@ -403,5 +413,12 @@ const styles = StyleSheet.create({
   },
   expandedButton: {
     flex: 1,
+  },
+  blurView: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
   },
 });
