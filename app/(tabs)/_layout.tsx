@@ -1,12 +1,12 @@
 import React from 'react';
 import { Tabs } from 'expo-router';
-import { Chrome as Home, History, Trophy, User, Gem, Radar, Route } from 'lucide-react-native';
-import { TouchableOpacity, Image, StyleSheet, Linking, View } from 'react-native';
+import { User, Gem, Radar, Route } from 'lucide-react-native';
+import { TouchableOpacity, Image, StyleSheet, Linking } from 'react-native';
 import { colors } from '@/utils/colors';
 import GlobalAudioPlayer from '@/components/GlobalAudioPlayer';
 
-const FloatingBoltBadge = () => {
-  const handlePress = async () => {
+export default function TabLayout() {
+  const handlePressBolt = async () => {
     try {
       await Linking.openURL('https://bolt.new/');
     } catch (error) {
@@ -14,20 +14,6 @@ const FloatingBoltBadge = () => {
     }
   };
 
-  return (
-    <View style={styles.floatingBadgeContainer}>
-      <TouchableOpacity onPress={handlePress} style={styles.boltBadge} activeOpacity={0.8}>
-        <Image 
-          source={require('../../assets/images/black_circle_360x360.png')} 
-          style={styles.boltBadgeImage}
-          resizeMode="contain"
-        />
-      </TouchableOpacity>
-    </View>
-  );
-};
-
-export default function TabLayout() {
   return (
     <>
       <Tabs
@@ -88,10 +74,29 @@ export default function TabLayout() {
             ),
           }}
         />
+
+        <Tabs.Screen
+          name="bolt"
+          options={{
+            tabBarLabelStyle: {
+              display: 'none',
+            },
+            tabBarIconStyle: {
+              marginTop: 6,
+            },
+            tabBarIcon: () => (
+              <TouchableOpacity onPress={handlePressBolt} style={styles.boltBadge} activeOpacity={0.8}>
+                <Image 
+                  source={require('../../assets/images/black_circle_360x360.png')} 
+                  style={styles.boltBadgeImage}
+                  resizeMode="contain"
+                  className='opacity-70'
+                />
+              </TouchableOpacity>
+            ),
+          }}
+        />
       </Tabs>
-      
-      {/* Floating Bolt Badge - positioned absolutely over content */}
-      <FloatingBoltBadge />
       
       {/* Global Audio Player - positioned above tab bar */}
       <GlobalAudioPlayer />
@@ -100,20 +105,13 @@ export default function TabLayout() {
 }
 
 const styles = StyleSheet.create({
-  floatingBadgeContainer: {
-    position: 'absolute',
-    top: 65, // Positioned from top of screen (below status bar)
-    right: 20, // Positioned from right edge
-    zIndex: 1000, // Ensure it's above other content
-    backgroundColor: 'transparent',
-  },
   boltBadge: {
     padding: 8,
     backgroundColor: 'transparent',
     borderRadius: 20,
   },
   boltBadgeImage: {
-    width: 36,
-    height: 36,
+    width: 40,
+    height: 40,
   },
 });
