@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react';
-import { Stack } from 'expo-router';
+import { Stack, usePathname } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { useFrameworkReady } from '@/hooks/useFrameworkReady';
@@ -17,40 +17,51 @@ SplashScreen.preventAutoHideAsync();
 function RootLayoutNav() {
   const { user, loading } = useAuth();
   const hasRedirected = useRef(false);
-
-  useEffect(() => {
-    // Reset hasRedirected when user state changes
-    hasRedirected.current = false;
-  }, [user]);
+  const pathname = usePathname();
 
   useEffect(() => {
     if (!loading && !hasRedirected.current) {
       if (!user) {
         // User is not authenticated, show welcome screen
-        router.replace('/welcome');
+        if (pathname !== '/welcome') {
+          router.replace('/welcome');
+        }
         hasRedirected.current = true;
       } else if (!user.profile?.onboarding_complete) {
         // User is authenticated but hasn't completed onboarding
         // Check if they just registered (no profile data) or returning user
         if (!user.profile?.username) {
           // New user, start onboarding
-          router.replace('/onboarding/genres');
+          if (pathname !== '/onboarding/genres') {
+            router.replace('/onboarding/genres');
+          }
           hasRedirected.current = true;
         } else {
           // Returning user with incomplete onboarding, ask if they want to complete it
-          router.replace('/onboarding-decision');
+          if (pathname !== '/onboarding-decision') {
+            router.replace('/onboarding-decision');
+          }
           hasRedirected.current = true;
         }
       } else {
         // User is authenticated and onboarding is complete
-        router.replace('/(tabs)');
+        if (pathname !== '/(tabs)' && !pathname.startsWith('/(tabs)/')) {
+          router.replace('/(tabs)');
+        }
         hasRedirected.current = true;
       }
     }
-  }, [user, loading]);
+  }, [user, loading, pathname]);
 
   return (
-    <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: '#19161a' } }}>
+    <Stack
+      screenOptions={{
+        headerShown: false,
+        contentStyle: { backgroundColor: '#19161a' },
+        gestureEnabled: false,
+        gestureDirection: 'horizontal',
+      }}
+    >
       <Stack.Screen name="welcome" />
       <Stack.Screen name="login" />
       <Stack.Screen name="register" />

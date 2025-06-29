@@ -40,12 +40,7 @@
       "output": "single",
       "favicon": "./assets/images/dark-icon.png"
     },
-    "plugins": [
-      "expo-router",
-      "expo-font",
-      "expo-web-browser",
-      "expo-av"
-    ],
+    "plugins": ["expo-router", "expo-font", "expo-web-browser", "expo-av"],
     "experiments": {
       "typedRoutes": true
     },

@@ -126,7 +126,7 @@ export default function DiscoverScreen() {
   const [showRating, setShowRating] = useState(false);
   const [trackRevealed, setTrackRevealed] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [ratingThreshold] = useState(0.05); // 5% of track length
+  const [ratingThreshold] = useState(0.2); // 20% of track length
   const [canSkip, setCanSkip] = useState(true);
   const [isTransitioning, setIsTransitioning] = useState(false);
   const [showReviewInput, setShowReviewInput] = useState(false);
