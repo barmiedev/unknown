@@ -1,7 +1,14 @@
 import React from 'react';
 import { View, TouchableOpacity, StyleSheet } from 'react-native';
 import { Play, Pause, SkipForward } from 'lucide-react-native';
-import Animated, { useAnimatedStyle, useSharedValue, withRepeat, withSequence, withTiming } from 'react-native-reanimated';
+import Animated, {
+  useAnimatedStyle,
+  useSharedValue,
+  withRepeat,
+  withSequence,
+  withTiming,
+} from 'react-native-reanimated';
+import Svg, { Circle } from 'react-native-svg';
 import { colors } from '@/utils/colors';
 import { spacing } from '@/utils/spacing';
 import { Text } from '@/components/typography/Text';
@@ -30,9 +37,9 @@ export function PlaybackControls({
       pulseAnimation.value = withRepeat(
         withSequence(
           withTiming(1.1, { duration: 800 }),
-          withTiming(1, { duration: 800 })
+          withTiming(1, { duration: 800 }),
         ),
-        -1
+        -1,
       );
     } else {
       pulseAnimation.value = withTiming(1);
@@ -47,22 +54,65 @@ export function PlaybackControls({
     width: duration > 0 ? `${(position / duration) * 100}%` : '0%',
   }));
 
+  // Calculate circular progress (stops at 20% of duration)
+  const maxProgressPercent = 20; // 20% of total duration
+  const currentPercent = duration > 0 ? (position / duration) * 100 : 0;
+  const progressPercent =
+    currentPercent <= maxProgressPercent
+      ? (currentPercent / maxProgressPercent) * 100
+      : 100;
+  const strokeDasharray = 2 * Math.PI * 70; // circumference of circle with radius 70
+  const strokeDashoffset = strokeDasharray * (1 - progressPercent / 100);
+
   return (
     <View style={styles.container}>
-      {/* Play Button */}
-      <Animated.View style={[pulseStyle, styles.playButtonContainer]}>
-        <TouchableOpacity
-          onPress={onPlayPause}
-          style={styles.playButton}
-          activeOpacity={0.8}
-        >
-          {isPlaying ? (
-            <Pause size={40} color={colors.text.primary} strokeWidth={2} />
-          ) : (
-            <Play size={40} color={colors.text.primary} strokeWidth={2} style={{ marginLeft: 4 }} />
-          )}
-        </TouchableOpacity>
-      </Animated.View>
+      {/* Play Button with Circular Progress */}
+      <View style={styles.playButtonWrapper}>
+        {/* Circular Progress Background */}
+        <Svg width={160} height={160} style={styles.progressSvg}>
+          <Circle
+            cx={80}
+            cy={80}
+            r={70}
+            stroke={colors.surface}
+            strokeWidth={4}
+            fill="none"
+          />
+          {/* Circular Progress Fill */}
+          <Circle
+            cx={80}
+            cy={80}
+            r={70}
+            stroke={colors.primary}
+            strokeWidth={4}
+            fill="none"
+            strokeDasharray={strokeDasharray}
+            strokeDashoffset={strokeDashoffset}
+            strokeLinecap="round"
+            transform="rotate(-90 80 80)"
+          />
+        </Svg>
+
+        {/* Play Button */}
+        <Animated.View style={[pulseStyle]}>
+          <TouchableOpacity
+            onPress={onPlayPause}
+            style={styles.playButton}
+            activeOpacity={0.8}
+          >
+            {isPlaying ? (
+              <Pause size={40} color={colors.text.primary} strokeWidth={2} />
+            ) : (
+              <Play
+                size={40}
+                color={colors.text.primary}
+                strokeWidth={2}
+                style={{ marginLeft: 4 }}
+              />
+            )}
+          </TouchableOpacity>
+        </Animated.View>
+      </View>
 
       {/* Progress Bar */}
       <View style={styles.progressContainer}>
@@ -78,7 +128,11 @@ export function PlaybackControls({
           style={styles.skipButton}
           activeOpacity={0.8}
         >
-          <SkipForward size={20} color={colors.text.secondary} strokeWidth={2} />
+          <SkipForward
+            size={20}
+            color={colors.text.secondary}
+            strokeWidth={2}
+          />
           <Text variant="body" color="secondary" style={styles.skipText}>
             Next
           </Text>
@@ -95,8 +149,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     width: '100%',
   },
-  playButtonContainer: {
+  playButtonWrapper: {
+    position: 'relative',
+    alignItems: 'center',
+    justifyContent: 'center',
     marginBottom: spacing.xl,
+  },
+  progressSvg: {
+    position: 'absolute',
   },
   playButton: {
     width: 120,
