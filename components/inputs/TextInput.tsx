@@ -97,7 +97,7 @@ const styles = StyleSheet.create({
     borderColor: colors.status.error,
   },
   icon: {
-    marginRight: spacing.sm,
+    marginRight: spacing.md,
   },
   input: {
     flex: 1,
@@ -106,7 +106,6 @@ const styles = StyleSheet.create({
     color: colors.text.primary,
   },
   inputWithIcon: {
-    marginLeft: spacing.sm,
   },
   multilineInput: {
     minHeight: 70,
