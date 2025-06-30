@@ -98,7 +98,7 @@ export default function DisclaimerScreen() {
             <Text variant="body" color="primary" style={styles.thankYouText}>
               Thank you for being part of the unknown journey! 🎵
             </Text>
-            <Text variant="body" color="secondary" style={styles.thankYouSubtext}>
+            <Text variant="body" color="primary" style={styles.thankYouSubtext}>
               Together, we're building the future of underground music discovery.
             </Text>
           </View>
