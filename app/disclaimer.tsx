@@ -184,8 +184,6 @@ const styles = StyleSheet.create({
   },
   thankYouCard: {
     backgroundColor: 'rgba(69, 36, 81, 0.3)',
-    borderWidth: 1,
-    borderColor: 'rgba(69, 36, 81, 0.5)',
     borderRadius: borderRadius.lg,
     padding: spacing.lg,
     alignItems: 'center',
