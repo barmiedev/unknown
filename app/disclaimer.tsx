@@ -172,8 +172,6 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(81, 65, 12, 0.2)',
     borderWidth: 1,
     borderColor: 'rgba(239, 165, 4, 0.3)',
-    borderRadius: borderRadius.lg,
-    padding: spacing.lg,
     marginBottom: spacing.lg,
   },
   warningHeader: {
