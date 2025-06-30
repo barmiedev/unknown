@@ -23,7 +23,7 @@ export default function DisclaimerScreen() {
     <Screen paddingHorizontal={24} withoutBottomSafeArea>
       {/* Header */}
       <View style={styles.header}>
-        <Heading variant="h1" color="primary" align="center">
+        <Heading variant="h2" color="primary" align="center">
           Hello Early Bird! <Bird />
         </Heading>
         <Text 
