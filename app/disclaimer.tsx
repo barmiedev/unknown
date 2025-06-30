@@ -93,25 +93,9 @@ export default function DisclaimerScreen() {
             </Text>
           </View>
 
-          {/* Data and Privacy */}
-          <View style={styles.disclaimerCard}>
-            <Text variant="body" color="primary" style={styles.disclaimerTitle}>
-              Data and Privacy
-            </Text>
-            <Text variant="body" color="secondary" style={styles.disclaimerText}>
-              During this testing phase, we collect usage data to improve the app's functionality. 
-              All data is handled in accordance with our privacy policy, and your personal information 
-              remains secure and private.
-            </Text>
-            <Text variant="body" color="secondary" style={styles.disclaimerText}>
-              Testing data may be reset periodically as we implement new features and improvements. 
-              We'll provide advance notice of any significant data changes that might affect your experience.
-            </Text>
-          </View>
-
           {/* Thank You */}
           <View style={styles.thankYouCard}>
-            <Text variant="body" color="accent" style={styles.thankYouText}>
+            <Text variant="body" color="primary" style={styles.thankYouText}>
               Thank you for being part of the unknown journey! 🎵
             </Text>
             <Text variant="body" color="secondary" style={styles.thankYouSubtext}>
