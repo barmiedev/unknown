@@ -9,7 +9,6 @@ import { Text } from '@/components/typography/Text';
 import { TextInput } from '@/components/inputs/TextInput';
 import { PasswordInput } from '@/components/inputs/PasswordInput';
 import { Button } from '@/components/buttons/Button';
-import { SocialButton } from '@/components/buttons/SocialButton';
 import { colors } from '@/utils/colors';
 import { spacing } from '@/utils/spacing';
 import { validateEmail } from '@/utils/validation';
@@ -146,19 +145,6 @@ export default function LoginScreen() {
             {loading ? 'Signing In...' : 'Sign In'}
           </Button>
 
-          {/* Divider */}
-          <View style={styles.divider}>
-            <View style={styles.dividerLine} />
-            <Text variant="caption" color="secondary" style={styles.dividerText}>
-              or
-            </Text>
-            <View style={styles.dividerLine} />
-          </View>
-
-          {/* Social Login Buttons */}
-          <SocialButton platform="apple" onPress={() => {}} />
-          <SocialButton platform="google" onPress={() => {}} />
-
           {/* Register Link */}
           <View style={styles.registerLink}>
             <Text variant="caption" color="secondary">
@@ -167,7 +153,7 @@ export default function LoginScreen() {
             <Button
               variant="ghost"
               size="small"
-              onPress={() => router.replace('/register')}
+              onPress={() => router.replace('/disclaimer')}
               style={styles.linkButton}
             >
               <Text variant="link" color="accent">Sign Up</Text>
@@ -198,19 +184,6 @@ const styles = StyleSheet.create({
   },
   loginButton: {
     marginBottom: spacing.lg,
-  },
-  divider: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: spacing.lg,
-  },
-  dividerLine: {
-    flex: 1,
-    height: 1,
-    backgroundColor: colors.surface,
-  },
-  dividerText: {
-    marginHorizontal: spacing.md,
   },
   registerLink: {
     flexDirection: 'row',

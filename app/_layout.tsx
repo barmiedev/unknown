@@ -69,6 +69,7 @@ function RootLayoutNav() {
       }}
     >
       <Stack.Screen name="welcome" />
+      <Stack.Screen name="disclaimer" />
       <Stack.Screen name="login" />
       <Stack.Screen name="register" />
       <Stack.Screen name="onboarding-decision" />

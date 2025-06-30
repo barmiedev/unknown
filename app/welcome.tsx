@@ -52,7 +52,7 @@ export default function WelcomeScreen() {
             <Button
               variant="primary"
               size="large"
-              onPress={() => router.push('/register')}
+              onPress={() => router.push('/disclaimer')}
               style={styles.primaryButton}
             >
               Get Started
