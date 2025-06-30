@@ -52,7 +52,7 @@ export default function DisclaimerScreen() {
                 Early Development Build
               </Text>
             </View>
-            <Text variant="body" color="secondary" style={styles.warningText}>
+            <Text variant="body" color="primary" style={styles.warningText}>
               This app is currently in early development. You might encounter issues with performance, 
               gamification features, and other aspects of the application. We appreciate your patience 
               as we work to improve the experience.
