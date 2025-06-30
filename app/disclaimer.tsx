@@ -113,7 +113,7 @@ export default function DisclaimerScreen() {
           onPress={handleUnderstand}
           style={styles.understandButton}
         >
-          I Understand
+          I understand
         </Button>
 
         <Button
