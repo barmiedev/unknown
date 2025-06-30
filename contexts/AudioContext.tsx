@@ -50,6 +50,11 @@ const AudioContext = createContext<AudioContextType | undefined>(undefined);
 const isWebCompatibleAudio = (url: string): boolean => {
   if (Platform.OS !== 'web') return true;
   
+  // Check if it's a Supabase storage URL - these are always web-compatible
+  if (url.includes('/storage/v1/object/public/')) {
+    return true;
+  }
+  
   const webCompatibleFormats = ['.mp3', '.wav', '.ogg', '.m4a', '.aac'];
   const urlLower = url.toLowerCase();
   return webCompatibleFormats.some(format => urlLower.includes(format));
