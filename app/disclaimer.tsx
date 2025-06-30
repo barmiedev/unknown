@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, StyleSheet, ScrollView } from 'react-native';
 import { router } from 'expo-router';
-import { ArrowLeft, AlertTriangle } from 'lucide-react-native';
+import { ArrowLeft, TriangleAlert as AlertTriangle } from 'lucide-react-native';
 import { Screen } from '@/components/layout/Screen';
 import { Heading } from '@/components/typography/Heading';
 import { Text } from '@/components/typography/Text';
