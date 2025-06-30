@@ -88,7 +88,7 @@ const styles = StyleSheet.create({
     borderColor: colors.status.error,
   },
   leftIcon: {
-    marginRight: spacing.sm,
+    marginRight: spacing.md,
   },
   rightIcon: {
     marginLeft: spacing.sm,
