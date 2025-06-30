@@ -123,7 +123,7 @@ export default function RegisterScreen() {
           {/* Register Button */}
           <Button
             variant="primary"
-            size="large"
+            size="medium"
             loading={loading}
             onPress={handleRegister}
             style={styles.registerButton}
