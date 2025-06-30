@@ -181,7 +181,7 @@ const styles = StyleSheet.create({
     marginBottom: spacing.md,
   },
   disclaimerText: {
-    fontSize: 12,
+    fontSize: 14,
     lineHeight: 20,
     marginBottom: spacing.md,
   },
