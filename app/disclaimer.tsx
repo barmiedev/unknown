@@ -173,6 +173,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surface,
     borderRadius: borderRadius.lg,
     padding: spacing.lg,
+    marginHorizontal: -spacing.md,
     marginBottom: spacing.lg,
   },
   disclaimerTitle: {
