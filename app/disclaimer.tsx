@@ -201,7 +201,6 @@ const styles = StyleSheet.create({
   },
   thankYouSubtext: {
     fontSize: 16,
-    textAlign: 'center',
     lineHeight: 22,
   },
   buttonContainer: {
