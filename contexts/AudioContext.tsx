@@ -46,7 +46,7 @@ interface AudioContextType {
 
 const AudioContext = createContext<AudioContextType | undefined>(undefined);
 
-// Helper function to check if audio URL is web-compatible
+// DEPRECATED / Helper function to check if audio URL is web-compatible
 const isWebCompatibleAudio = (url: string): boolean => {
   if (Platform.OS !== 'web') return true;
   return true;
@@ -65,11 +65,14 @@ const isWebCompatibleAudio = (url: string): boolean => {
 const getWebCompatibleAudioUrl = (originalUrl: string): string => {
   if (Platform.OS !== 'web') return originalUrl;
   
-  if (isWebCompatibleAudio(originalUrl)) {
-    return originalUrl;
-  }
+  // since we are not using direct links to .wav/.mp3 we can provide standard urls to web also
+  return originalUrl;
   
-  return 'https://www.soundjay.com/misc/sounds/bell-ringing-05.wav';
+  // if (isWebCompatibleAudio(originalUrl)) {
+  //   return originalUrl;
+  // }
+  
+  // return 'https://www.soundjay.com/misc/sounds/bell-ringing-05.wav';
 };
 
 export function AudioProvider({ children }: { children: React.ReactNode }) {
