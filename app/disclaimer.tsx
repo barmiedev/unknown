@@ -183,7 +183,7 @@ const styles = StyleSheet.create({
     marginBottom: spacing.md,
   },
   thankYouCard: {
-    backgroundColor: 'rgba(69, 36, 81, 0.3)',
+    backgroundColor: 'rgba(69, 36, 81, 0.1)',
     borderRadius: borderRadius.lg,
     padding: spacing.lg,
     alignItems: 'center',
