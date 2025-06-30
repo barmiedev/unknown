@@ -137,7 +137,7 @@ export default function LoginScreen() {
           {/* Login Button */}
           <Button
             variant="primary"
-            size="large"
+            size="medium"
             loading={loading}
             onPress={handleLogin}
             style={styles.loginButton}
