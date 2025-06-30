@@ -169,9 +169,6 @@ const styles = StyleSheet.create({
     paddingBottom: spacing.lg,
   },
   warningCard: {
-    backgroundColor: 'rgba(81, 65, 12, 0.2)',
-    borderWidth: 1,
-    borderColor: 'rgba(239, 165, 4, 0.3)',
     marginBottom: spacing.lg,
   },
   warningHeader: {
