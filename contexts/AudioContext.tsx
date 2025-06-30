@@ -49,6 +49,7 @@ const AudioContext = createContext<AudioContextType | undefined>(undefined);
 // Helper function to check if audio URL is web-compatible
 const isWebCompatibleAudio = (url: string): boolean => {
   if (Platform.OS !== 'web') return true;
+  return true;
   
   // Check if it's a Supabase storage URL - these are always web-compatible
   if (url.includes('/storage/v1/object/public/')) {
