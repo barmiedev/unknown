@@ -10,7 +10,8 @@ export const useUserHistory = (userId?: string) => {
 
       const { data: trackData, error: trackError } = await supabase
         .from('user_ratings')
-        .select(`
+        .select(
+          `
           rating,
           review_text,
           created_at,
@@ -23,11 +24,13 @@ export const useUserHistory = (userId?: string) => {
             mood,
             artwork_url,
             spotify_url,
+            duration,
             artists (
               location
             )
           )
-        `)
+        `,
+        )
         .eq('profile_id', userId)
         .gte('rating', 4)
         .order('created_at', { ascending: false });
@@ -47,6 +50,7 @@ export const useUserHistory = (userId?: string) => {
         spotify_url: item.tracks.spotify_url,
         created_at: item.created_at,
         artist_location: item.tracks.artists?.location,
+        duration: item.tracks.duration,
       }));
     },
     enabled: !!userId,
@@ -61,7 +65,8 @@ export const useSubscribedArtists = (userId?: string) => {
 
       const { data: artistData, error: artistError } = await supabase
         .from('user_artist_subscriptions')
-        .select(`
+        .select(
+          `
           subscribed_at,
           artists (
             id,
@@ -74,7 +79,8 @@ export const useSubscribedArtists = (userId?: string) => {
           tracks (
             title
           )
-        `)
+        `,
+        )
         .eq('profile_id', userId)
         .order('subscribed_at', { ascending: false });
 

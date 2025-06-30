@@ -1,6 +1,14 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { View, ScrollView, TouchableOpacity, StyleSheet, Linking, Alert, Modal } from 'react-native';
-import { 
+import {
+  View,
+  ScrollView,
+  TouchableOpacity,
+  StyleSheet,
+  Linking,
+  Alert,
+  Modal,
+} from 'react-native';
+import {
   Heart,
   HeartHandshake,
   MapPin,
@@ -9,7 +17,7 @@ import {
   SkipForward,
   X,
   ArrowLeft,
-  ExternalLink
+  ExternalLink,
 } from 'lucide-react-native';
 import Animated, { FadeIn, FadeOut } from 'react-native-reanimated';
 import { supabase } from '@/lib/supabase';
@@ -23,12 +31,19 @@ import { OptimizedImage } from '@/components/media/OptimizedImage';
 import { colors } from '@/utils/colors';
 import { spacing, borderRadius } from '@/utils/spacing';
 import {
-  getPlatformColor, 
+  getPlatformColor,
   getPlatformName,
-  DEFAULT_STREAMING_PLATFORM 
+  DEFAULT_STREAMING_PLATFORM,
 } from '@/lib/platforms';
 import SocialIcon from '@/components/media/SocialIcon';
-import { Artist, SocialLink, StreamingLink, TrackDisplay, GamificationReward, Badge } from '@/types';
+import {
+  Artist,
+  SocialLink,
+  StreamingLink,
+  TrackDisplay,
+  GamificationReward,
+  Badge,
+} from '@/types';
 import { FloatingBackButton } from '@/components/navigation';
 import { GamificationRewardDisplay } from '@/components/discover';
 
@@ -47,10 +62,10 @@ interface ArtistUnveilViewProps {
   paddingBottom?: number;
 }
 
-export default function ArtistUnveilView({ 
-  track, 
-  onContinueListening, 
-  onDiscoverNext, 
+export default function ArtistUnveilView({
+  track,
+  onContinueListening,
+  onDiscoverNext,
   showPlaybackControls = true,
   userRating,
   userReview,
@@ -65,7 +80,9 @@ export default function ArtistUnveilView({
   const [artist, setArtist] = useState<Artist | null>(null);
   const [socialLinks, setSocialLinks] = useState<SocialLink[]>([]);
   const [streamingLinks, setStreamingLinks] = useState<StreamingLink[]>([]);
-  const [preferredPlatform, setPreferredPlatform] = useState<string>(DEFAULT_STREAMING_PLATFORM);
+  const [preferredPlatform, setPreferredPlatform] = useState<string>(
+    DEFAULT_STREAMING_PLATFORM,
+  );
   const [isSubscribed, setIsSubscribed] = useState(false);
   const [loading, setLoading] = useState(true);
   const [showOtherPlatforms, setShowOtherPlatforms] = useState(false);
@@ -75,7 +92,7 @@ export default function ArtistUnveilView({
     setLoading(true);
     loadArtistData();
     loadUserPreferences();
-    
+
     return () => {
       isMountedRef.current = false;
     };
@@ -86,7 +103,8 @@ export default function ArtistUnveilView({
       // Get artist data
       const { data: artistData, error: artistError } = await supabase
         .from('tracks')
-        .select(`
+        .select(
+          `
           artists (
             id,
             name,
@@ -95,7 +113,8 @@ export default function ArtistUnveilView({
             genres,
             avatar_url
           )
-        `)
+        `,
+        )
         .eq('id', track.id)
         .single();
 
@@ -103,8 +122,10 @@ export default function ArtistUnveilView({
 
       if (artistData?.artists) {
         // Handle the case where artists might be an array or single object
-        const artist = Array.isArray(artistData.artists) ? artistData.artists[0] : artistData.artists;
-        
+        const artist = Array.isArray(artistData.artists)
+          ? artistData.artists[0]
+          : artistData.artists;
+
         if (artist) {
           if (isMountedRef.current) {
             setArtist(artist);
@@ -131,24 +152,24 @@ export default function ArtistUnveilView({
 
             // Check if subscription exists by checking if data array is not empty
             if (isMountedRef.current) {
-              setIsSubscribed(Boolean(subscriptionData && subscriptionData.length > 0));
+              setIsSubscribed(
+                Boolean(subscriptionData && subscriptionData.length > 0),
+              );
             }
           }
         }
       }
 
-      // Get streaming links (excluding spotify since we removed it)
+      // Get streaming links
       const { data: streamingData, error: streamingError } = await supabase
         .from('track_streaming_links')
         .select('platform, url')
-        .eq('track_id', track.id)
-        .neq('platform', 'spotify'); // Exclude spotify links
+        .eq('track_id', track.id);
 
       if (streamingError) throw streamingError;
       if (isMountedRef.current) {
         setStreamingLinks(streamingData || []);
       }
-
     } catch (error) {
       console.error('Error loading artist data:', error);
     } finally {
@@ -227,26 +248,31 @@ export default function ArtistUnveilView({
   };
 
   const getPreferredStreamingLink = useCallback(() => {
-    return streamingLinks.find(link => link.platform === preferredPlatform) || streamingLinks[0];
+    return (
+      streamingLinks.find((link) => link.platform === preferredPlatform) ||
+      streamingLinks[0]
+    );
   }, [streamingLinks, preferredPlatform]);
 
   const getOtherStreamingLinks = useCallback(() => {
-    return streamingLinks.filter(link => link.platform !== preferredPlatform);
+    return streamingLinks.filter((link) => link.platform !== preferredPlatform);
   }, [streamingLinks, preferredPlatform]);
 
   if (loading) {
     return (
       <Screen>
         <View style={styles.loadingContainer}>
-          <Text variant="body" color="primary">Loading artist details...</Text>
+          <Text variant="body" color="primary">
+            Loading artist details...
+          </Text>
         </View>
       </Screen>
     );
   }
 
   return (
-    <Screen 
-      backgroundColor={colors.background} 
+    <Screen
+      backgroundColor={colors.background}
       withoutBottomSafeArea={withoutBottomSafeArea}
       paddingHorizontal={0}
     >
@@ -264,7 +290,11 @@ export default function ArtistUnveilView({
         />
       ) : null}
 
-      <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom }}>
+      <ScrollView
+        style={styles.scrollView}
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={{ paddingBottom }}
+      >
         <View style={{ paddingHorizontal: spacing.lg }}>
           {/* Track Artwork */}
           <View style={styles.artworkContainer}>
@@ -277,7 +307,11 @@ export default function ArtistUnveilView({
                 />
               ) : (
                 <View style={styles.placeholderArtwork}>
-                  <Music size={64} color={colors.text.secondary} strokeWidth={1.5} />
+                  <Music
+                    size={64}
+                    color={colors.text.secondary}
+                    strokeWidth={1.5}
+                  />
                 </View>
               )}
             </View>
@@ -285,15 +319,35 @@ export default function ArtistUnveilView({
 
           {/* Track Info */}
           <View style={styles.trackInfo}>
-            <Heading variant="h2" color="primary" align="center" style={styles.trackTitle}>
-              {track.title && track.title.trim() ? track.title : 'Unknown Track'}
+            <Heading
+              variant="h2"
+              color="primary"
+              align="center"
+              style={styles.trackTitle}
+            >
+              {track.title && track.title.trim()
+                ? track.title
+                : 'Unknown Track'}
             </Heading>
-            <Text variant="body" color="secondary" align="center" style={styles.artistName}>
-              {track.artist && track.artist.trim() ? track.artist : 'Unknown Artist'}
+            <Text
+              variant="body"
+              color="secondary"
+              align="center"
+              style={styles.artistName}
+            >
+              {track.artist && track.artist.trim()
+                ? track.artist
+                : 'Unknown Artist'}
             </Text>
             <View style={styles.genreMoodContainer}>
-              <Text style={styles.tag}>{track.genre && track.genre.trim() ? track.genre : 'Unknown Genre'}</Text>
-              <Text style={styles.tag}>{track.mood && track.mood.trim() ? track.mood : 'Unknown Mood'}</Text>
+              <Text style={styles.tag}>
+                {track.genre && track.genre.trim()
+                  ? track.genre
+                  : 'Unknown Genre'}
+              </Text>
+              <Text style={styles.tag}>
+                {track.mood && track.mood.trim() ? track.mood : 'Unknown Mood'}
+              </Text>
             </View>
           </View>
 
@@ -301,14 +355,26 @@ export default function ArtistUnveilView({
           {userRating ? (
             <View style={styles.section}>
               <View style={styles.userRatingContainer}>
-                <Heading variant="h4" color="primary" style={styles.userRatingTitle}>
+                <Heading
+                  variant="h4"
+                  color="primary"
+                  style={styles.userRatingTitle}
+                >
                   Your Rating
                 </Heading>
-                <StarRating rating={userRating} readonly style={styles.userRatingStars} />
+                <StarRating
+                  rating={userRating}
+                  readonly
+                  style={styles.userRatingStars}
+                />
                 {userReview && userReview.trim() ? (
                   <View style={styles.artisticQuoteContainer}>
                     <Text style={styles.quoteSymbol}>"</Text>
-                    <Text variant="body" color="secondary" style={styles.userReviewText}>
+                    <Text
+                      variant="body"
+                      color="secondary"
+                      style={styles.userReviewText}
+                    >
                       {userReview.trim()}
                     </Text>
                     <Text style={styles.quoteSymbol}>"</Text>
@@ -331,7 +397,13 @@ export default function ArtistUnveilView({
                     variant="primary"
                     size="large"
                     onPress={onPlayInApp}
-                    icon={<Play size={20} color={colors.text.primary} strokeWidth={2} />}
+                    icon={
+                      <Play
+                        size={20}
+                        color={colors.text.primary}
+                        strokeWidth={2}
+                      />
+                    }
                     iconPosition="left"
                     style={styles.playInAppButton}
                   >
@@ -346,17 +418,32 @@ export default function ArtistUnveilView({
                     <Button
                       variant="secondary"
                       size="medium"
-                      onPress={() => handleOpenLink(getPreferredStreamingLink()!.url)}
-                      style={[styles.preferredStreamingButton, { flex: 1, marginRight: getOtherStreamingLinks().length > 0 ? 4 : 0 }]}
+                      onPress={() =>
+                        handleOpenLink(getPreferredStreamingLink()!.url)
+                      }
+                      style={[
+                        styles.preferredStreamingButton,
+                        {
+                          flex: 1,
+                          marginRight:
+                            getOtherStreamingLinks().length > 0 ? 4 : 0,
+                        },
+                      ]}
                     >
-                      <Text 
-                        variant="body" 
+                      <Text
+                        variant="body"
                         style={[
                           styles.preferredStreamingButtonText,
-                          { color: getPlatformColor(getPreferredStreamingLink()!.platform) }
+                          {
+                            color: getPlatformColor(
+                              getPreferredStreamingLink()!.platform,
+                            ),
+                          },
                         ]}
                       >
-                        {getPlatformName(getPreferredStreamingLink()!.platform) || 'Listen'}
+                        {getPlatformName(
+                          getPreferredStreamingLink()!.platform,
+                        ) || 'Listen'}
                       </Text>
                     </Button>
                   )}
@@ -367,9 +454,21 @@ export default function ArtistUnveilView({
                       variant="secondary"
                       size="medium"
                       onPress={() => setShowOtherPlatforms(true)}
-                      icon={<ExternalLink size={16} color={colors.text.secondary} strokeWidth={2} />}
+                      icon={
+                        <ExternalLink
+                          size={16}
+                          color={colors.text.secondary}
+                          strokeWidth={2}
+                        />
+                      }
                       iconPosition="right"
-                      style={[styles.otherPlatformsButton, { flex: 1, marginLeft: getPreferredStreamingLink() ? 4 : 0 }]}
+                      style={[
+                        styles.otherPlatformsButton,
+                        {
+                          flex: 1,
+                          marginLeft: getPreferredStreamingLink() ? 4 : 0,
+                        },
+                      ]}
                     >
                       Elsewhere
                     </Button>
@@ -384,18 +483,34 @@ export default function ArtistUnveilView({
             <>
               {/* Connect with Artist Section */}
               <View style={styles.section}>
-                <Heading variant="h4" color="primary" style={styles.sectionTitle}>
-                  Connect with {artist.name && artist.name.trim() ? artist.name : 'Artist'}
+                <Heading
+                  variant="h4"
+                  color="primary"
+                  style={styles.sectionTitle}
+                >
+                  Connect with{' '}
+                  {artist.name && artist.name.trim() ? artist.name : 'Artist'}
                 </Heading>
-                
+
                 {/* Follow Button */}
                 <Button
-                  variant={isSubscribed ? "success" : "primary"}
+                  variant={isSubscribed ? 'success' : 'primary'}
                   size="medium"
                   onPress={handleSubscribeToArtist}
-                  icon={isSubscribed ? 
-                    <HeartHandshake size={20} color={colors.text.primary} strokeWidth={2} /> :
-                    <Heart size={20} color={colors.text.primary} strokeWidth={2} />
+                  icon={
+                    isSubscribed ? (
+                      <HeartHandshake
+                        size={20}
+                        color={colors.text.primary}
+                        strokeWidth={2}
+                      />
+                    ) : (
+                      <Heart
+                        size={20}
+                        color={colors.text.primary}
+                        strokeWidth={2}
+                      />
+                    )
                   }
                   iconPosition="left"
                   style={styles.followButton}
@@ -413,7 +528,11 @@ export default function ArtistUnveilView({
                         onPress={() => handleOpenLink(link.url)}
                         activeOpacity={0.8}
                       >
-                        <SocialIcon platform={link.platform} size={24} color={colors.text.primary} />
+                        <SocialIcon
+                          platform={link.platform}
+                          size={24}
+                          color={colors.text.primary}
+                        />
                       </TouchableOpacity>
                     ))}
                   </View>
@@ -422,7 +541,11 @@ export default function ArtistUnveilView({
 
               {/* About the Artist */}
               <View style={styles.lastSection}>
-                <Heading variant="h4" color="primary" style={styles.sectionTitle}>
+                <Heading
+                  variant="h4"
+                  color="primary"
+                  style={styles.sectionTitle}
+                >
                   About the Artist
                 </Heading>
                 <View style={styles.artistDetailsContainer}>
@@ -435,26 +558,38 @@ export default function ArtistUnveilView({
                       />
                     </View>
                   )}
-                  
+
                   <View style={styles.artistDetails}>
                     {artist.location && artist.location.trim() && (
                       <View style={styles.artistDetailRow}>
-                        <MapPin size={16} color={colors.text.secondary} strokeWidth={2} />
-                        <Text variant="body" color="secondary" style={styles.artistDetailText}>
+                        <MapPin
+                          size={16}
+                          color={colors.text.secondary}
+                          strokeWidth={2}
+                        />
+                        <Text
+                          variant="body"
+                          color="secondary"
+                          style={styles.artistDetailText}
+                        >
                           {artist.location.trim()}
                         </Text>
                       </View>
                     )}
-                    
-                    {artist.genres && artist.genres.length > 0 && artist.genres.some(genre => genre && genre.trim()) && (
-                      <View style={styles.genresContainer}>
-                        {artist.genres.filter(genre => genre && genre.trim()).map((genre) => (
-                          <Text key={genre} style={styles.tag}>
-                            {genre.trim()}
-                          </Text>
-                        ))}
-                      </View>
-                    )}
+
+                    {artist.genres &&
+                      artist.genres.length > 0 &&
+                      artist.genres.some((genre) => genre && genre.trim()) && (
+                        <View style={styles.genresContainer}>
+                          {artist.genres
+                            .filter((genre) => genre && genre.trim())
+                            .map((genre) => (
+                              <Text key={genre} style={styles.tag}>
+                                {genre.trim()}
+                              </Text>
+                            ))}
+                        </View>
+                      )}
                   </View>
                 </View>
 
@@ -476,7 +611,13 @@ export default function ArtistUnveilView({
                     variant="primary"
                     size="medium"
                     onPress={onContinueListening}
-                    icon={<Play size={20} color={colors.text.primary} strokeWidth={2} />}
+                    icon={
+                      <Play
+                        size={20}
+                        color={colors.text.primary}
+                        strokeWidth={2}
+                      />
+                    }
                     iconPosition="left"
                   >
                     Listen to Full Track
@@ -488,7 +629,13 @@ export default function ArtistUnveilView({
                     variant="secondary"
                     size="medium"
                     onPress={onDiscoverNext}
-                    icon={<SkipForward size={20} color={colors.text.primary} strokeWidth={2} />}
+                    icon={
+                      <SkipForward
+                        size={20}
+                        color={colors.text.primary}
+                        strokeWidth={2}
+                      />
+                    }
                     iconPosition="left"
                   >
                     Discover Next
@@ -510,7 +657,9 @@ export default function ArtistUnveilView({
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
             <View style={styles.modalHeader}>
-              <Heading variant="h4" color="primary">Listen elsewhere</Heading>
+              <Heading variant="h4" color="primary">
+                Listen elsewhere
+              </Heading>
               <TouchableOpacity
                 onPress={() => setShowOtherPlatforms(false)}
                 style={styles.modalCloseButton}
@@ -518,7 +667,7 @@ export default function ArtistUnveilView({
                 <X size={24} color={colors.text.secondary} strokeWidth={2} />
               </TouchableOpacity>
             </View>
-            
+
             <View style={styles.modalPlatformsList}>
               {getOtherStreamingLinks().map((link) => (
                 <Button
@@ -529,15 +678,21 @@ export default function ArtistUnveilView({
                     handleOpenLink(link.url);
                     setShowOtherPlatforms(false);
                   }}
-                  icon={<ExternalLink size={16} color={getPlatformColor(link.platform)} strokeWidth={2} />}
+                  icon={
+                    <ExternalLink
+                      size={16}
+                      color={getPlatformColor(link.platform)}
+                      strokeWidth={2}
+                    />
+                  }
                   iconPosition="right"
                   style={styles.modalPlatformButton}
                 >
-                  <Text 
+                  <Text
                     variant="body"
                     style={[
                       styles.modalPlatformButtonText,
-                      { color: getPlatformColor(link.platform) }
+                      { color: getPlatformColor(link.platform) },
                     ]}
                   >
                     {getPlatformName(link.platform) || link.platform}
@@ -631,8 +786,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     marginBottom: spacing.sm,
   },
-  userRatingStars: {
-  },
+  userRatingStars: {},
   artisticQuoteContainer: {
     flexDirection: 'row',
     alignItems: 'flex-start',
