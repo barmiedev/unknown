@@ -109,7 +109,7 @@ export default function DisclaimerScreen() {
       <View style={styles.buttonContainer}>
         <Button
           variant="primary"
-          size="large"
+          size="medium"
           onPress={handleUnderstand}
           style={styles.understandButton}
         >
@@ -209,10 +209,6 @@ const styles = StyleSheet.create({
   },
   understandButton: {
     shadowColor: colors.primary,
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.4,
-    shadowRadius: 12,
-    elevation: 8,
   },
   backButton: {
     backgroundColor: colors.surface,
