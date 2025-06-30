@@ -12,9 +12,9 @@ export const useUserPreferences = (userId?: string) => {
         .from('user_preferences')
         .select('preferred_genres, preferred_moods, min_duration, max_duration')
         .eq('profile_id', userId)
-        .single();
+        .maybeSingle();
 
-      if (error && error.code !== 'PGRST116') {
+      if (error) {
         throw error;
       }
 
