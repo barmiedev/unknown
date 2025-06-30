@@ -8,6 +8,7 @@ import { Text } from '@/components/typography/Text';
 import { Button } from '@/components/buttons/Button';
 import { colors } from '@/utils/colors';
 import { spacing, borderRadius } from '@/utils/spacing';
+import { Bird } from 'lucide-react-native';
 
 export default function DisclaimerScreen() {
   const handleUnderstand = () => {
@@ -23,7 +24,7 @@ export default function DisclaimerScreen() {
       {/* Header */}
       <View style={styles.header}>
         <Heading variant="h1" color="primary" align="center">
-          Hello Early Bird! 🐦
+          Hello Early Bird! <Bird />
         </Heading>
         <Text 
           variant="body" 
