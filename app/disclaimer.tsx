@@ -198,7 +198,6 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: '600',
     marginBottom: spacing.sm,
-    textAlign: 'center',
   },
   thankYouSubtext: {
     fontSize: 16,
