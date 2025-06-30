@@ -28,7 +28,7 @@ export default function DisclaimerScreen() {
         </Heading>
         <Text 
           variant="body" 
-          color="secondary" 
+          color="secondary"
           align="center"
           style={styles.subtitle}
         >
