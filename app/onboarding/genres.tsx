@@ -16,17 +16,15 @@ export default function GenrePreferencesScreen() {
   const [selectedGenres, setSelectedGenres] = useState<Genre[]>([]);
 
   const toggleGenre = (genre: Genre) => {
-    setSelectedGenres(prev => 
-      prev.includes(genre) 
-        ? prev.filter(g => g !== genre)
-        : [...prev, genre]
+    setSelectedGenres((prev) =>
+      prev.includes(genre) ? prev.filter((g) => g !== genre) : [...prev, genre],
     );
   };
 
   const handleContinue = () => {
     router.push({
       pathname: '/onboarding/moods',
-      params: { genres: JSON.stringify(selectedGenres) }
+      params: { genres: JSON.stringify(selectedGenres) },
     });
   };
 
@@ -37,11 +35,7 @@ export default function GenrePreferencesScreen() {
         <Heading variant="h2" color="primary">
           What genres do you love?
         </Heading>
-        <Text 
-          variant="body" 
-          color="secondary" 
-          style={styles.subtitle}
-        >
+        <Text variant="body" color="secondary" style={styles.subtitle}>
           Choose your favorites to get personalized recommendations
         </Text>
       </View>
@@ -63,7 +57,9 @@ export default function GenrePreferencesScreen() {
           size="large"
           disabled={selectedGenres.length === 0}
           onPress={handleContinue}
-          icon={<ArrowRight size={20} color={colors.text.primary} strokeWidth={2} />}
+          icon={
+            <ArrowRight size={20} color={colors.text.primary} strokeWidth={2} />
+          }
           iconPosition="right"
           style={styles.continueButton}
         >
@@ -73,10 +69,12 @@ export default function GenrePreferencesScreen() {
         <Button
           variant="ghost"
           size="medium"
-          onPress={() => router.push('/onboarding/moods')}
+          onPress={handleContinue}
           style={styles.skipButton}
         >
-          <Text variant="body" color="secondary">Skip for now</Text>
+          <Text variant="body" color="secondary">
+            Skip for now
+          </Text>
         </Button>
       </View>
     </Screen>

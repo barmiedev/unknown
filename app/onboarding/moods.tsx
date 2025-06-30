@@ -17,10 +17,8 @@ export default function MoodPreferencesScreen() {
   const [selectedMoods, setSelectedMoods] = useState<Mood[]>([]);
 
   const toggleMood = (mood: Mood) => {
-    setSelectedMoods(prev => 
-      prev.includes(mood) 
-        ? prev.filter(m => m !== mood)
-        : [...prev, mood]
+    setSelectedMoods((prev) =>
+      prev.includes(mood) ? prev.filter((m) => m !== mood) : [...prev, mood],
     );
   };
 
@@ -28,10 +26,10 @@ export default function MoodPreferencesScreen() {
     const genres = params.genres ? JSON.parse(params.genres as string) : [];
     router.push({
       pathname: '/onboarding/profile',
-      params: { 
+      params: {
         genres: JSON.stringify(genres),
-        moods: JSON.stringify(selectedMoods)
-      }
+        moods: JSON.stringify(selectedMoods),
+      },
     });
   };
 
@@ -42,11 +40,7 @@ export default function MoodPreferencesScreen() {
         <Heading variant="h2" color="primary">
           What moods move you?
         </Heading>
-        <Text 
-          variant="body" 
-          color="secondary" 
-          style={styles.subtitle}
-        >
+        <Text variant="body" color="secondary" style={styles.subtitle}>
           Select the vibes that resonate with your soul
         </Text>
       </View>
@@ -68,7 +62,9 @@ export default function MoodPreferencesScreen() {
           size="large"
           disabled={selectedMoods.length === 0}
           onPress={handleContinue}
-          icon={<ArrowRight size={20} color={colors.text.primary} strokeWidth={2} />}
+          icon={
+            <ArrowRight size={20} color={colors.text.primary} strokeWidth={2} />
+          }
           iconPosition="right"
           style={styles.continueButton}
         >
@@ -78,10 +74,12 @@ export default function MoodPreferencesScreen() {
         <Button
           variant="ghost"
           size="medium"
-          onPress={() => router.push('/onboarding/profile')}
+          onPress={handleContinue}
           style={styles.skipButton}
         >
-          <Text variant="body" color="secondary">Skip for now</Text>
+          <Text variant="body" color="secondary">
+            Skip for now
+          </Text>
         </Button>
       </View>
     </Screen>
