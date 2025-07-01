@@ -2,7 +2,7 @@
   "expo": {
     "name": "Unknown",
     "slug": "unknown",
-    "version": "0.0.3-alpha",
+    "version": "0.0.4",
     "orientation": "portrait",
     "icon": "./assets/images/dark-icon.png",
     "scheme": "unknown",
