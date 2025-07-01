@@ -6,6 +6,7 @@
     "development": {
       "developmentClient": true,
       "distribution": "internal",
+      "environment": "development",
       "ios": {
         "resourceClass": "m-medium"
       },
@@ -15,14 +16,18 @@
     },
     "preview": {
       "distribution": "store",
+      "environment": "preview",
       "ios": {
         "resourceClass": "m-medium"
       },
       "android": {
-        "resourceClass": "medium"
+        "resourceClass": "medium",
+        "gradleCommand": ":app:assembleRelease",
+        "buildType": "apk"
       }
     },
     "production": {
+      "environment": "production",
       "ios": {
         "resourceClass": "m-medium"
       },

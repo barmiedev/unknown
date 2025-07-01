@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, StyleSheet, ScrollView } from 'react-native';
 import { colors } from '@/utils/colors';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 interface ScreenProps {
   children: React.ReactNode;
@@ -27,7 +28,14 @@ export function Screen({
 
   return (
     <View style={[styles.container, { backgroundColor }, style]}>
-      <View style={styles.safeArea}>
+      <SafeAreaView
+        style={styles.safeArea}
+        edges={
+          withoutBottomSafeArea
+            ? ['top', 'left', 'right']
+            : ['top', 'right', 'bottom', 'left']
+        }
+      >
         <Container
           style={[styles.content, { paddingHorizontal }]}
           showsVerticalScrollIndicator={showsVerticalScrollIndicator}
@@ -38,7 +46,7 @@ export function Screen({
         >
           {children}
         </Container>
-      </View>
+      </SafeAreaView>
     </View>
   );
 }
